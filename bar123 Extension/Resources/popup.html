@@ -6,6 +6,55 @@
     <script type="module" src="popup.js"></script>
 </head>
 <body>
+<<<<<<< HEAD
     <strong>Hello World!</strong>
+=======
+    <div class="container">
+        <h2>History Sync</h2>
+        
+        <div class="status">
+            <div class="sync-status" id="syncStatus">Disconnected</div>
+            <div class="device-count" id="deviceCount">0 devices</div>
+        </div>
+        
+        <div class="settings">
+            <div class="field">
+                <label for="sharedSecret">Room Secret:</label>
+                <input type="password" id="sharedSecret" placeholder="Enter shared secret for your room">
+                <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">
+                    🔗 Uses PeerJS Cloud • All devices must use the same secret to sync together
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <button id="connectBtn" class="primary">Connect</button>
+                <button id="disconnectBtn" class="secondary">Disconnect</button>
+            </div>
+        </div>
+        
+        <div class="history-controls">
+            <h3>History Management</h3>
+            <button id="clearLocalBtn" class="danger">Clear Local History</button>
+            <button id="deleteRemoteBtn" class="danger">Delete Remote History</button>
+        </div>
+        
+        <div class="stats">
+            <div>Local entries: <span id="localCount">0</span></div>
+            <div>Last sync: <span id="lastSync">Never</span></div>
+        </div>
+
+        <div class="history-section">
+            <h3>History <button id="refreshHistoryBtn" class="refresh-btn">↻</button></h3>
+            <div id="historyList" class="history-list">
+                <div class="empty-state">No history entries yet</div>
+            </div>
+        </div>
+
+        <div class="history-controls">
+            <h3>Debug</h3>
+            <button id="debugSyncBtn" class="secondary">Force Sync</button>
+        </div>
+    </div>
+>>>>>>> 6a3c53c (Initial Commit)
 </body>
 </html>

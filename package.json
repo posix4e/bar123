@@ -1,0 +1,38 @@
+{
+  "name": "bar123-history-sync-extension",
+  "version": "1.0.0",
+  "description": "Safari extension for P2P history synchronization",
+  "main": "index.js",
+  "scripts": {
+    "install-deps": "npm install",
+    "build": "npm run bundle-peerjs && npm run copy-assets",
+    "bundle-peerjs": "cp node_modules/peerjs/dist/peerjs.min.js 'bar123 Extension/Resources/'",
+    "copy-assets": "echo 'Assets ready'",
+    "dev": "npm run build && npm run serve",
+    "serve": "python3 -m http.server 8081 --directory test-pages",
+    "clean": "rm -f 'bar123 Extension/Resources/peerjs.min.js'",
+    "xcode": "npm run build && open bar123.xcodeproj",
+    "test-peerjs": "open quick-peerjs-test.html",
+    "test": "node test-runner.js",
+    "test-integration": "node test-runner.js --integration-only", 
+    "test-ui": "npm run build && xcodebuild test -project bar123.xcodeproj -scheme bar123UITests -destination 'platform=iOS Simulator,name=iPhone 15'",
+    "test-full": "npm run test-integration && npm run test",
+    "test-real": "node real-simulator-test.js",
+    "test-verify": "node real-simulator-test.js --verify-only"
+  },
+  "keywords": [
+    "safari",
+    "extension",
+    "p2p",
+    "history",
+    "sync",
+    "peerjs",
+    "webrtc"
+  ],
+  "dependencies": {
+    "peerjs": "^1.4.7"
+  },
+  "devDependencies": {},
+  "author": "History Sync Extension",
+  "license": "MIT"
+}
