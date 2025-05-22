@@ -1,42 +1,51 @@
-//
-//  SafariWebExtensionHandler.swift
-//  bar123 Extension
-//
-//  Created by Alex Newman on 5/22/25.
-//
-
 import SafariServices
 import os.log
 
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
-
+    
+    static var shared = SafariWebExtensionHandler()
+    
     func beginRequest(with context: NSExtensionContext) {
-        let request = context.inputItems.first as? NSExtensionItem
-
-        let profile: UUID?
-        if #available(iOS 17.0, macOS 14.0, *) {
-            profile = request?.userInfo?[SFExtensionProfileKey] as? UUID
-        } else {
-            profile = request?.userInfo?["profile"] as? UUID
+        let item = context.inputItems[0] as! NSExtensionItem
+        let message = item.userInfo?[SFExtensionMessageKey] as? [String: Any]
+        os_log(.default, "Received message from extension: %@", message as! CVarArg)
+        
+        // Handle page visit data
+        if let action = message?["action"] as? String, action == "pageVisit" {
+            let url = message?["url"] as? String ?? ""
+            let title = message?["title"] as? String ?? ""
+            let timestamp = message?["timestamp"] as? String ?? ""
+            
+            // Store history data
+            storeHistoryItem(url: url, title: title, timestamp: timestamp)
         }
-
-        let message: Any?
-        if #available(iOS 15.0, macOS 11.0, *) {
-            message = request?.userInfo?[SFExtensionMessageKey]
-        } else {
-            message = request?.userInfo?["message"]
-        }
-
-        os_log(.default, "Received message from browser.runtime.sendNativeMessage: %@ (profile: %@)", String(describing: message), profile?.uuidString ?? "none")
 
         let response = NSExtensionItem()
-        if #available(iOS 15.0, macOS 11.0, *) {
-            response.userInfo = [ SFExtensionMessageKey: [ "echo": message ] ]
-        } else {
-            response.userInfo = [ "message": [ "echo": message ] ]
-        }
+        response.userInfo = [ SFExtensionMessageKey: [ "Response to": message ] ]
 
-        context.completeRequest(returningItems: [ response ], completionHandler: nil)
+        context.completeRequest(returningItems: [response], completionHandler: nil)
+    }
+    
+    private func storeHistoryItem(url: String, title: String, timestamp: String) {
+        var history = UserDefaults.standard.array(forKey: "browsing_history") as? [[String: String]] ?? []
+        
+        let historyItem = [
+            "url": url,
+            "title": title,
+            "timestamp": timestamp
+        ]
+        
+        history.append(historyItem)
+        
+        // Keep only last 100 items
+        if history.count > 100 {
+            history = Array(history.suffix(100))
+        }
+        
+        UserDefaults.standard.set(history, forKey: "browsing_history")
+        
+        // Notify the app
+        NotificationCenter.default.post(name: NSNotification.Name("HistoryUpdated"), object: nil)
     }
 
 }

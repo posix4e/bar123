@@ -1,15 +1,709 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
-
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-
-    <link rel="stylesheet" href="../Style.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>bar123</title>
+    <style>
+        body { 
+            font-family: -apple-system, sans-serif; 
+            padding: 20px; 
+            margin: 0;
+            background: #f5f5f5;
+        }
+        h1 { 
+            color: #333; 
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .history-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .history-item {
+            background: white;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .history-item h3 {
+            margin: 0 0 5px 0;
+            color: #007AFF;
+            font-size: 16px;
+        }
+        .history-item .url {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+            word-break: break-all;
+        }
+        .history-item .timestamp {
+            color: #999;
+            font-size: 12px;
+        }
+        
+        .history-item .source {
+            color: #007AFF;
+            font-size: 10px;
+            margin-top: 3px;
+            font-style: italic;
+        }
+        .empty-state {
+            text-align: center;
+            color: #666;
+            margin-top: 50px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        
+        .refresh-btn, .settings-btn {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .settings-btn {
+            background: #666;
+        }
+        
+        .settings-panel {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .settings-panel h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+        
+        .setting-group {
+            margin: 15px 0;
+        }
+        
+        .setting-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .setting-group input, .setting-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .setting-actions {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0 10px 0;
+        }
+        
+        .setting-actions button {
+            flex: 1;
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .setting-actions button:nth-child(2) {
+            background: #28a745;
+        }
+        
+        .setting-actions button:nth-child(3) {
+            background: #dc3545;
+        }
+        
+        .sync-status {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .sync-status #peer-count {
+            margin-top: 5px;
+        }
+    </style>
 </head>
 <body>
-    <img src="../Icon.png" width="128" height="128" alt="bar123 Icon">
-    <p>You can turn on bar123’s Safari extension in Settings.</p>
+    <h1>🔥 bar123 Browsing History</h1>
+    
+    <div class="history-container">
+        <div class="controls">
+            <button class="refresh-btn" onclick="refreshHistory()">Refresh History</button>
+            <button class="settings-btn" onclick="toggleSettings()">⚙️ Settings</button>
+        </div>
+        
+        <div id="settings-panel" class="settings-panel" style="display: none;">
+            <h3>P2P Sync Settings</h3>
+            <div class="setting-group">
+                <label for="shared-secret">Shared Secret:</label>
+                <input type="password" id="shared-secret" placeholder="Enter shared secret for sync">
+            </div>
+            <div class="setting-group">
+                <label for="discovery-server">Discovery Server:</label>
+                <select id="discovery-server">
+                    <option value="google">Google STUN</option>
+                    <option value="twilio">Twilio TURN</option>
+                    <option value="custom">Custom Server</option>
+                </select>
+            </div>
+            <div class="setting-group" id="custom-server-group" style="display: none;">
+                <label for="custom-server-url">Custom Server URL:</label>
+                <input type="text" id="custom-server-url" placeholder="wss://your-server.com">
+            </div>
+            <div class="setting-group">
+                <label for="device-name">Device Name:</label>
+                <input type="text" id="device-name" placeholder="My Device">
+            </div>
+            <div class="setting-actions">
+                <button onclick="saveSettings()">Save Settings</button>
+                <button onclick="startP2PSync()">Start Sync</button>
+                <button onclick="stopP2PSync()">Stop Sync</button>
+            </div>
+            <div id="sync-status" class="sync-status">
+                Status: <span id="status-text">Disconnected</span>
+                <div id="peer-count">Peers: 0</div>
+            </div>
+        </div>
+        
+        <div id="history-list">
+            <div class="empty-state">
+                <p>No browsing history yet.</p>
+                <p>Enable the extension in Safari Settings and browse some websites!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateHistory(historyData) {
+            const historyList = document.getElementById('history-list');
+            
+            if (!historyData || historyData.length === 0) {
+                historyList.innerHTML = `
+                    <div class="empty-state">
+                        <p>No browsing history yet.</p>
+                        <p>Enable the extension in Safari Settings and browse some websites!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Reverse to show newest first
+            const reversedHistory = historyData.slice().reverse();
+            
+            historyList.innerHTML = reversedHistory.map(item => `
+                <div class="history-item">
+                    <h3>${escapeHtml(item.title)}</h3>
+                    <div class="url">${escapeHtml(item.url)}</div>
+                    <div class="timestamp">${formatTimestamp(item.timestamp)}</div>
+                    ${item.source ? `<div class="source">📡 from ${escapeHtml(item.source)}</div>` : ''}
+                </div>
+            `).join('');
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString();
+        }
+        
+        function refreshHistory() {
+            window.webkit.messageHandlers.getHistory.postMessage({});
+        }
+        
+        // P2P Sync functionality
+        let p2pSync = null;
+        let peers = new Map();
+        let deviceId = null;
+        
+        class P2PHistorySync {
+            constructor() {
+                this.ws = null;
+                this.peers = new Map();
+                this.config = null;
+                this.deviceId = this.generateDeviceId();
+                this.deviceInfo = this.getDeviceInfo();
+            }
+            
+            generateDeviceId() {
+                return 'bar123_' + Math.random().toString(36).substring(2, 15);
+            }
+            
+            getDeviceInfo() {
+                return {
+                    id: this.deviceId,
+                    name: document.getElementById('device-name').value || 'Unknown Device',
+                    platform: navigator.platform,
+                    userAgent: navigator.userAgent,
+                    timestamp: Date.now(),
+                    version: '1.0.0'
+                };
+            }
+            
+            async start(config) {
+                this.config = config;
+                this.updateStatus('Connecting...');
+                
+                try {
+                    const serverUrl = this.getServerUrl(config);
+                    await this.connectToDiscoveryServer(serverUrl);
+                } catch (error) {
+                    console.error('P2P sync error:', error);
+                    this.updateStatus('Connection failed');
+                }
+            }
+            
+            getServerUrl(config) {
+                switch (config.discoveryServer) {
+                    case 'google':
+                        // Use a public WebSocket echo server for demo
+                        return 'wss://echo.websocket.org/?room=bar123-' + encodeURIComponent(config.sharedSecret);
+                    case 'twilio':
+                        // Fallback to echo server since real Twilio needs auth
+                        return 'wss://echo.websocket.org/?room=bar123-twilio-' + encodeURIComponent(config.sharedSecret);
+                    case 'custom':
+                        return config.customServerUrl + '?shared=' + encodeURIComponent(config.sharedSecret);
+                    default:
+                        return 'wss://echo.websocket.org/?room=bar123-default-' + encodeURIComponent(config.sharedSecret);
+                }
+            }
+            
+            async connectToDiscoveryServer(url) {
+                return new Promise((resolve, reject) => {
+                    try {
+                        this.ws = new WebSocket(url);
+                        
+                        // Set a timeout for connection
+                        const timeout = setTimeout(() => {
+                            if (this.ws.readyState === WebSocket.CONNECTING) {
+                                this.ws.close();
+                                reject(new Error('Connection timeout'));
+                            }
+                        }, 10000);
+                        
+                        this.ws.onopen = () => {
+                            clearTimeout(timeout);
+                            console.log('Connected to discovery server');
+                            this.updateStatus('Connected');
+                            this.announcePresence();
+                            resolve();
+                        };
+                        
+                        this.ws.onmessage = (event) => {
+                            try {
+                                const data = JSON.parse(event.data);
+                                this.handleDiscoveryMessage(data);
+                            } catch (e) {
+                                console.log('Received non-JSON message:', event.data);
+                                // Ignore non-JSON messages (echo server echoes back our messages)
+                            }
+                        };
+                        
+                        this.ws.onclose = (event) => {
+                            clearTimeout(timeout);
+                            console.log('WebSocket closed:', event.code, event.reason);
+                            this.updateStatus('Disconnected');
+                            if (this.config && event.code !== 1000) {
+                                // Reconnect unless it was a normal close
+                                setTimeout(() => this.reconnect(), 5000);
+                            }
+                        };
+                        
+                        this.ws.onerror = (error) => {
+                            clearTimeout(timeout);
+                            console.error('WebSocket error:', error);
+                            this.updateStatus('Connection failed');
+                            reject(error);
+                        };
+                    } catch (error) {
+                        console.error('Failed to create WebSocket:', error);
+                        this.updateStatus('Connection failed');
+                        reject(error);
+                    }
+                });
+            }
+            
+            announcePresence() {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({
+                        type: 'announce',
+                        device: this.deviceInfo,
+                        sharedSecret: this.config.sharedSecret
+                    }));
+                }
+            }
+            
+            async handleDiscoveryMessage(message) {
+                switch (message.type) {
+                    case 'peer_discovered':
+                        if (message.device.id !== this.deviceId) {
+                            await this.connectToPeer(message.device);
+                        }
+                        break;
+                    case 'offer':
+                        await this.handleOffer(message);
+                        break;
+                    case 'answer':
+                        await this.handleAnswer(message);
+                        break;
+                    case 'ice_candidate':
+                        await this.handleIceCandidate(message);
+                        break;
+                }
+            }
+            
+            async connectToPeer(peerDevice) {
+                const peerConnection = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                });
+                
+                const dataChannel = peerConnection.createDataChannel('history', {
+                    ordered: true
+                });
+                
+                this.setupDataChannel(dataChannel, peerDevice.id);
+                this.setupPeerConnection(peerConnection, peerDevice.id);
+                
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                
+                this.ws.send(JSON.stringify({
+                    type: 'offer',
+                    target: peerDevice.id,
+                    source: this.deviceId,
+                    offer: offer
+                }));
+                
+                this.peers.set(peerDevice.id, {
+                    connection: peerConnection,
+                    channel: dataChannel,
+                    device: peerDevice
+                });
+            }
+            
+            async handleOffer(message) {
+                const peerConnection = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                });
+                
+                peerConnection.ondatachannel = (event) => {
+                    this.setupDataChannel(event.channel, message.source);
+                };
+                
+                this.setupPeerConnection(peerConnection, message.source);
+                
+                await peerConnection.setRemoteDescription(message.offer);
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                
+                this.ws.send(JSON.stringify({
+                    type: 'answer',
+                    target: message.source,
+                    source: this.deviceId,
+                    answer: answer
+                }));
+                
+                this.peers.set(message.source, {
+                    connection: peerConnection,
+                    channel: null
+                });
+            }
+            
+            async handleAnswer(message) {
+                const peer = this.peers.get(message.source);
+                if (peer) {
+                    await peer.connection.setRemoteDescription(message.answer);
+                }
+            }
+            
+            async handleIceCandidate(message) {
+                const peer = this.peers.get(message.source);
+                if (peer && message.candidate) {
+                    await peer.connection.addIceCandidate(message.candidate);
+                }
+            }
+            
+            setupPeerConnection(pc, peerId) {
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        this.ws.send(JSON.stringify({
+                            type: 'ice_candidate',
+                            target: peerId,
+                            source: this.deviceId,
+                            candidate: event.candidate
+                        }));
+                    }
+                };
+            }
+            
+            setupDataChannel(channel, peerId) {
+                channel.onopen = () => {
+                    console.log('Data channel opened with peer:', peerId);
+                    this.updatePeerCount();
+                    this.syncHistory(channel);
+                };
+                
+                channel.onmessage = (event) => {
+                    this.handlePeerMessage(JSON.parse(event.data), peerId);
+                };
+                
+                channel.onclose = () => {
+                    console.log('Data channel closed with peer:', peerId);
+                    this.peers.delete(peerId);
+                    this.updatePeerCount();
+                };
+                
+                const peer = this.peers.get(peerId);
+                if (peer) {
+                    peer.channel = channel;
+                }
+            }
+            
+            async syncHistory(channel) {
+                // Get local history and send to peer
+                const history = JSON.parse(localStorage.getItem('browsing_history') || '[]');
+                const syncData = {
+                    type: 'history_sync',
+                    device: this.deviceInfo,
+                    history: history,
+                    timestamp: Date.now()
+                };
+                
+                if (channel.readyState === 'open') {
+                    channel.send(JSON.stringify(syncData));
+                }
+            }
+            
+            handlePeerMessage(message, peerId) {
+                switch (message.type) {
+                    case 'history_sync':
+                        this.mergeHistory(message.history, message.device);
+                        break;
+                    case 'history_update':
+                        this.addHistoryItem(message.item, message.device);
+                        break;
+                }
+            }
+            
+            mergeHistory(peerHistory, peerDevice) {
+                let localHistory = JSON.parse(localStorage.getItem('browsing_history') || '[]');
+                const existingUrls = new Set(localHistory.map(item => item.url + '|' + item.timestamp));
+                
+                let added = 0;
+                peerHistory.forEach(item => {
+                    const key = item.url + '|' + item.timestamp;
+                    if (!existingUrls.has(key)) {
+                        item.source = peerDevice.name || peerDevice.id;
+                        localHistory.push(item);
+                        added++;
+                    }
+                });
+                
+                if (added > 0) {
+                    localHistory.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    localStorage.setItem('browsing_history', JSON.stringify(localHistory));
+                    refreshHistory();
+                    console.log(`Merged ${added} items from ${peerDevice.name}`);
+                }
+            }
+            
+            addHistoryItem(item, peerDevice) {
+                let localHistory = JSON.parse(localStorage.getItem('browsing_history') || '[]');
+                item.source = peerDevice.name || peerDevice.id;
+                localHistory.push(item);
+                localStorage.setItem('browsing_history', JSON.stringify(localHistory));
+                refreshHistory();
+            }
+            
+            broadcastHistoryUpdate(item) {
+                const message = {
+                    type: 'history_update',
+                    device: this.deviceInfo,
+                    item: item,
+                    timestamp: Date.now()
+                };
+                
+                this.peers.forEach(peer => {
+                    if (peer.channel && peer.channel.readyState === 'open') {
+                        peer.channel.send(JSON.stringify(message));
+                    }
+                });
+            }
+            
+            updateStatus(status) {
+                const statusElement = document.getElementById('status-text');
+                if (statusElement) {
+                    statusElement.textContent = status;
+                }
+            }
+            
+            updatePeerCount() {
+                const count = Array.from(this.peers.values()).filter(peer => 
+                    peer.channel && peer.channel.readyState === 'open'
+                ).length;
+                
+                const peerCountElement = document.getElementById('peer-count');
+                if (peerCountElement) {
+                    peerCountElement.textContent = `Peers: ${count}`;
+                }
+            }
+            
+            stop() {
+                if (this.ws) {
+                    this.ws.close();
+                    this.ws = null;
+                }
+                
+                this.peers.forEach(peer => {
+                    if (peer.channel) peer.channel.close();
+                    if (peer.connection) peer.connection.close();
+                });
+                this.peers.clear();
+                
+                this.updateStatus('Disconnected');
+                this.updatePeerCount();
+            }
+            
+            reconnect() {
+                if (this.config) {
+                    this.start(this.config);
+                }
+            }
+        }
+        
+        function toggleSettings() {
+            const panel = document.getElementById('settings-panel');
+            const isVisible = panel.style.display !== 'none';
+            panel.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                loadSettings();
+            }
+        }
+        
+        function generateDefaultSecret() {
+            // Generate a better default secret
+            const words = ['fire', 'sync', 'browse', 'share', 'connect', 'link', 'mesh', 'peer'];
+            const randomWord = words[Math.floor(Math.random() * words.length)];
+            const randomNum = Math.floor(Math.random() * 9999) + 1000;
+            return `${randomWord}-${randomNum}`;
+        }
+        
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('p2p_settings') || '{}');
+            
+            // Generate default secret if none exists
+            const defaultSecret = settings.sharedSecret || generateDefaultSecret();
+            
+            document.getElementById('shared-secret').value = defaultSecret;
+            document.getElementById('discovery-server').value = settings.discoveryServer || 'google';
+            document.getElementById('custom-server-url').value = settings.customServerUrl || '';
+            document.getElementById('device-name').value = settings.deviceName || `bar123-${navigator.platform}`;
+            
+            // Save the default secret if it was generated
+            if (!settings.sharedSecret) {
+                settings.sharedSecret = defaultSecret;
+                localStorage.setItem('p2p_settings', JSON.stringify(settings));
+            }
+            
+            toggleCustomServerField();
+        }
+        
+        function saveSettings() {
+            const settings = {
+                sharedSecret: document.getElementById('shared-secret').value,
+                discoveryServer: document.getElementById('discovery-server').value,
+                customServerUrl: document.getElementById('custom-server-url').value,
+                deviceName: document.getElementById('device-name').value
+            };
+            
+            localStorage.setItem('p2p_settings', JSON.stringify(settings));
+            alert('Settings saved!');
+        }
+        
+        function startP2PSync() {
+            const settings = JSON.parse(localStorage.getItem('p2p_settings') || '{}');
+            
+            if (!settings.sharedSecret) {
+                alert('Please enter a shared secret first!');
+                return;
+            }
+            
+            if (p2pSync) {
+                p2pSync.stop();
+            }
+            
+            p2pSync = new P2PHistorySync();
+            p2pSync.start(settings);
+        }
+        
+        function stopP2PSync() {
+            if (p2pSync) {
+                p2pSync.stop();
+                p2pSync = null;
+            }
+        }
+        
+        // Handle discovery server changes
+        document.addEventListener('DOMContentLoaded', function() {
+            const discoverySelect = document.getElementById('discovery-server');
+            if (discoverySelect) {
+                discoverySelect.addEventListener('change', toggleCustomServerField);
+            }
+        });
+        
+        function toggleCustomServerField() {
+            const discoveryServer = document.getElementById('discovery-server').value;
+            const customGroup = document.getElementById('custom-server-group');
+            customGroup.style.display = discoveryServer === 'custom' ? 'block' : 'none';
+        }
+        
+        // Intercept history updates to broadcast to peers
+        const originalRefreshHistory = refreshHistory;
+        refreshHistory = function() {
+            originalRefreshHistory();
+            // Broadcast to peers if connected
+            if (p2pSync && window.lastHistoryUpdate) {
+                p2pSync.broadcastHistoryUpdate(window.lastHistoryUpdate);
+            }
+        };
+        
+        // Initial load
+        refreshHistory();
+        deviceId = 'bar123_' + Math.random().toString(36).substring(2, 15);
+    </script>
 </body>
 </html>

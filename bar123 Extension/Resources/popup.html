@@ -6,6 +6,26 @@
     <script type="module" src="popup.js"></script>
 </head>
 <body>
-    <strong>Hello World!</strong>
+    <div class="header">
+        <h2>🔥 bar123</h2>
+        <p>Recent History</p>
+    </div>
+    
+    <div id="history-list">
+        <div class="loading">Loading...</div>
+    </div>
+    
+    <div class="footer">
+        <button id="refresh-btn">Refresh</button>
+        <button id="sync-btn">🔄 Sync</button>
+        <button id="open-app-btn">Open App</button>
+    </div>
+    
+    <div id="sync-status" class="sync-footer">
+        <div class="sync-info">
+            <span id="sync-text">P2P: Off</span>
+            <span id="peer-count">Peers: 0</span>
+        </div>
+    </div>
 </body>
 </html>
