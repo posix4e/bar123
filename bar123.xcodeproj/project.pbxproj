@@ -1,0 +1,762 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		CE03C42D2DDF94E1008CC9F2 /* bar123 Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CE03C42C2DDF94E1008CC9F2 /* bar123 Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		CE03C4172DDF94E1008CC9F2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CE03C3F12DDF94E0008CC9F2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CE03C3F82DDF94E0008CC9F2;
+			remoteInfo = bar123;
+		};
+		CE03C4212DDF94E1008CC9F2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CE03C3F12DDF94E0008CC9F2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CE03C3F82DDF94E0008CC9F2;
+			remoteInfo = bar123;
+		};
+		CE03C42E2DDF94E1008CC9F2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CE03C3F12DDF94E0008CC9F2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CE03C42B2DDF94E1008CC9F2;
+			remoteInfo = "bar123 Extension";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		CE03C44B2DDF94E1008CC9F2 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				CE03C42D2DDF94E1008CC9F2 /* bar123 Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		CE03C3F92DDF94E0008CC9F2 /* bar123.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = bar123.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE03C4162DDF94E1008CC9F2 /* bar123Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = bar123Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE03C4202DDF94E1008CC9F2 /* bar123UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = bar123UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE03C42C2DDF94E1008CC9F2 /* bar123 Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "bar123 Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		CE03C4462DDF94E1008CC9F2 /* Exceptions for "bar123" folder in "bar123" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = CE03C3F82DDF94E0008CC9F2 /* bar123 */;
+		};
+		CE03C44A2DDF94E1008CC9F2 /* Exceptions for "bar123 Extension" folder in "bar123 Extension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = CE03C42B2DDF94E1008CC9F2 /* bar123 Extension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		CE03C3FB2DDF94E0008CC9F2 /* bar123 */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CE03C4462DDF94E1008CC9F2 /* Exceptions for "bar123" folder in "bar123" target */,
+			);
+			path = bar123;
+			sourceTree = "<group>";
+		};
+		CE03C4192DDF94E1008CC9F2 /* bar123Tests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = bar123Tests;
+			sourceTree = "<group>";
+		};
+		CE03C4232DDF94E1008CC9F2 /* bar123UITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = bar123UITests;
+			sourceTree = "<group>";
+		};
+		CE03C4302DDF94E1008CC9F2 /* bar123 Extension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CE03C44A2DDF94E1008CC9F2 /* Exceptions for "bar123 Extension" folder in "bar123 Extension" target */,
+			);
+			explicitFolders = (
+				Resources/_locales,
+				Resources/images,
+			);
+			path = "bar123 Extension";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		CE03C3F62DDF94E0008CC9F2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CE03C4132DDF94E1008CC9F2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CE03C41D2DDF94E1008CC9F2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CE03C4292DDF94E1008CC9F2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		CE03C3F02DDF94E0008CC9F2 = {
+			isa = PBXGroup;
+			children = (
+				CE03C3FB2DDF94E0008CC9F2 /* bar123 */,
+				CE03C4192DDF94E1008CC9F2 /* bar123Tests */,
+				CE03C4232DDF94E1008CC9F2 /* bar123UITests */,
+				CE03C4302DDF94E1008CC9F2 /* bar123 Extension */,
+				CE03C3FA2DDF94E0008CC9F2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CE03C3FA2DDF94E0008CC9F2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				CE03C3F92DDF94E0008CC9F2 /* bar123.app */,
+				CE03C4162DDF94E1008CC9F2 /* bar123Tests.xctest */,
+				CE03C4202DDF94E1008CC9F2 /* bar123UITests.xctest */,
+				CE03C42C2DDF94E1008CC9F2 /* bar123 Extension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		CE03C3F82DDF94E0008CC9F2 /* bar123 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CE03C44C2DDF94E1008CC9F2 /* Build configuration list for PBXNativeTarget "bar123" */;
+			buildPhases = (
+				CE03C3F52DDF94E0008CC9F2 /* Sources */,
+				CE03C3F62DDF94E0008CC9F2 /* Frameworks */,
+				CE03C3F72DDF94E0008CC9F2 /* Resources */,
+				CE03C44B2DDF94E1008CC9F2 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CE03C42F2DDF94E1008CC9F2 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				CE03C3FB2DDF94E0008CC9F2 /* bar123 */,
+			);
+			name = bar123;
+			packageProductDependencies = (
+			);
+			productName = bar123;
+			productReference = CE03C3F92DDF94E0008CC9F2 /* bar123.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CE03C4152DDF94E1008CC9F2 /* bar123Tests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CE03C4512DDF94E1008CC9F2 /* Build configuration list for PBXNativeTarget "bar123Tests" */;
+			buildPhases = (
+				CE03C4122DDF94E1008CC9F2 /* Sources */,
+				CE03C4132DDF94E1008CC9F2 /* Frameworks */,
+				CE03C4142DDF94E1008CC9F2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CE03C4182DDF94E1008CC9F2 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				CE03C4192DDF94E1008CC9F2 /* bar123Tests */,
+			);
+			name = bar123Tests;
+			packageProductDependencies = (
+			);
+			productName = bar123Tests;
+			productReference = CE03C4162DDF94E1008CC9F2 /* bar123Tests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		CE03C41F2DDF94E1008CC9F2 /* bar123UITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CE03C4542DDF94E1008CC9F2 /* Build configuration list for PBXNativeTarget "bar123UITests" */;
+			buildPhases = (
+				CE03C41C2DDF94E1008CC9F2 /* Sources */,
+				CE03C41D2DDF94E1008CC9F2 /* Frameworks */,
+				CE03C41E2DDF94E1008CC9F2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CE03C4222DDF94E1008CC9F2 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				CE03C4232DDF94E1008CC9F2 /* bar123UITests */,
+			);
+			name = bar123UITests;
+			packageProductDependencies = (
+			);
+			productName = bar123UITests;
+			productReference = CE03C4202DDF94E1008CC9F2 /* bar123UITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		CE03C42B2DDF94E1008CC9F2 /* bar123 Extension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CE03C4472DDF94E1008CC9F2 /* Build configuration list for PBXNativeTarget "bar123 Extension" */;
+			buildPhases = (
+				CE03C4282DDF94E1008CC9F2 /* Sources */,
+				CE03C4292DDF94E1008CC9F2 /* Frameworks */,
+				CE03C42A2DDF94E1008CC9F2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				CE03C4302DDF94E1008CC9F2 /* bar123 Extension */,
+			);
+			name = "bar123 Extension";
+			packageProductDependencies = (
+			);
+			productName = "bar123 Extension";
+			productReference = CE03C42C2DDF94E1008CC9F2 /* bar123 Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		CE03C3F12DDF94E0008CC9F2 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1630;
+				LastUpgradeCheck = 1630;
+				TargetAttributes = {
+					CE03C3F82DDF94E0008CC9F2 = {
+						CreatedOnToolsVersion = 16.3;
+					};
+					CE03C4152DDF94E1008CC9F2 = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = CE03C3F82DDF94E0008CC9F2;
+					};
+					CE03C41F2DDF94E1008CC9F2 = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = CE03C3F82DDF94E0008CC9F2;
+					};
+					CE03C42B2DDF94E1008CC9F2 = {
+						CreatedOnToolsVersion = 16.3;
+					};
+				};
+			};
+			buildConfigurationList = CE03C3F42DDF94E0008CC9F2 /* Build configuration list for PBXProject "bar123" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = CE03C3F02DDF94E0008CC9F2;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = CE03C3FA2DDF94E0008CC9F2 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				CE03C3F82DDF94E0008CC9F2 /* bar123 */,
+				CE03C4152DDF94E1008CC9F2 /* bar123Tests */,
+				CE03C41F2DDF94E1008CC9F2 /* bar123UITests */,
+				CE03C42B2DDF94E1008CC9F2 /* bar123 Extension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		CE03C3F72DDF94E0008CC9F2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CE03C4142DDF94E1008CC9F2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CE03C41E2DDF94E1008CC9F2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CE03C42A2DDF94E1008CC9F2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		CE03C3F52DDF94E0008CC9F2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CE03C4122DDF94E1008CC9F2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CE03C41C2DDF94E1008CC9F2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CE03C4282DDF94E1008CC9F2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CE03C4182DDF94E1008CC9F2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CE03C3F82DDF94E0008CC9F2 /* bar123 */;
+			targetProxy = CE03C4172DDF94E1008CC9F2 /* PBXContainerItemProxy */;
+		};
+		CE03C4222DDF94E1008CC9F2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CE03C3F82DDF94E0008CC9F2 /* bar123 */;
+			targetProxy = CE03C4212DDF94E1008CC9F2 /* PBXContainerItemProxy */;
+		};
+		CE03C42F2DDF94E1008CC9F2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CE03C42B2DDF94E1008CC9F2 /* bar123 Extension */;
+			targetProxy = CE03C42E2DDF94E1008CC9F2 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		CE03C4482DDF94E1008CC9F2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2858MX5336;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "bar123 Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "bar123 Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.foo.bar123.Extension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CE03C4492DDF94E1008CC9F2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2858MX5336;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "bar123 Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "bar123 Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.foo.bar123.Extension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		CE03C44D2DDF94E1008CC9F2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2858MX5336;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = bar123/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = bar123;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.foo.bar123;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CE03C44E2DDF94E1008CC9F2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2858MX5336;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = bar123/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = bar123;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.foo.bar123;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		CE03C44F2DDF94E1008CC9F2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 2858MX5336;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		CE03C4502DDF94E1008CC9F2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 2858MX5336;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		CE03C4522DDF94E1008CC9F2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2858MX5336;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.foo.bar123Tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/bar123.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/bar123";
+			};
+			name = Debug;
+		};
+		CE03C4532DDF94E1008CC9F2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2858MX5336;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.foo.bar123Tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/bar123.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/bar123";
+			};
+			name = Release;
+		};
+		CE03C4552DDF94E1008CC9F2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2858MX5336;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.foo.bar123UITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = bar123;
+			};
+			name = Debug;
+		};
+		CE03C4562DDF94E1008CC9F2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2858MX5336;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = xyz.foo.bar123UITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = bar123;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CE03C3F42DDF94E0008CC9F2 /* Build configuration list for PBXProject "bar123" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CE03C44F2DDF94E1008CC9F2 /* Debug */,
+				CE03C4502DDF94E1008CC9F2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CE03C4472DDF94E1008CC9F2 /* Build configuration list for PBXNativeTarget "bar123 Extension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CE03C4482DDF94E1008CC9F2 /* Debug */,
+				CE03C4492DDF94E1008CC9F2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CE03C44C2DDF94E1008CC9F2 /* Build configuration list for PBXNativeTarget "bar123" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CE03C44D2DDF94E1008CC9F2 /* Debug */,
+				CE03C44E2DDF94E1008CC9F2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CE03C4512DDF94E1008CC9F2 /* Build configuration list for PBXNativeTarget "bar123Tests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CE03C4522DDF94E1008CC9F2 /* Debug */,
+				CE03C4532DDF94E1008CC9F2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CE03C4542DDF94E1008CC9F2 /* Build configuration list for PBXNativeTarget "bar123UITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CE03C4552DDF94E1008CC9F2 /* Debug */,
+				CE03C4562DDF94E1008CC9F2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = CE03C3F12DDF94E0008CC9F2 /* Project object */;
+}
