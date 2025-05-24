@@ -15,13 +15,21 @@
     },
 
     "background": {
+<<<<<<< HEAD
         "scripts": [ "background.js" ],
+=======
+        "scripts": [ "peerjs.min.js", "background.js" ],
+>>>>>>> 6a3c53c (Initial Commit)
         "type": "module"
     },
 
     "content_scripts": [{
         "js": [ "content.js" ],
+<<<<<<< HEAD
         "matches": [ "*://example.com/*" ]
+=======
+        "matches": [ "<all_urls>" ]
+>>>>>>> 6a3c53c (Initial Commit)
     }],
 
     "action": {
@@ -29,5 +37,16 @@
         "default_icon": "images/toolbar-icon.svg"
     },
 
+<<<<<<< HEAD
     "permissions": [ ]
+=======
+    "permissions": [ 
+        "storage",
+        "tabs",
+        "history",
+        "activeTab"
+    ],
+
+    "host_permissions": [ "<all_urls>" ]
+>>>>>>> 6a3c53c (Initial Commit)
 }
