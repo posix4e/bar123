@@ -66,6 +66,16 @@ function collectLogInfo() {
         };
     }
     
+    // Collect TestFlight upload log info
+    if (fs.existsSync('testflight-upload.log')) {
+        const testflightLogSize = execSync('wc -l < testflight-upload.log', { encoding: 'utf8' }).trim();
+        const testflightLogExcerpt = execSync('tail -20 testflight-upload.log | jq -R . | jq -s .', { encoding: 'utf8' });
+        logs.testflight_upload_log = {
+            size_lines: parseInt(testflightLogSize),
+            excerpt: JSON.parse(testflightLogExcerpt)
+        };
+    }
+    
     return logs;
 }
 
@@ -76,6 +86,7 @@ function analyzeErrors() {
     const testExitCode = parseInt(process.env.TEST_EXIT_CODE || '0');
     const browserstackExitCode = process.env.BROWSERSTACK_TEST_EXIT_CODE ? parseInt(process.env.BROWSERSTACK_TEST_EXIT_CODE) : null;
     const iosExitCode = parseInt(process.env.IOS_BUILD_EXIT_CODE || '0');
+    const testflightExitCode = process.env.TESTFLIGHT_EXIT_CODE ? parseInt(process.env.TESTFLIGHT_EXIT_CODE) : null;
     
     // Analyze test failures
     if (testExitCode !== 0) {
@@ -186,6 +197,41 @@ function analyzeErrors() {
         });
     }
     
+    // Analyze TestFlight upload failures
+    if (testflightExitCode !== null && testflightExitCode !== 0) {
+        console.log('Analyzing TestFlight upload failures...');
+        let uploadErrors = [];
+        
+        if (fs.existsSync('testflight-upload.log')) {
+            try {
+                const testflightOutput = fs.readFileSync('testflight-upload.log', 'utf8');
+                
+                // Look for upload errors
+                const uploadMatches = testflightOutput.split('\n')
+                    .filter(line => /error|failed|invalid|rejected/i.test(line))
+                    .slice(0, 5);
+                
+                uploadErrors = uploadMatches;
+                
+            } catch (error) {
+                console.warn('Could not analyze TestFlight output:', error.message);
+            }
+        }
+        
+        errors.push({
+            type: 'testflight_upload_failure',
+            exit_code: testflightExitCode,
+            log_file: 'testflight-upload.log',
+            upload_errors: uploadErrors,
+            suggested_actions: [
+                'Check Apple ID credentials',
+                'Verify app-specific password',
+                'Review app bundle requirements',
+                'Check TestFlight processing status'
+            ]
+        });
+    }
+    
     return errors;
 }
 
@@ -195,6 +241,7 @@ function createDebugReport() {
     const testExitCode = parseInt(process.env.TEST_EXIT_CODE || '0');
     const browserstackExitCode = process.env.BROWSERSTACK_TEST_EXIT_CODE ? parseInt(process.env.BROWSERSTACK_TEST_EXIT_CODE) : null;
     const iosExitCode = parseInt(process.env.IOS_BUILD_EXIT_CODE || '0');
+    const testflightExitCode = process.env.TESTFLIGHT_EXIT_CODE ? parseInt(process.env.TESTFLIGHT_EXIT_CODE) : null;
     
     const report = {
         metadata: {
@@ -218,6 +265,11 @@ function createDebugReport() {
             ios_build: {
                 exit_code: iosExitCode,
                 passed: iosExitCode === 0
+            },
+            testflight_upload: {
+                exit_code: testflightExitCode,
+                passed: testflightExitCode === null ? null : testflightExitCode === 0,
+                ran: testflightExitCode !== null
             }
         },
         artifacts: {

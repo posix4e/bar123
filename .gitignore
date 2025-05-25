@@ -1,3 +1,13 @@
 build
 node_modules
 bar123 Extension/Resources/peerjs.min.js
+
+# CI/CD logs and artifacts
+*.log
+test-output.log
+browserstack-test-output.log
+ios-build.log
+testflight-upload.log
+build-debug-report.json
+chrome-extension-*.zip
+test-results/

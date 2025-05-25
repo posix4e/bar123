@@ -32,9 +32,11 @@ jobs:
       with:
         xcode-version: '16.2'
         
+    # Testing Phase - Always runs
     - name: Run cross-platform sync tests
       run: npm run ci:test
       
+    # Building Phase - Only run if tests pass
     - name: Build Chrome extension
       run: npm run ci:build-chrome
       
@@ -44,7 +46,19 @@ jobs:
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
       run: npm run ci:test-browserstack
       
-    - name: Build iOS app for testing/deployment
+    # iOS Build - Always runs (creates IPA)
+    - name: Build iOS app
+      env:
+        BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+        APP_PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_PROVISIONING_PROFILE_BASE64 }}
+        EXTENSION_PROVISIONING_PROFILE_BASE64: ${{ secrets.EXTENSION_PROVISIONING_PROFILE_BASE64 }}
+        RUNNER_TEMP: ${{ runner.temp }}
+      run: npm run ci:build-ios
+      
+    # TestFlight Upload - Only for main branch and tags
+    - name: Upload to TestFlight
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
       env:
         BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
         P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
@@ -53,7 +67,7 @@ jobs:
         APPLE_ID: ${{ secrets.APPLE_ID }}
         APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
         RUNNER_TEMP: ${{ runner.temp }}
-      run: npm run ci:build-ios
+      run: npm run ci:upload-testflight
         
     - name: Collect comprehensive debugging information
       if: always()
@@ -69,6 +83,7 @@ jobs:
           test-output.log
           browserstack-test-output.log
           ios-build.log
+          testflight-upload.log
           test-results/
         retention-days: 30
         
