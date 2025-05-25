@@ -101,6 +101,7 @@ jobs:
         name: ios-app-${{ github.sha }}
         path: ${{ runner.temp }}/bar123.ipa
         retention-days: 30
+        if-no-files-found: ignore
         
     - name: Collect error logs and create summary
       if: always()
@@ -112,16 +113,16 @@ jobs:
         echo "  \"event_name\": \"${{ github.event_name }}\"," >> build-summary.json
         echo "  \"ref\": \"${{ github.ref }}\"," >> build-summary.json
         echo "  \"tests\": {" >> build-summary.json
-        echo "    \"exit_code\": \"${TEST_EXIT_CODE:-0}\"," >> build-summary.json
-        echo "    \"passed\": $([ \"${TEST_EXIT_CODE:-0}\" -eq 0 ] && echo true || echo false)" >> build-summary.json
+        echo "    \"exit_code\": ${TEST_EXIT_CODE:-0}," >> build-summary.json
+        echo "    \"passed\": $(if [ ${TEST_EXIT_CODE:-0} -eq 0 ]; then echo true; else echo false; fi)" >> build-summary.json
         echo "  }," >> build-summary.json
         echo "  \"ios_build\": {" >> build-summary.json
-        echo "    \"exit_code\": \"${IOS_BUILD_EXIT_CODE:-0}\"," >> build-summary.json
-        echo "    \"passed\": $([ \"${IOS_BUILD_EXIT_CODE:-0}\" -eq 0 ] && echo true || echo false)" >> build-summary.json
+        echo "    \"exit_code\": ${IOS_BUILD_EXIT_CODE:-0}," >> build-summary.json
+        echo "    \"passed\": $(if [ ${IOS_BUILD_EXIT_CODE:-0} -eq 0 ]; then echo true; else echo false; fi)" >> build-summary.json
         echo "  }," >> build-summary.json
         echo "  \"artifacts\": {" >> build-summary.json
-        echo "    \"chrome_extension\": $([ -f chrome-extension-*.zip ] && echo true || echo false)," >> build-summary.json
-        echo "    \"ios_ipa\": $([ -f \"${{ runner.temp }}/bar123.ipa\" ] && echo true || echo false)" >> build-summary.json
+        echo "    \"chrome_extension\": $(if ls chrome-extension-*.zip >/dev/null 2>&1; then echo true; else echo false; fi)," >> build-summary.json
+        echo "    \"ios_ipa\": $(if [ -f \"${{ runner.temp }}/bar123.ipa\" ]; then echo true; else echo false; fi)" >> build-summary.json
         echo "  }," >> build-summary.json
         echo "  \"errors\": []" >> build-summary.json
         
