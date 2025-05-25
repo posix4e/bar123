@@ -60,6 +60,10 @@
     "puppeteer": "^22.8.2",
     "selenium-webdriver": "^4.15.0"
   },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
   "author": "History Sync Extension",
   "license": "MIT"
 }
