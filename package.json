@@ -48,7 +48,8 @@
     "webrtc"
   ],
   "dependencies": {
-    "peerjs": "^1.5.4"
+    "peerjs": "^1.5.4",
+    "trystero": "^0.21.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",

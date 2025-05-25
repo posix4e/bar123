@@ -495,7 +495,7 @@ class LocalMultiplatformSyncTester {
 <head>
     <title>History Sync Test - iOS Safari</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://unpkg.com/trystero"></script>
 </head>
 <body>
     <h1>History Sync Test - iOS Safari</h1>
@@ -510,7 +510,7 @@ class LocalMultiplatformSyncTester {
         const connectBtn = document.getElementById('connectBtn');
         const log = document.getElementById('log');
         
-        let peer = null;
+        let room = null;
         
         function updateStatus(message) {
             status.textContent = message;
@@ -534,44 +534,42 @@ class LocalMultiplatformSyncTester {
             try {
                 updateStatus('Connecting...');
                 
-                // Hash the secret
+                // Hash the secret to create room ID
                 const encoder = new TextEncoder();
                 const data = encoder.encode(secret);
                 const hashBuffer = await crypto.subtle.digest('SHA-256', data);
                 const hashArray = Array.from(new Uint8Array(hashBuffer));
                 const roomId = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
                 
-                // Create peer ID
-                const timestamp = Date.now();
-                const random = Math.random().toString(36).substr(2, 6);
-                const myPeerId = roomId + '_safari_' + timestamp + '_' + random;
+                addLog('Joining Trystero room: ' + roomId);
                 
-                addLog('Creating peer with ID: ' + myPeerId);
+                // Join room using Trystero
+                room = trystero.joinRoom({ appId: 'history-sync' }, roomId);
                 
-                peer = new Peer(myPeerId, {
-                    key: 'peerjs',
-                    secure: true,
-                    debug: 1
+                room.onPeerJoin(peerId => {
+                    updateStatus('Peer joined: ' + peerId);
+                    addLog('Peer joined: ' + peerId);
                 });
                 
-                peer.on('open', function(id) {
-                    updateStatus('Connected to PeerJS server');
-                    addLog('Peer opened with ID: ' + id);
+                room.onPeerLeave(peerId => {
+                    updateStatus('Peer left: ' + peerId);
+                    addLog('Peer left: ' + peerId);
                 });
                 
-                peer.on('error', function(error) {
-                    updateStatus('PeerJS error: ' + error.message);
-                    addLog('Peer error: ' + error.message);
+                // Set up data channels
+                const [sendHistory, getHistory] = room.makeAction('history-sync');
+                const [sendDelete, getDelete] = room.makeAction('delete-item');
+                
+                getHistory((historyData, peerId) => {
+                    addLog('Received history from ' + peerId + ': ' + JSON.stringify(historyData));
                 });
                 
-                peer.on('connection', function(conn) {
-                    updateStatus('Received connection from: ' + conn.peer);
-                    addLog('Connection received from: ' + conn.peer);
-                    
-                    conn.on('data', function(data) {
-                        addLog('Received data: ' + JSON.stringify(data));
-                    });
+                getDelete((deleteData, peerId) => {
+                    addLog('Received delete from ' + peerId + ': ' + JSON.stringify(deleteData));
                 });
+                
+                updateStatus('Connected to Trystero room');
+                addLog('Successfully joined room, waiting for peers...');
                 
             } catch (error) {
                 updateStatus('Connection failed: ' + error.message);

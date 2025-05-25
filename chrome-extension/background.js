@@ -1,5 +1,5 @@
-// Import PeerJS - Chrome extension service worker style
-importScripts('peerjs.min.js');
+// Import Trystero - Chrome extension service worker style
+importScripts('https://unpkg.com/trystero');
 
 class HistorySyncService {
     constructor() {
@@ -73,11 +73,11 @@ class HistorySyncService {
         this.roomId = await this.hashSecret(sharedSecret);
         
         try {
-            await this.initializePeerJS();
-            console.log('Connected to PeerJS');
+            await this.initializeTrystero();
+            console.log('Connected to Trystero');
             this.isConnected = true;
         } catch (error) {
-            throw new Error('Failed to connect to PeerJS: ' + error.message);
+            throw new Error('Failed to connect to Trystero: ' + error.message);
         }
     }
 
@@ -89,37 +89,97 @@ class HistorySyncService {
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
     }
 
-    async initializePeerJS() {
+    async initializeTrystero() {
         const timestamp = Date.now();
         const random = Math.random().toString(36).substr(2, 6);
-        this.myPeerId = `${this.roomId}_${timestamp}_${random}`;
+        this.myPeerId = `${await this.deviceId}_${timestamp}_${random}`;
         
-        this.peer = new Peer(this.myPeerId, {
-            key: 'peerjs',
-            secure: true,
-            debug: 1
+        console.log('Connecting to Trystero room:', this.roomId);
+        
+        // Use Nostr strategy (default, serverless)
+        this.room = trystero.joinRoom({ appId: 'history-sync' }, this.roomId);
+        
+        // Set up peer connection handlers
+        this.room.onPeerJoin(peerId => {
+            console.log('Peer joined:', peerId);
+            this.peers.set(peerId, { connected: true });
         });
-
-        return new Promise((resolve, reject) => {
-            this.peer.on('open', (id) => {
-                console.log('PeerJS connected with ID:', id);
-                resolve();
-            });
-
-            this.peer.on('error', (error) => {
-                console.error('PeerJS error:', error);
-                reject(error);
-            });
+        
+        this.room.onPeerLeave(peerId => {
+            console.log('Peer left:', peerId);
+            this.peers.delete(peerId);
         });
+        
+        // Set up history sync channels
+        const [sendHistory, getHistory] = this.room.makeAction('history-sync');
+        const [sendDelete, getDelete] = this.room.makeAction('delete-item');
+        
+        getHistory((historyData, peerId) => {
+            console.log('Received history from', peerId, historyData);
+            this.handleReceivedHistory(historyData);
+        });
+        
+        getDelete((deleteData, peerId) => {
+            console.log('Received delete from', peerId, deleteData);
+            this.handleReceivedDelete(deleteData);
+        });
+        
+        this.sendHistory = sendHistory;
+        this.sendDelete = sendDelete;
+        
+        console.log('Trystero room joined successfully');
+        return Promise.resolve();
     }
 
     disconnect() {
-        if (this.peer) {
-            this.peer.destroy();
-            this.peer = null;
+        if (this.room) {
+            this.room.leave();
+            this.room = null;
         }
+        this.peers.clear();
         this.isConnected = false;
-        console.log('Disconnected from PeerJS');
+        console.log('Disconnected from Trystero');
+    }
+    
+    handleReceivedHistory(historyData) {
+        // Merge received history with local history
+        for (const entry of historyData.entries || []) {
+            const existingIndex = this.localHistory.findIndex(h => h.url === entry.url);
+            if (existingIndex === -1) {
+                this.localHistory.push(entry);
+            } else {
+                // Update if received entry is newer
+                if (entry.visitTime > this.localHistory[existingIndex].visitTime) {
+                    this.localHistory[existingIndex] = entry;
+                }
+            }
+        }
+        
+        // Save merged history
+        chrome.storage.local.set({ 
+            localHistory: this.localHistory,
+            lastSyncTime: Date.now()
+        });
+        
+        console.log('History synchronized, total entries:', this.localHistory.length);
+    }
+    
+    handleReceivedDelete(deleteData) {
+        const { url, timestamp } = deleteData;
+        
+        // Remove from local history
+        const index = this.localHistory.findIndex(h => h.url === url);
+        if (index !== -1) {
+            this.localHistory.splice(index, 1);
+            
+            // Save updated history
+            chrome.storage.local.set({ 
+                localHistory: this.localHistory,
+                lastSyncTime: Date.now()
+            });
+            
+            console.log('History entry deleted via sync:', url);
+        }
     }
 }
 
