@@ -184,10 +184,18 @@ class RealBrowserStackSyncTester {
             }
         };
         
-        const driver = await new Builder()
-            .usingServer(`https://${this.username}:${this.accessKey}@hub-cloud.browserstack.com/wd/hub`)
-            .withCapabilities(capabilities)
-            .build();
+        console.log('⏳ Creating Chrome WebDriver session (this may take 30-60 seconds)...');
+        
+        // Add timeout to prevent hanging
+        const driver = await Promise.race([
+            new Builder()
+                .usingServer(`https://${this.username}:${this.accessKey}@hub-cloud.browserstack.com/wd/hub`)
+                .withCapabilities(capabilities)
+                .build(),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Chrome session creation timeout after 2 minutes')), 120000)
+            )
+        ]);
             
         console.log(`✅ Chrome session created successfully`);
         return driver;
@@ -1126,30 +1134,56 @@ class RealBrowserStackSyncTester {
     }
 
     findChromeExtension() {
-        // Look for built Chrome extension
-        const possiblePaths = [
-            'chrome-extension.zip',
-            'chrome-extension-*.zip',
-            'dist/chrome-extension.zip',
-            'chrome-extension' // Unzipped directory
-        ];
+        // For BrowserStack Chrome testing, we need an unzipped directory
+        // The CI builds chrome-extension directory, so use that
+        console.log('🔍 Looking for Chrome extension directory...');
         
-        for (const pattern of possiblePaths) {
-            try {
-                if (pattern.includes('*')) {
-                    const files = execSync(`ls ${pattern} 2>/dev/null || true`, { encoding: 'utf8' }).trim().split('\n').filter(f => f);
-                    if (files.length > 0) {
-                        return files[0];
-                    }
-                } else if (fs.existsSync(pattern)) {
-                    return pattern;
-                }
-            } catch (error) {
-                // Continue looking
-            }
+        if (fs.existsSync('chrome-extension')) {
+            console.log('✅ Found chrome-extension directory');
+            return 'chrome-extension';
         }
         
+        // If directory doesn't exist, try to extract from ZIP
+        const zipFiles = [];
+        try {
+            const files = execSync('ls chrome-extension*.zip 2>/dev/null || true', { encoding: 'utf8' }).trim().split('\n').filter(f => f);
+            zipFiles.push(...files);
+        } catch (error) {
+            // Ignore
+        }
+        
+        if (zipFiles.length > 0) {
+            const zipFile = zipFiles[0];
+            console.log(`📦 Extracting Chrome extension from ZIP: ${zipFile}`);
+            return this.extractChromeExtension(zipFile);
+        }
+        
+        console.log('❌ No Chrome extension found (directory or ZIP)');
         return null;
+    }
+
+    extractChromeExtension(zipPath) {
+        try {
+            const extractDir = 'chrome-extension-for-testing';
+            
+            // Remove existing extracted directory
+            if (fs.existsSync(extractDir)) {
+                execSync(`rm -rf "${extractDir}"`);
+            }
+            
+            // Create extraction directory
+            fs.mkdirSync(extractDir, { recursive: true });
+            
+            // Extract ZIP file
+            execSync(`unzip -q "${zipPath}" -d "${extractDir}"`);
+            
+            console.log(`✅ Chrome extension extracted to: ${extractDir}`);
+            return extractDir;
+            
+        } catch (error) {
+            console.error(`❌ Failed to extract Chrome extension: ${error.message}`);
+            throw error;
+        }
     }
 
     async runRealMultiplatformSyncTests() {
