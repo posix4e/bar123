@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log("Received request: ", request);
-
-    if (request.greeting === "hello")
-        return Promise.resolve({ farewell: "goodbye" });
-});
-=======
 class HistorySyncService {
     constructor() {
         this.isConnected = false;
@@ -16,6 +8,7 @@ class HistorySyncService {
         this.roomId = null;
         this.sharedSecret = null;
         this.lastSyncTime = null;
+        this.clearTombstones = new Map(); // Track clear operations with expiration
         
         this.init();
     }
@@ -23,6 +16,8 @@ class HistorySyncService {
     init() {
         this.loadLocalHistory();
         this.setupMessageHandlers();
+        // Clean up expired tombstones every 5 minutes
+        setInterval(() => this.cleanupExpiredTombstones(), 5 * 60 * 1000);
     }
 
     generateDeviceId() {
@@ -35,17 +30,39 @@ class HistorySyncService {
         return newId;
     }
 
+    cleanupExpiredTombstones() {
+        const now = Date.now();
+        const TOMBSTONE_TTL = 10 * 60 * 1000; // 10 minutes
+        
+        for (const [clearId, timestamp] of this.clearTombstones.entries()) {
+            if (now - timestamp > TOMBSTONE_TTL) {
+                this.clearTombstones.delete(clearId);
+            }
+        }
+        
+        if (this.clearTombstones.size > 0) {
+            this.saveLocalHistory(); // Save updated tombstones
+        }
+    }
+
+    generateClearId() {
+        return `${this.deviceId}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    }
+
     async loadLocalHistory() {
-        const stored = await browser.storage.local.get(['localHistory', 'lastSyncTime']);
+        const stored = await browser.storage.local.get(['localHistory', 'lastSyncTime', 'clearTombstones']);
         this.localHistory = stored.localHistory || [];
         this.lastSyncTime = stored.lastSyncTime || null;
+        this.clearTombstones = new Map(stored.clearTombstones || []);
+        this.cleanupExpiredTombstones();
     }
 
     async saveLocalHistory() {
         await browser.storage.local.set({
             localHistory: this.localHistory,
             lastSyncTime: this.lastSyncTime,
-            localHistoryCount: this.localHistory.length
+            localHistoryCount: this.localHistory.length,
+            clearTombstones: Array.from(this.clearTombstones.entries())
         });
     }
 
@@ -399,9 +416,13 @@ class HistorySyncService {
                 break;
 
             case 'history-clear':
-                if (message.deviceId !== this.deviceId) {
-                    console.log(`🗑️ Clearing history due to remote clear from ${message.deviceId}`);
-                    this.clearLocalHistory();
+                if (message.clearId && !this.clearTombstones.has(message.clearId)) {
+                    console.log(`🗑️ Clearing history due to remote clear from ${message.deviceId} (ID: ${message.clearId})`);
+                    this.clearTombstones.set(message.clearId, Date.now());
+                    this.clearLocalHistoryInternal(false); // Don't broadcast again
+                    this.saveLocalHistory();
+                } else if (message.clearId) {
+                    console.log(`⚠️ Ignoring duplicate clear operation ${message.clearId}`);
                 }
                 break;
                 
@@ -489,20 +510,32 @@ class HistorySyncService {
     }
 
     clearLocalHistory() {
+        this.clearLocalHistoryInternal(true);
+    }
+
+    clearLocalHistoryInternal(shouldBroadcast = true) {
         this.localHistory = [];
+        
+        if (shouldBroadcast) {
+            const clearId = this.generateClearId();
+            this.clearTombstones.set(clearId, Date.now());
+            
+            this.broadcastToAllPeers({
+                type: 'history-clear',
+                deviceId: this.deviceId,
+                clearId: clearId,
+                timestamp: Date.now()
+            });
+            
+            console.log(`📢 Broadcasting history clear with ID: ${clearId}`);
+        }
+        
         this.saveLocalHistory();
-        this.broadcastToAllPeers({
-            type: 'history-clear',
-            deviceId: this.deviceId
-        });
         this.updateStorageAndUI();
     }
 
     deleteRemoteHistory() {
-        this.broadcastToAllPeers({
-            type: 'history-clear',
-            deviceId: this.deviceId
-        });
+        // This is the same as clearing local history - both clear all history everywhere
         this.clearLocalHistory();
     }
 
@@ -526,4 +559,3 @@ class HistorySyncService {
 }
 
 const historySyncService = new HistorySyncService();
->>>>>>> 6a3c53c (Initial Commit)
