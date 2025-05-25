@@ -38,6 +38,11 @@ jobs:
         echo "TEST_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
       continue-on-error: true
       
+    - name: Build Chrome extension
+      run: |
+        npm run build-chrome
+        cd chrome-extension && zip -r ../chrome-extension-${{ github.sha }}.zip * && cd ..
+      
     - name: Run BrowserStack multiplatform tests
       if: env.BROWSERSTACK_USERNAME && env.BROWSERSTACK_ACCESS_KEY
       env:
@@ -48,11 +53,6 @@ jobs:
         npm run test-browserstack 2>&1 | tee browserstack-test-output.log
         echo "BROWSERSTACK_TEST_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
       continue-on-error: true
-      
-    - name: Build Chrome extension
-      run: |
-        npm run build-chrome
-        cd chrome-extension && zip -r ../chrome-extension-${{ github.sha }}.zip * && cd ..
       
     - name: Build iOS app for testing/deployment
       env:
