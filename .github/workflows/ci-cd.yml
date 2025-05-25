@@ -38,6 +38,17 @@ jobs:
         echo "TEST_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
       continue-on-error: true
       
+    - name: Run BrowserStack multiplatform tests
+      if: env.BROWSERSTACK_USERNAME && env.BROWSERSTACK_ACCESS_KEY
+      env:
+        BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+        BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+      run: |
+        echo "🌐 Running BrowserStack multiplatform tests..."
+        npm run test-browserstack 2>&1 | tee browserstack-test-output.log
+        echo "BROWSERSTACK_TEST_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
+      continue-on-error: true
+      
     - name: Build Chrome extension
       run: |
         npm run build-chrome
@@ -85,6 +96,11 @@ jobs:
               "exit_code": ${TEST_EXIT_CODE:-0},
               "passed": $(if [ ${TEST_EXIT_CODE:-0} -eq 0 ]; then echo true; else echo false; fi)
             },
+            "browserstack_tests": {
+              "exit_code": ${BROWSERSTACK_TEST_EXIT_CODE:-null},
+              "passed": $(if [ "${BROWSERSTACK_TEST_EXIT_CODE:-null}" = "null" ]; then echo null; elif [ ${BROWSERSTACK_TEST_EXIT_CODE:-0} -eq 0 ]; then echo true; else echo false; fi),
+              "ran": $(if [ "${BROWSERSTACK_TEST_EXIT_CODE:-null}" = "null" ]; then echo false; else echo true; fi)
+            },
             "ios_build": {
               "exit_code": ${IOS_BUILD_EXIT_CODE:-0},
               "passed": $(if [ ${IOS_BUILD_EXIT_CODE:-0} -eq 0 ]; then echo true; else echo false; fi)
@@ -112,6 +128,12 @@ jobs:
           TEST_LOG_SIZE=$(wc -l < test-output.log)
           TEST_LOG_EXCERPT=$(tail -20 test-output.log | jq -R . | jq -s .)
           jq ".logs.test_log = {\"size_lines\": $TEST_LOG_SIZE, \"excerpt\": $TEST_LOG_EXCERPT}" build-debug-report.json > tmp.json && mv tmp.json build-debug-report.json
+        fi
+        
+        if [ -f browserstack-test-output.log ]; then
+          BROWSERSTACK_LOG_SIZE=$(wc -l < browserstack-test-output.log)
+          BROWSERSTACK_LOG_EXCERPT=$(tail -20 browserstack-test-output.log | jq -R . | jq -s .)
+          jq ".logs.browserstack_test_log = {\"size_lines\": $BROWSERSTACK_LOG_SIZE, \"excerpt\": $BROWSERSTACK_LOG_EXCERPT}" build-debug-report.json > tmp.json && mv tmp.json build-debug-report.json
         fi
         
         if [ -f ios-build.log ]; then
@@ -189,6 +211,7 @@ jobs:
         path: |
           build-debug-report.json
           test-output.log
+          browserstack-test-output.log
           ios-build.log
           test-results/
         retention-days: 30
@@ -198,6 +221,7 @@ jobs:
       run: |
         echo "=== Checking for critical failures ==="
         echo "Test exit code: ${TEST_EXIT_CODE:-0}"
+        echo "BrowserStack test exit code: ${BROWSERSTACK_TEST_EXIT_CODE:-null}"
         echo "iOS build exit code: ${IOS_BUILD_EXIT_CODE:-0}"
         
         # Fail fast if critical components failed - logs are already uploaded
@@ -242,4 +266,4 @@ jobs:
         echo "📊 Debug report: debug-report-${{ github.sha }} (always available for analysis)"
         echo ""
         echo "=== Quick Status ==="
-        jq -r '.results | "✅ Tests: \(if .tests.passed then "PASSED" else "FAILED" end), iOS Build: \(if .ios_build.passed then "PASSED" else "FAILED" end)"' build-debug-report.json
+        jq -r '.results | "✅ Tests: \(if .tests.passed then "PASSED" else "FAILED" end), BrowserStack: \(if .browserstack_tests.ran then (if .browserstack_tests.passed then "PASSED" else "FAILED") else "SKIPPED" end), iOS Build: \(if .ios_build.passed then "PASSED" else "FAILED" end)"' build-debug-report.json

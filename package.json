@@ -20,6 +20,7 @@
     "test-safari": "node test/safari-extension-test.js",
     "test-local": "node test/run-local-tests.js",
     "test-integration": "npm run test", 
+    "test-browserstack": "node test/browserstack-multiplatform-test.js",
     "test-all": "npm run test-local",
     
     "prepare-profiles": "node scripts/prepare-profiles.js",
