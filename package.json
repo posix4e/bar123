@@ -48,7 +48,7 @@
     "webrtc"
   ],
   "dependencies": {
-    "peerjs": "^1.4.7"
+    "peerjs": "^1.5.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",

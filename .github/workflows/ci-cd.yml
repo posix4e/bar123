@@ -43,12 +43,8 @@ jobs:
     - name: Install Playwright browsers
       run: npx playwright install --with-deps chromium
       
-    - name: Run local multiplatform tests with virtual display
-      run: |
-        export DISPLAY=:99
-        Xvfb :99 -screen 0 1280x720x24 &
-        sleep 3
-        npm run ci:test-local-multiplatform
+    - name: Run local multiplatform tests
+      run: npm run ci:test-local-multiplatform
       
     # iOS Build - Always runs (creates IPA)
     - name: Build iOS app
