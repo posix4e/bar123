@@ -28,10 +28,10 @@
     "ios-build-testflight": "npm run prepare-profiles && npm run ios-build -- --upload --apple-id $APPLE_ID --app-password $APP_SPECIFIC_PASSWORD",
     "ios-build-local": "npm run prepare-profiles && npm run ios-build",
     
-    "ci:test": "npm run test 2>&1 | tee test-output.log; echo \"TEST_EXIT_CODE=${PIPESTATUS[0]}\" >> $GITHUB_ENV",
-    "ci:test-browserstack": "npm run test-browserstack 2>&1 | tee browserstack-test-output.log; echo \"BROWSERSTACK_TEST_EXIT_CODE=${PIPESTATUS[0]}\" >> $GITHUB_ENV",
+    "ci:test": "npm run test 2>&1 | tee test-output.log; TEST_EXIT=${PIPESTATUS[0]}; echo \"TEST_EXIT_CODE=$TEST_EXIT\" >> $GITHUB_ENV; exit $TEST_EXIT",
+    "ci:test-browserstack": "npm run test-browserstack 2>&1 | tee browserstack-test-output.log; BROWSERSTACK_EXIT=${PIPESTATUS[0]}; echo \"BROWSERSTACK_TEST_EXIT_CODE=$BROWSERSTACK_EXIT\" >> $GITHUB_ENV; exit $BROWSERSTACK_EXIT",
     "ci:build-chrome": "npm run build-chrome && cd chrome-extension && zip -r ../chrome-extension-$GITHUB_SHA.zip * && cd ..",
-    "ci:build-ios": "npm run ios-build-local 2>&1 | tee ios-build.log; echo \"IOS_BUILD_EXIT_CODE=${PIPESTATUS[0]}\" >> $GITHUB_ENV",
+    "ci:build-ios": "npm run ios-build-local 2>&1 | tee ios-build.log; IOS_EXIT=${PIPESTATUS[0]}; echo \"IOS_BUILD_EXIT_CODE=$IOS_EXIT\" >> $GITHUB_ENV; exit $IOS_EXIT",
     "ci:upload-testflight": "npm run prepare-profiles && npm run ios-build -- --upload --apple-id $APPLE_ID --app-password $APP_SPECIFIC_PASSWORD 2>&1 | tee testflight-upload.log; echo \"TESTFLIGHT_EXIT_CODE=${PIPESTATUS[0]}\" >> $GITHUB_ENV",
     "ci:collect-debug": "node scripts/collect-debug-info.js",
     "ci:generate-showcase": "node scripts/generate-showcase-page.js",
