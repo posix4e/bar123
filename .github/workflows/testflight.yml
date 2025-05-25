@@ -6,6 +6,7 @@ on:
     tags: ['v*']
   pull_request:
     branches: [main]
+
   workflow_dispatch:
 
 env:
@@ -35,7 +36,6 @@ jobs:
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: '15.0'
-        
     - name: Make scripts executable
       run: chmod +x scripts/*.js
       
