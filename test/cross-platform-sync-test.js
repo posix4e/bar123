@@ -130,9 +130,9 @@ class CrossPlatformSyncTester {
             if (workflowExists) {
                 const workflow = fs.readFileSync('.github/workflows/ci-cd.yml', 'utf8');
                 workflowValid = workflow.includes('CI/CD Pipeline') && 
-                               workflow.includes('build-and-test') &&
-                               workflow.includes('test-ios') &&
-                               workflow.includes('deploy-testflight');
+                               workflow.includes('build-test-deploy') &&
+                               workflow.includes('runs-on: macos-latest') &&
+                               workflow.includes('Build Chrome extension');
             }
             
             this.addTestResult('GitHub Workflows', workflowExists && workflowValid, {
