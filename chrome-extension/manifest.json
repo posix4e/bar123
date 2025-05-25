@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "History Sync",
-  "description": "P2P history synchronization across devices using PeerJS",
+  "description": "P2P history synchronization across devices using Trystero",
   "version": "1.0.0",
   
   "icons": {
@@ -11,8 +11,7 @@
   },
   
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "service_worker": "background.js"
   },
   
   "content_scripts": [{
@@ -35,7 +34,8 @@
     "storage",
     "tabs", 
     "history",
-    "activeTab"
+    "activeTab",
+    "scripting"
   ],
   
   "host_permissions": [
@@ -43,7 +43,7 @@
   ],
   
   "web_accessible_resources": [{
-    "resources": ["peerjs.min.js"],
+    "resources": ["trystero-bundle.js"],
     "matches": ["<all_urls>"]
   }]
 }

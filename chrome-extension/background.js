@@ -1,5 +1,5 @@
-// Import Trystero - Chrome extension service worker style (bundled locally)
-importScripts('trystero-bundle.js');
+// Chrome extension background service worker
+// WebRTC operations are delegated to content scripts/popup
 
 class HistorySyncService {
     constructor() {
@@ -10,6 +10,7 @@ class HistorySyncService {
         this.roomId = null;
         this.sharedSecret = null;
         this.lastSyncTime = null;
+        this.connectionTab = null;
         
         this.init();
     }
@@ -64,6 +65,30 @@ class HistorySyncService {
                         localHistoryCount: this.localHistory.length
                     });
                     break;
+                    
+                case 'peerJoined':
+                    console.log('Peer joined:', request.peerId);
+                    this.peers.set(request.peerId, { connected: true });
+                    break;
+                    
+                case 'peerLeft':
+                    console.log('Peer left:', request.peerId);
+                    this.peers.delete(request.peerId);
+                    break;
+                    
+                case 'receivedHistory':
+                    this.handleReceivedHistory(request.historyData);
+                    break;
+                    
+                case 'receivedDelete':
+                    this.handleReceivedDelete(request.deleteData);
+                    break;
+                    
+                case 'trackHistory':
+                    // Handle history tracking from content script
+                    this.localHistory.push(request.entry);
+                    chrome.storage.local.set({ localHistory: this.localHistory });
+                    break;
             }
         });
     }
@@ -73,11 +98,45 @@ class HistorySyncService {
         this.roomId = await this.hashSecret(sharedSecret);
         
         try {
-            await this.initializeTrystero();
-            console.log('Connected to Trystero');
+            // Create or find a tab to handle the WebRTC connection
+            const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tabs.length > 0) {
+                this.connectionTab = tabs[0].id;
+            } else {
+                // Create a new tab for the connection
+                const tab = await chrome.tabs.create({ url: 'chrome://newtab/', active: false });
+                this.connectionTab = tab.id;
+            }
+            
+            // Wait for tab to be ready, then send connection request
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            try {
+                await chrome.tabs.sendMessage(this.connectionTab, {
+                    action: 'initConnection',
+                    roomId: this.roomId,
+                    sharedSecret: sharedSecret
+                });
+            } catch (error) {
+                // If content script not ready, inject it manually
+                await chrome.scripting.executeScript({
+                    target: { tabId: this.connectionTab },
+                    files: ['content.js']
+                });
+                
+                // Wait a bit more and try again
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                await chrome.tabs.sendMessage(this.connectionTab, {
+                    action: 'initConnection',
+                    roomId: this.roomId,
+                    sharedSecret: sharedSecret
+                });
+            }
+            
+            console.log('Connection initiated via content script');
             this.isConnected = true;
         } catch (error) {
-            throw new Error('Failed to connect to Trystero: ' + error.message);
+            throw new Error('Failed to connect: ' + error.message);
         }
     }
 
@@ -89,65 +148,17 @@ class HistorySyncService {
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
     }
 
-    async initializeTrystero() {
-        try {
-            const timestamp = Date.now();
-            const random = Math.random().toString(36).substr(2, 6);
-            this.myPeerId = `${await this.deviceId}_${timestamp}_${random}`;
-            
-            console.log('Connecting to Trystero room:', this.roomId);
-            console.log('Trystero available:', typeof trystero);
-            console.log('Trystero object:', trystero);
-            
-            // Check if trystero is available
-            if (typeof trystero === 'undefined') {
-                throw new Error('Trystero is not loaded');
-            }
-            
-            // Use Nostr strategy (default, serverless)
-            this.room = trystero.joinRoom({ appId: 'history-sync' }, this.roomId);
-            console.log('Room created:', this.room);
-        
-        // Set up peer connection handlers
-        this.room.onPeerJoin(peerId => {
-            console.log('Peer joined:', peerId);
-            this.peers.set(peerId, { connected: true });
-        });
-        
-        this.room.onPeerLeave(peerId => {
-            console.log('Peer left:', peerId);
-            this.peers.delete(peerId);
-        });
-        
-        // Set up history sync channels
-        const [sendHistory, getHistory] = this.room.makeAction('history-sync');
-        const [sendDelete, getDelete] = this.room.makeAction('delete-item');
-        
-        getHistory((historyData, peerId) => {
-            console.log('Received history from', peerId, historyData);
-            this.handleReceivedHistory(historyData);
-        });
-        
-        getDelete((deleteData, peerId) => {
-            console.log('Received delete from', peerId, deleteData);
-            this.handleReceivedDelete(deleteData);
-        });
-        
-        this.sendHistory = sendHistory;
-        this.sendDelete = sendDelete;
-        
-            console.log('Trystero room joined successfully');
-            return Promise.resolve();
-        } catch (error) {
-            console.error('Trystero initialization error:', error);
-            throw error;
-        }
-    }
+    // Trystero initialization moved to content script due to WebRTC restrictions in service workers
 
     disconnect() {
-        if (this.room) {
-            this.room.leave();
-            this.room = null;
+        if (this.connectionTab) {
+            // Send disconnect message to content script
+            chrome.tabs.sendMessage(this.connectionTab, {
+                action: 'disconnect'
+            }).catch(() => {
+                // Tab might be closed, ignore error
+            });
+            this.connectionTab = null;
         }
         this.peers.clear();
         this.isConnected = false;
