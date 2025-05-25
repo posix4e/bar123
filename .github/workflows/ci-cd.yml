@@ -33,36 +33,18 @@ jobs:
         xcode-version: '16.2'
         
     - name: Run cross-platform sync tests
-      run: |
-        npm run test 2>&1 | tee test-output.log
-        echo "TEST_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
-        if [ ${PIPESTATUS[0]} -ne 0 ]; then
-          echo "CRITICAL_FAILURE=tests" >> $GITHUB_ENV
-          echo "❌ Tests failed - will skip remaining steps and upload logs"
-        fi
+      run: npm run ci:test
       
     - name: Build Chrome extension
-      if: env.CRITICAL_FAILURE == ''
-      run: |
-        npm run build-chrome
-        cd chrome-extension && zip -r ../chrome-extension-${{ github.sha }}.zip * && cd ..
+      run: npm run ci:build-chrome
       
     - name: Run BrowserStack multiplatform tests
-      if: env.CRITICAL_FAILURE == '' && env.BROWSERSTACK_USERNAME && env.BROWSERSTACK_ACCESS_KEY
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-      run: |
-        echo "🌐 Running BrowserStack multiplatform tests..."
-        npm run test-browserstack 2>&1 | tee browserstack-test-output.log
-        echo "BROWSERSTACK_TEST_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
-        if [ ${PIPESTATUS[0]} -ne 0 ]; then
-          echo "CRITICAL_FAILURE=browserstack" >> $GITHUB_ENV
-          echo "❌ BrowserStack tests failed - will skip remaining steps and upload logs"
-        fi
+      run: npm run ci:test-browserstack
       
     - name: Build iOS app for testing/deployment
-      if: env.CRITICAL_FAILURE == ''
       env:
         BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
         P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
@@ -71,148 +53,11 @@ jobs:
         APPLE_ID: ${{ secrets.APPLE_ID }}
         APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
         RUNNER_TEMP: ${{ runner.temp }}
-      run: |
-        if [[ "${{ github.event_name }}" == "push" && ("${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == "refs/tags/"*) ]]; then
-          echo "Main branch/tag push: Building and uploading to TestFlight..."
-          npm run ios-build-testflight 2>&1 | tee ios-build.log
-          echo "IOS_BUILD_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
-        else
-          echo "PR or non-main branch: Running build test only (no TestFlight upload)"
-          npm run ios-build-local 2>&1 | tee ios-build.log
-          echo "IOS_BUILD_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
-        fi
-        if [ ${PIPESTATUS[0]} -ne 0 ]; then
-          echo "CRITICAL_FAILURE=ios_build" >> $GITHUB_ENV
-          echo "❌ iOS build failed - will skip remaining steps and upload logs"
-        fi
+      run: npm run ci:build-ios
         
     - name: Collect comprehensive debugging information
       if: always()
-      run: |
-        echo "=== Collecting comprehensive debugging information ==="
-        
-        # Create structured debug report with full context for programmatic access
-        cat > build-debug-report.json << EOF
-        {
-          "metadata": {
-            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "commit_sha": "${{ github.sha }}",
-            "event_name": "${{ github.event_name }}",
-            "ref": "${{ github.ref }}",
-            "runner_os": "${{ runner.os }}",
-            "runner_arch": "${{ runner.arch }}"
-          },
-          "results": {
-            "tests": {
-              "exit_code": ${TEST_EXIT_CODE:-0},
-              "passed": $(if [ ${TEST_EXIT_CODE:-0} -eq 0 ]; then echo true; else echo false; fi)
-            },
-            "browserstack_tests": {
-              "exit_code": ${BROWSERSTACK_TEST_EXIT_CODE:-null},
-              "passed": $(if [ "${BROWSERSTACK_TEST_EXIT_CODE:-null}" = "null" ]; then echo null; elif [ ${BROWSERSTACK_TEST_EXIT_CODE:-0} -eq 0 ]; then echo true; else echo false; fi),
-              "ran": $(if [ "${BROWSERSTACK_TEST_EXIT_CODE:-null}" = "null" ]; then echo false; else echo true; fi)
-            },
-            "ios_build": {
-              "exit_code": ${IOS_BUILD_EXIT_CODE:-0},
-              "passed": $(if [ ${IOS_BUILD_EXIT_CODE:-0} -eq 0 ]; then echo true; else echo false; fi)
-            }
-          },
-          "artifacts": {
-            "chrome_extension": $(if ls chrome-extension-*.zip >/dev/null 2>&1; then echo true; else echo false; fi),
-            "ios_ipa": $(if [ -f "${{ runner.temp }}/build/bar123.ipa" ]; then echo true; else echo false; fi)
-          },
-          "environment": {
-            "node_version": "$(node --version 2>/dev/null || echo 'not found')",
-            "npm_version": "$(npm --version 2>/dev/null || echo 'not found')",
-            "xcode_version": "$(xcodebuild -version 2>/dev/null | head -1 | sed 's/Xcode //' || echo 'not found')",
-            "os_version": "$(sw_vers -productVersion 2>/dev/null || echo 'unknown')",
-            "available_disk_space": "$(df -h . | tail -1 | awk '{print $4}' || echo 'unknown')"
-          },
-          "logs": {},
-          "error_analysis": []
-        }
-        EOF
-        
-        # Collect detailed log information using jq for proper JSON handling
-        echo "=== Collecting log details ==="
-        if [ -f test-output.log ]; then
-          TEST_LOG_SIZE=$(wc -l < test-output.log)
-          TEST_LOG_EXCERPT=$(tail -20 test-output.log | jq -R . | jq -s .)
-          jq ".logs.test_log = {\"size_lines\": $TEST_LOG_SIZE, \"excerpt\": $TEST_LOG_EXCERPT}" build-debug-report.json > tmp.json && mv tmp.json build-debug-report.json
-        fi
-        
-        if [ -f browserstack-test-output.log ]; then
-          BROWSERSTACK_LOG_SIZE=$(wc -l < browserstack-test-output.log)
-          BROWSERSTACK_LOG_EXCERPT=$(tail -20 browserstack-test-output.log | jq -R . | jq -s .)
-          jq ".logs.browserstack_test_log = {\"size_lines\": $BROWSERSTACK_LOG_SIZE, \"excerpt\": $BROWSERSTACK_LOG_EXCERPT}" build-debug-report.json > tmp.json && mv tmp.json build-debug-report.json
-        fi
-        
-        if [ -f ios-build.log ]; then
-          IOS_LOG_SIZE=$(wc -l < ios-build.log)
-          IOS_LOG_EXCERPT=$(tail -20 ios-build.log | jq -R . | jq -s .)
-          jq ".logs.ios_build_log = {\"size_lines\": $IOS_LOG_SIZE, \"excerpt\": $IOS_LOG_EXCERPT}" build-debug-report.json > tmp.json && mv tmp.json build-debug-report.json
-        fi
-        
-        # Analyze specific error patterns for actionable debugging
-        echo "=== Analyzing errors for debugging ==="
-        ERRORS="[]"
-        
-        if [ "${TEST_EXIT_CODE:-0}" -ne 0 ]; then
-          echo "Analyzing test failures..."
-          ERROR_PATTERNS="[]"
-          if [ -f test-output.log ]; then
-            # Extract error patterns
-            if grep -i "error\|fail\|exception" test-output.log > /dev/null; then
-              ERROR_PATTERNS=$(grep -i "error\|fail\|exception" test-output.log | head -5 | jq -R . | jq -s .)
-            fi
-          fi
-          
-          TEST_ERROR=$(jq -n --argjson patterns "$ERROR_PATTERNS" '{
-            "type": "test_failure",
-            "exit_code": '${TEST_EXIT_CODE:-0}',
-            "log_file": "test-output.log",
-            "error_patterns": $patterns,
-            "suggested_actions": ["Review test logs for specific failure points", "Check for dependency issues", "Verify test environment setup"]
-          }')
-          ERRORS=$(echo "$ERRORS" | jq ". + [$TEST_ERROR]")
-        fi
-        
-        if [ "${IOS_BUILD_EXIT_CODE:-0}" -ne 0 ]; then
-          echo "Analyzing iOS build failures..."
-          CODE_SIGN_ERRORS="[]"
-          BUILD_ERRORS="[]"
-          
-          if [ -f ios-build.log ]; then
-            # Extract code signing errors
-            if grep -i "code.*sign\|provisioning\|certificate" ios-build.log > /dev/null; then
-              CODE_SIGN_ERRORS=$(grep -i "code.*sign\|provisioning\|certificate" ios-build.log | head -3 | jq -R . | jq -s .)
-            fi
-            
-            # Extract build errors  
-            if grep -i "error:\|failed\|❌" ios-build.log > /dev/null; then
-              BUILD_ERRORS=$(grep -i "error:\|failed\|❌" ios-build.log | head -5 | jq -R . | jq -s .)
-            fi
-          fi
-          
-          IOS_ERROR=$(jq -n --argjson code_sign "$CODE_SIGN_ERRORS" --argjson build "$BUILD_ERRORS" '{
-            "type": "ios_build_failure",
-            "exit_code": '${IOS_BUILD_EXIT_CODE:-0}',
-            "log_file": "ios-build.log", 
-            "code_signing_errors": $code_sign,
-            "build_errors": $build,
-            "suggested_actions": ["Check provisioning profiles", "Verify code signing certificates", "Review Xcode build settings"]
-          }')
-          ERRORS=$(echo "$ERRORS" | jq ". + [$IOS_ERROR]")
-        fi
-        
-        # Update the report with error analysis
-        jq --argjson errors "$ERRORS" '.error_analysis = $errors' build-debug-report.json > tmp.json && mv tmp.json build-debug-report.json
-        
-        echo "=== Debug report created ==="
-        echo "Report size: $(wc -c < build-debug-report.json) bytes"
-        echo "Summary:"
-        jq -r '.results | "Tests: \(.tests.exit_code) (\(if .tests.passed then "PASSED" else "FAILED" end)), iOS Build: \(.ios_build.exit_code) (\(if .ios_build.passed then "PASSED" else "FAILED" end))"' build-debug-report.json
-        echo "Errors found: $(jq '.error_analysis | length' build-debug-report.json)"
+      run: npm run ci:collect-debug
         
     - name: Upload comprehensive debugging artifacts
       if: always()
@@ -228,7 +73,6 @@ jobs:
         retention-days: 30
         
     - name: Upload Chrome extension artifact
-      if: env.CRITICAL_FAILURE == ''
       uses: actions/upload-artifact@v4
       with:
         name: chrome-extension-${{ github.sha }}
@@ -236,7 +80,7 @@ jobs:
         retention-days: 30
         
     - name: Upload iOS IPA artifact
-      if: env.CRITICAL_FAILURE == '' && hashFiles('${{ runner.temp }}/build/bar123.ipa') != ''
+      if: hashFiles('${{ runner.temp }}/build/bar123.ipa') != ''
       uses: actions/upload-artifact@v4
       with:
         name: ios-app-${{ github.sha }}
@@ -244,27 +88,7 @@ jobs:
         retention-days: 30
         if-no-files-found: ignore
         
-    - name: Check for critical failures and fail fast
-      if: always()
-      run: |
-        echo "=== Final Status Check ==="
-        echo "Test exit code: ${TEST_EXIT_CODE:-0}"
-        echo "BrowserStack test exit code: ${BROWSERSTACK_TEST_EXIT_CODE:-null}"
-        echo "iOS build exit code: ${IOS_BUILD_EXIT_CODE:-0}"
-        echo "Critical failure: ${CRITICAL_FAILURE:-none}"
-        
-        # Exit with failure if any critical step failed
-        if [ "${CRITICAL_FAILURE:-none}" != "none" ]; then
-          echo "❌ Build failed at step: ${CRITICAL_FAILURE}"
-          echo "📊 Comprehensive debug report uploaded as: debug-report-${{ github.sha }}"
-          echo "💡 Download the debug artifact for detailed failure analysis"
-          exit 1
-        fi
-        
-        echo "✅ All critical components passed successfully"
-        
     - name: Build success summary
-      if: env.CRITICAL_FAILURE == ''
       run: |
         echo "🎉 Build completed successfully!"
         echo "=== Available Artifacts ==="
