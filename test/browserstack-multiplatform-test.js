@@ -144,25 +144,7 @@ class RealBrowserStackSyncTester {
     async createRealChromeSession(platform, extensionPath) {
         console.log(`🚀 Creating REAL Chrome session with extension: ${platform.name}`);
         
-        // Prepare Chrome options for extension loading
-        const chromeOptions = new chrome.Options();
-        chromeOptions.addArguments(
-            '--no-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-web-security',
-            '--allow-running-insecure-content',
-            `--load-extension=${path.resolve(extensionPath)}`,
-            '--disable-extensions-except=' + path.resolve(extensionPath),
-            '--disable-default-apps',
-            '--enable-automation',
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding'
-        );
-        
-        chromeOptions.setUserPreferences({
-            'extensions.ui.developer_mode': true
-        });
+        console.log(`Loading extension from: ${path.resolve(extensionPath)}`);
         
         const capabilities = {
             'bstack:options': {
@@ -183,7 +165,24 @@ class RealBrowserStackSyncTester {
         };
         
         // Set Chrome-specific options
-        capabilities['goog:chromeOptions'] = chromeOptions.toCapabilities()['goog:chromeOptions'];
+        capabilities['goog:chromeOptions'] = {
+            args: [
+                '--no-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-web-security',
+                '--allow-running-insecure-content',
+                `--load-extension=${path.resolve(extensionPath)}`,
+                '--disable-extensions-except=' + path.resolve(extensionPath),
+                '--disable-default-apps',
+                '--enable-automation',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding'
+            ],
+            prefs: {
+                'extensions.ui.developer_mode': true
+            }
+        };
         
         const driver = await new Builder()
             .usingServer(`https://${this.username}:${this.accessKey}@hub-cloud.browserstack.com/wd/hub`)
