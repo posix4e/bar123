@@ -124,14 +124,15 @@ class CrossPlatformSyncTester {
         console.log('🧪 Testing GitHub workflows...');
         
         try {
-            const workflowExists = fs.existsSync('.github/workflows/test-multiplatform-sync.yml');
+            const workflowExists = fs.existsSync('.github/workflows/ci-cd.yml');
             
             let workflowValid = false;
             if (workflowExists) {
-                const workflow = fs.readFileSync('.github/workflows/test-multiplatform-sync.yml', 'utf8');
-                workflowValid = workflow.includes('Test Multiplatform Sync') && 
-                               workflow.includes('build-extensions') &&
-                               workflow.includes('test-chrome-extension');
+                const workflow = fs.readFileSync('.github/workflows/ci-cd.yml', 'utf8');
+                workflowValid = workflow.includes('CI/CD Pipeline') && 
+                               workflow.includes('build-and-test') &&
+                               workflow.includes('test-ios') &&
+                               workflow.includes('deploy-testflight');
             }
             
             this.addTestResult('GitHub Workflows', workflowExists && workflowValid, {
