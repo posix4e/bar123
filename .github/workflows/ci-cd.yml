@@ -87,23 +87,7 @@ jobs:
         fi
       continue-on-error: true
         
-    - name: Upload Chrome extension artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: chrome-extension-${{ github.sha }}
-        path: chrome-extension-${{ github.sha }}.zip
-        retention-days: 30
-        
-    - name: Upload iOS IPA artifact
-      uses: actions/upload-artifact@v4
-      if: always() && hashFiles('${{ runner.temp }}/build/bar123.ipa') != ''
-      with:
-        name: ios-app-${{ github.sha }}
-        path: ${{ runner.temp }}/build/bar123.ipa
-        retention-days: 30
-        if-no-files-found: ignore
-        
-    - name: Collect error logs and create summary
+    - name: Collect error logs and create summary (always runs for debugging)
       if: always()
       run: |
         echo "=== Build Summary Report ===" > build-summary.json
@@ -178,8 +162,43 @@ jobs:
           test-results/
         retention-days: 30
         
-    - name: List build artifacts
+    - name: Check for critical failures and exit early
       if: always()
+      run: |
+        echo "=== Checking for critical failures ==="
+        echo "Test exit code: ${TEST_EXIT_CODE:-0}"
+        echo "iOS build exit code: ${IOS_BUILD_EXIT_CODE:-0}"
+        
+        # Fail fast if critical components failed
+        if [ "${TEST_EXIT_CODE:-0}" -ne 0 ]; then
+          echo "❌ Tests failed - stopping build"
+          exit 1
+        fi
+        
+        if [ "${IOS_BUILD_EXIT_CODE:-0}" -ne 0 ]; then
+          echo "❌ iOS build failed - stopping build"
+          exit 1
+        fi
+        
+        echo "✅ All critical components passed - continuing with artifacts"
+        
+    - name: Upload Chrome extension artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: chrome-extension-${{ github.sha }}
+        path: chrome-extension-${{ github.sha }}.zip
+        retention-days: 30
+        
+    - name: Upload iOS IPA artifact
+      uses: actions/upload-artifact@v4
+      if: hashFiles('${{ runner.temp }}/build/bar123.ipa') != ''
+      with:
+        name: ios-app-${{ github.sha }}
+        path: ${{ runner.temp }}/build/bar123.ipa
+        retention-days: 30
+        if-no-files-found: ignore
+        
+    - name: List build artifacts
       run: |
         echo "=== Build Artifacts ==="
         echo "Chrome extension:"
@@ -195,21 +214,5 @@ jobs:
         ls -la *.log || echo "No log files found"
         
     - name: Final status check
-      if: always()
       run: |
-        echo "=== Final Status ==="
-        echo "Test exit code: ${TEST_EXIT_CODE:-0}"
-        echo "iOS build exit code: ${IOS_BUILD_EXIT_CODE:-0}"
-        
-        # Fail the job if critical components failed
-        if [ "${TEST_EXIT_CODE:-0}" -ne 0 ]; then
-          echo "❌ Tests failed"
-          exit 1
-        fi
-        
-        if [ "${IOS_BUILD_EXIT_CODE:-0}" -ne 0 ]; then
-          echo "❌ iOS build failed"
-          exit 1
-        fi
-        
-        echo "✅ All components passed"
+        echo "✅ Build completed successfully - all components passed"
