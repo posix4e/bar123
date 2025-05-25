@@ -96,10 +96,10 @@ jobs:
         
     - name: Upload iOS IPA artifact
       uses: actions/upload-artifact@v4
-      if: always() && hashFiles('${{ runner.temp }}/bar123.ipa') != ''
+      if: always() && hashFiles('${{ runner.temp }}/build/bar123.ipa') != ''
       with:
         name: ios-app-${{ github.sha }}
-        path: ${{ runner.temp }}/bar123.ipa
+        path: ${{ runner.temp }}/build/bar123.ipa
         retention-days: 30
         if-no-files-found: ignore
         
@@ -122,13 +122,12 @@ jobs:
         echo "  }," >> build-summary.json
         echo "  \"artifacts\": {" >> build-summary.json
         echo "    \"chrome_extension\": $(if ls chrome-extension-*.zip >/dev/null 2>&1; then echo true; else echo false; fi)," >> build-summary.json
-        echo "    \"ios_ipa\": $(if [ -f \"${{ runner.temp }}/bar123.ipa\" ]; then echo true; else echo false; fi)" >> build-summary.json
+        echo "    \"ios_ipa\": $(if [ -f \"${{ runner.temp }}/build/bar123.ipa\" ]; then echo true; else echo false; fi)" >> build-summary.json
         echo "  }," >> build-summary.json
-        echo "  \"errors\": []" >> build-summary.json
+        echo "  \"errors\": [" >> build-summary.json
         
         # Collect test errors if any
         if [ "${TEST_EXIT_CODE:-0}" -ne 0 ] && [ -f test-output.log ]; then
-          echo "  \"errors\": [" >> build-summary.json
           echo "    {" >> build-summary.json
           echo "      \"type\": \"test_failure\"," >> build-summary.json
           echo "      \"log_file\": \"test-output.log\"," >> build-summary.json
@@ -152,7 +151,6 @@ jobs:
           fi
           echo "  ]" >> build-summary.json
         elif [ "${IOS_BUILD_EXIT_CODE:-0}" -ne 0 ] && [ -f ios-build.log ]; then
-          echo "  \"errors\": [" >> build-summary.json
           echo "    {" >> build-summary.json
           echo "      \"type\": \"ios_build_failure\"," >> build-summary.json
           echo "      \"log_file\": \"ios-build.log\"," >> build-summary.json
@@ -188,7 +186,7 @@ jobs:
         ls -la chrome-extension-*.zip || echo "Chrome extension zip not found"
         echo ""
         echo "iOS IPA file:"
-        ls -la "${{ runner.temp }}/bar123.ipa" || echo "IPA file not found"
+        ls -la "${{ runner.temp }}/build/bar123.ipa" || echo "IPA file not found"
         echo ""
         echo "Build summary:"
         cat build-summary.json
