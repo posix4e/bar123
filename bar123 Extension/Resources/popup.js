@@ -1,6 +1,4 @@
-<<<<<<< HEAD
-console.log("Hello World!", browser);
-=======
+
 class HistorySyncUI {
     constructor() {
         this.initializeElements();
@@ -231,4 +229,3 @@ browser.runtime.onMessage.addListener((message) => {
 document.addEventListener('DOMContentLoaded', () => {
     window.historySyncUI = new HistorySyncUI();
 });
->>>>>>> 6a3c53c (Initial Commit)
