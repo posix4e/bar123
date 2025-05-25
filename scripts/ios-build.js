@@ -129,15 +129,17 @@ function buildArchive(uuids) {
 function createExportOptions(uuids) {
   console.log('Creating export options plist...');
   
+  if (!uuids.appProfileUUID || !uuids.extProfileUUID) {
+    throw new Error('Profile UUIDs are required for export options');
+  }
+  
   const exportOptionsPath = path.join(options.output, 'ExportOptions.plist');
   const exportOptionsContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>destination</key>
-  <string>upload</string>
   <key>method</key>
-  <string>app-store</string>
+  <string>app-store-connect</string>
   <key>teamID</key>
   <string>2858MX5336</string>
   <key>signingStyle</key>
