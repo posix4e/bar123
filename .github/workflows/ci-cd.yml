@@ -99,7 +99,7 @@ jobs:
             "npm_version": "$(npm --version 2>/dev/null || echo 'not found')",
             "xcode_version": "$(xcodebuild -version 2>/dev/null | head -1 | sed 's/Xcode //' || echo 'not found')",
             "os_version": "$(sw_vers -productVersion 2>/dev/null || echo 'unknown')",
-            "available_disk_space": "$(df -h . | tail -1 | awk '{print \$4}' || echo 'unknown')"
+            "available_disk_space": "$(df -h . | tail -1 | awk '{print $4}' || echo 'unknown')"
           },
           "logs": {},
           "error_analysis": []
