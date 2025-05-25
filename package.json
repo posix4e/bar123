@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "commander": "^11.1.0",
-    "puppeteer": "^21.5.0"
+    "puppeteer": "^22.8.2"
   },
   "author": "History Sync Extension",
   "license": "MIT"

@@ -33,7 +33,10 @@ jobs:
       run: npm run build-chrome
       
     - name: Run multiplatform sync tests
-      run: npm run test
+      run: |
+        npm run test 2>&1 | tee test-output.log
+        echo "TEST_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
+      continue-on-error: true
       
     - name: Create Chrome extension package
       run: |
@@ -75,11 +78,14 @@ jobs:
       run: |
         if [[ "${{ github.event_name }}" == "push" && ("${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == "refs/tags/"*) ]]; then
           echo "Main branch/tag push: Building and uploading to TestFlight..."
-          npm run ios-build-testflight
+          npm run ios-build-testflight 2>&1 | tee ios-build.log
+          echo "IOS_BUILD_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
         else
           echo "PR or non-main branch: Running build test only (no TestFlight upload)"
-          npm run ios-build-local
+          npm run ios-build-local 2>&1 | tee ios-build.log
+          echo "IOS_BUILD_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
         fi
+      continue-on-error: true
         
     - name: Upload Chrome extension artifact
       uses: actions/upload-artifact@v4
@@ -96,6 +102,83 @@ jobs:
         path: ${{ runner.temp }}/bar123.ipa
         retention-days: 30
         
+    - name: Collect error logs and create summary
+      if: always()
+      run: |
+        echo "=== Build Summary Report ===" > build-summary.json
+        echo "{" >> build-summary.json
+        echo "  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"," >> build-summary.json
+        echo "  \"commit_sha\": \"${{ github.sha }}\"," >> build-summary.json
+        echo "  \"event_name\": \"${{ github.event_name }}\"," >> build-summary.json
+        echo "  \"ref\": \"${{ github.ref }}\"," >> build-summary.json
+        echo "  \"tests\": {" >> build-summary.json
+        echo "    \"exit_code\": \"${TEST_EXIT_CODE:-0}\"," >> build-summary.json
+        echo "    \"passed\": $([ \"${TEST_EXIT_CODE:-0}\" -eq 0 ] && echo true || echo false)" >> build-summary.json
+        echo "  }," >> build-summary.json
+        echo "  \"ios_build\": {" >> build-summary.json
+        echo "    \"exit_code\": \"${IOS_BUILD_EXIT_CODE:-0}\"," >> build-summary.json
+        echo "    \"passed\": $([ \"${IOS_BUILD_EXIT_CODE:-0}\" -eq 0 ] && echo true || echo false)" >> build-summary.json
+        echo "  }," >> build-summary.json
+        echo "  \"artifacts\": {" >> build-summary.json
+        echo "    \"chrome_extension\": $([ -f chrome-extension-*.zip ] && echo true || echo false)," >> build-summary.json
+        echo "    \"ios_ipa\": $([ -f \"${{ runner.temp }}/bar123.ipa\" ] && echo true || echo false)" >> build-summary.json
+        echo "  }," >> build-summary.json
+        echo "  \"errors\": []" >> build-summary.json
+        
+        # Collect test errors if any
+        if [ "${TEST_EXIT_CODE:-0}" -ne 0 ] && [ -f test-output.log ]; then
+          echo "  \"errors\": [" >> build-summary.json
+          echo "    {" >> build-summary.json
+          echo "      \"type\": \"test_failure\"," >> build-summary.json
+          echo "      \"log_file\": \"test-output.log\"," >> build-summary.json
+          echo "      \"last_lines\": [" >> build-summary.json
+          tail -10 test-output.log | sed 's/"/\\"/g' | sed 's/^/        "/' | sed 's/$/",/' >> build-summary.json
+          sed -i '$ s/,$//' build-summary.json  # Remove last comma
+          echo "      ]" >> build-summary.json
+          echo "    }" >> build-summary.json
+          
+          # Add iOS build errors if they exist
+          if [ "${IOS_BUILD_EXIT_CODE:-0}" -ne 0 ] && [ -f ios-build.log ]; then
+            echo "    ," >> build-summary.json
+            echo "    {" >> build-summary.json
+            echo "      \"type\": \"ios_build_failure\"," >> build-summary.json
+            echo "      \"log_file\": \"ios-build.log\"," >> build-summary.json
+            echo "      \"last_lines\": [" >> build-summary.json
+            tail -10 ios-build.log | sed 's/"/\\"/g' | sed 's/^/        "/' | sed 's/$/",/' >> build-summary.json
+            sed -i '$ s/,$//' build-summary.json
+            echo "      ]" >> build-summary.json
+            echo "    }" >> build-summary.json
+          fi
+          echo "  ]" >> build-summary.json
+        elif [ "${IOS_BUILD_EXIT_CODE:-0}" -ne 0 ] && [ -f ios-build.log ]; then
+          echo "  \"errors\": [" >> build-summary.json
+          echo "    {" >> build-summary.json
+          echo "      \"type\": \"ios_build_failure\"," >> build-summary.json
+          echo "      \"log_file\": \"ios-build.log\"," >> build-summary.json
+          echo "      \"last_lines\": [" >> build-summary.json
+          tail -10 ios-build.log | sed 's/"/\\"/g' | sed 's/^/        "/' | sed 's/$/",/' >> build-summary.json
+          sed -i '$ s/,$//' build-summary.json
+          echo "      ]" >> build-summary.json
+          echo "    }" >> build-summary.json
+          echo "  ]" >> build-summary.json
+        else
+          echo "  ]" >> build-summary.json
+        fi
+        
+        echo "}" >> build-summary.json
+        
+    - name: Upload error logs and summary
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-logs-${{ github.sha }}
+        path: |
+          build-summary.json
+          test-output.log
+          ios-build.log
+          test-results/
+        retention-days: 30
+        
     - name: List build artifacts
       if: always()
       run: |
@@ -106,5 +189,28 @@ jobs:
         echo "iOS IPA file:"
         ls -la "${{ runner.temp }}/bar123.ipa" || echo "IPA file not found"
         echo ""
-        echo "Build directory contents:"
-        ls -la "${{ runner.temp }}" || echo "Build directory not found"
+        echo "Build summary:"
+        cat build-summary.json
+        echo ""
+        echo "Available log files:"
+        ls -la *.log || echo "No log files found"
+        
+    - name: Final status check
+      if: always()
+      run: |
+        echo "=== Final Status ==="
+        echo "Test exit code: ${TEST_EXIT_CODE:-0}"
+        echo "iOS build exit code: ${IOS_BUILD_EXIT_CODE:-0}"
+        
+        # Fail the job if critical components failed
+        if [ "${TEST_EXIT_CODE:-0}" -ne 0 ]; then
+          echo "❌ Tests failed"
+          exit 1
+        fi
+        
+        if [ "${IOS_BUILD_EXIT_CODE:-0}" -ne 0 ]; then
+          echo "❌ iOS build failed"
+          exit 1
+        fi
+        
+        echo "✅ All components passed"
