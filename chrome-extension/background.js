@@ -1,5 +1,5 @@
-// Import Trystero - Chrome extension service worker style
-importScripts('https://unpkg.com/trystero');
+// Import Trystero - Chrome extension service worker style (bundled locally)
+importScripts('trystero-bundle.js');
 
 class HistorySyncService {
     constructor() {
@@ -90,14 +90,23 @@ class HistorySyncService {
     }
 
     async initializeTrystero() {
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substr(2, 6);
-        this.myPeerId = `${await this.deviceId}_${timestamp}_${random}`;
-        
-        console.log('Connecting to Trystero room:', this.roomId);
-        
-        // Use Nostr strategy (default, serverless)
-        this.room = trystero.joinRoom({ appId: 'history-sync' }, this.roomId);
+        try {
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substr(2, 6);
+            this.myPeerId = `${await this.deviceId}_${timestamp}_${random}`;
+            
+            console.log('Connecting to Trystero room:', this.roomId);
+            console.log('Trystero available:', typeof trystero);
+            console.log('Trystero object:', trystero);
+            
+            // Check if trystero is available
+            if (typeof trystero === 'undefined') {
+                throw new Error('Trystero is not loaded');
+            }
+            
+            // Use Nostr strategy (default, serverless)
+            this.room = trystero.joinRoom({ appId: 'history-sync' }, this.roomId);
+            console.log('Room created:', this.room);
         
         // Set up peer connection handlers
         this.room.onPeerJoin(peerId => {
@@ -127,8 +136,12 @@ class HistorySyncService {
         this.sendHistory = sendHistory;
         this.sendDelete = sendDelete;
         
-        console.log('Trystero room joined successfully');
-        return Promise.resolve();
+            console.log('Trystero room joined successfully');
+            return Promise.resolve();
+        } catch (error) {
+            console.error('Trystero initialization error:', error);
+            throw error;
+        }
     }
 
     disconnect() {

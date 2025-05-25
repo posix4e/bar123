@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "install-deps": "npm install",
-    "build": "npm run bundle-peerjs && npm run copy-assets",
-    "bundle-peerjs": "cp node_modules/peerjs/dist/peerjs.min.js 'bar123 Extension/Resources/' && cp node_modules/peerjs/dist/peerjs.min.js chrome-extension/",
-    "build-chrome": "npm run bundle-peerjs && npm run copy-chrome-assets",
+    "build": "npm run bundle-trystero && npm run copy-assets",
+    "bundle-trystero": "npm run build-trystero-bundle && cp dist/trystero-bundle.js 'bar123 Extension/Resources/' && cp dist/trystero-bundle.js chrome-extension/",
+    "build-chrome": "npm run bundle-trystero && npm run copy-chrome-assets",
+    "build-trystero-bundle": "mkdir -p dist && npx esbuild node_modules/trystero/src/index.js --bundle --format=iife --global-name=trystero --outfile=dist/trystero-bundle.js",
     "copy-chrome-assets": "mkdir -p chrome-extension/images && cp 'bar123 Extension/Resources/images/'* chrome-extension/images/ 2>/dev/null || echo 'Images copied or not found'",
     "copy-assets": "echo 'Assets ready'",
     "dev": "npm run build && npm run serve",
@@ -54,6 +55,7 @@
   "devDependencies": {
     "@playwright/test": "^1.52.0",
     "commander": "^11.1.0",
+    "esbuild": "^0.25.4",
     "playwright": "^1.52.0",
     "puppeteer": "^22.8.2",
     "selenium-webdriver": "^4.15.0"

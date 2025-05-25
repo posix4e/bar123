@@ -1,3 +1,6 @@
+// Import Trystero - Safari extension style (bundled locally)
+importScripts('trystero-bundle.js');
+
 class HistorySyncService {
     constructor() {
         this.isConnected = false;
