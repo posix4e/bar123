@@ -25,7 +25,7 @@ class HistorySyncService {
         const stored = localStorage.getItem('deviceId');
         if (stored) return stored;
         
-        const newId = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        const newId = 'ios_safari_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
         localStorage.setItem('deviceId', newId);
         return newId;
     }

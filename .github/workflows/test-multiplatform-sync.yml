@@ -1,0 +1,94 @@
+name: Test Multiplatform Sync
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-extensions:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Build Chrome extension
+      run: npm run build-chrome
+      
+    - name: Create extension package
+      run: |
+        cd chrome-extension
+        zip -r ../chrome-extension-${{ github.sha }}.zip . -x "*.DS_Store"
+        
+    - name: Upload Chrome extension artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: chrome-extension-${{ github.sha }}
+        path: chrome-extension-${{ github.sha }}.zip
+        retention-days: 30
+        
+    - name: Verify extension structure
+      run: |
+        echo "Extension contents:"
+        ls -la chrome-extension/
+        echo "Manifest content:"
+        cat chrome-extension/manifest.json
+
+  test-chrome-extension:
+    runs-on: ubuntu-latest
+    needs: build-extensions
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Run multiplatform sync tests
+      run: npm run test
+
+  test-safari-extension:
+    runs-on: macos-latest
+    needs: build-extensions
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install
+        
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+        
+    - name: Test Safari extension build
+      run: |
+        npm run build
+        xcodebuild -project bar123.xcodeproj -scheme bar123 -destination 'platform=iOS Simulator,name=iPhone 15' build
