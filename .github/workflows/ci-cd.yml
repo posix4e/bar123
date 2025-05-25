@@ -36,15 +36,19 @@ jobs:
       run: |
         npm run test 2>&1 | tee test-output.log
         echo "TEST_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
-      continue-on-error: true
+        if [ ${PIPESTATUS[0]} -ne 0 ]; then
+          echo "CRITICAL_FAILURE=tests" >> $GITHUB_ENV
+          echo "❌ Tests failed - will skip remaining steps and upload logs"
+        fi
       
     - name: Build Chrome extension
+      if: env.CRITICAL_FAILURE == ''
       run: |
         npm run build-chrome
         cd chrome-extension && zip -r ../chrome-extension-${{ github.sha }}.zip * && cd ..
       
     - name: Run BrowserStack multiplatform tests
-      if: env.BROWSERSTACK_USERNAME && env.BROWSERSTACK_ACCESS_KEY
+      if: env.CRITICAL_FAILURE == '' && env.BROWSERSTACK_USERNAME && env.BROWSERSTACK_ACCESS_KEY
       env:
         BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
         BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
@@ -52,9 +56,13 @@ jobs:
         echo "🌐 Running BrowserStack multiplatform tests..."
         npm run test-browserstack 2>&1 | tee browserstack-test-output.log
         echo "BROWSERSTACK_TEST_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
-      continue-on-error: true
+        if [ ${PIPESTATUS[0]} -ne 0 ]; then
+          echo "CRITICAL_FAILURE=browserstack" >> $GITHUB_ENV
+          echo "❌ BrowserStack tests failed - will skip remaining steps and upload logs"
+        fi
       
     - name: Build iOS app for testing/deployment
+      if: env.CRITICAL_FAILURE == ''
       env:
         BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
         P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
@@ -73,7 +81,10 @@ jobs:
           npm run ios-build-local 2>&1 | tee ios-build.log
           echo "IOS_BUILD_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
         fi
-      continue-on-error: true
+        if [ ${PIPESTATUS[0]} -ne 0 ]; then
+          echo "CRITICAL_FAILURE=ios_build" >> $GITHUB_ENV
+          echo "❌ iOS build failed - will skip remaining steps and upload logs"
+        fi
         
     - name: Collect comprehensive debugging information
       if: always()
@@ -216,30 +227,8 @@ jobs:
           test-results/
         retention-days: 30
         
-    - name: Check for critical failures and exit early if needed
-      if: always()
-      run: |
-        echo "=== Checking for critical failures ==="
-        echo "Test exit code: ${TEST_EXIT_CODE:-0}"
-        echo "BrowserStack test exit code: ${BROWSERSTACK_TEST_EXIT_CODE:-null}"
-        echo "iOS build exit code: ${IOS_BUILD_EXIT_CODE:-0}"
-        
-        # Fail fast if critical components failed - logs are already uploaded
-        if [ "${TEST_EXIT_CODE:-0}" -ne 0 ]; then
-          echo "❌ Tests failed - comprehensive debug report uploaded"
-          echo "Download the debug-report-${{ github.sha }} artifact for detailed analysis"
-          exit 1
-        fi
-        
-        if [ "${IOS_BUILD_EXIT_CODE:-0}" -ne 0 ]; then
-          echo "❌ iOS build failed - comprehensive debug report uploaded"
-          echo "Download the debug-report-${{ github.sha }} artifact for detailed analysis"
-          exit 1
-        fi
-        
-        echo "✅ All critical components passed - continuing with artifacts"
-        
     - name: Upload Chrome extension artifact
+      if: env.CRITICAL_FAILURE == ''
       uses: actions/upload-artifact@v4
       with:
         name: chrome-extension-${{ github.sha }}
@@ -247,15 +236,35 @@ jobs:
         retention-days: 30
         
     - name: Upload iOS IPA artifact
+      if: env.CRITICAL_FAILURE == '' && hashFiles('${{ runner.temp }}/build/bar123.ipa') != ''
       uses: actions/upload-artifact@v4
-      if: hashFiles('${{ runner.temp }}/build/bar123.ipa') != ''
       with:
         name: ios-app-${{ github.sha }}
         path: ${{ runner.temp }}/build/bar123.ipa
         retention-days: 30
         if-no-files-found: ignore
         
+    - name: Check for critical failures and fail fast
+      if: always()
+      run: |
+        echo "=== Final Status Check ==="
+        echo "Test exit code: ${TEST_EXIT_CODE:-0}"
+        echo "BrowserStack test exit code: ${BROWSERSTACK_TEST_EXIT_CODE:-null}"
+        echo "iOS build exit code: ${IOS_BUILD_EXIT_CODE:-0}"
+        echo "Critical failure: ${CRITICAL_FAILURE:-none}"
+        
+        # Exit with failure if any critical step failed
+        if [ "${CRITICAL_FAILURE:-none}" != "none" ]; then
+          echo "❌ Build failed at step: ${CRITICAL_FAILURE}"
+          echo "📊 Comprehensive debug report uploaded as: debug-report-${{ github.sha }}"
+          echo "💡 Download the debug artifact for detailed failure analysis"
+          exit 1
+        fi
+        
+        echo "✅ All critical components passed successfully"
+        
     - name: Build success summary
+      if: env.CRITICAL_FAILURE == ''
       run: |
         echo "🎉 Build completed successfully!"
         echo "=== Available Artifacts ==="
