@@ -40,11 +40,15 @@ jobs:
     - name: Build Chrome extension
       run: npm run ci:build-chrome
       
-    - name: Run BrowserStack multiplatform tests
-      env:
-        BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
-        BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-      run: npm run ci:test-browserstack
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium
+      
+    - name: Run local multiplatform tests with virtual display
+      run: |
+        export DISPLAY=:99
+        Xvfb :99 -screen 0 1280x720x24 &
+        sleep 3
+        npm run ci:test-local-multiplatform
       
     # iOS Build - Always runs (creates IPA)
     - name: Build iOS app
