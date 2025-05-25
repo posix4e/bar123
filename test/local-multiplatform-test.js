@@ -248,10 +248,10 @@ class LocalMultiplatformSyncTester {
                     };
                 }
                 
-                // Test PeerJS functionality via background script
-                console.log('  🔗 Testing PeerJS functionality...');
+                // Test Trystero functionality via background script
+                console.log('  🔗 Testing Trystero functionality...');
                 
-                const peerJSTest = await page.evaluate(async (sharedSecret) => {
+                const trysteroTest = await page.evaluate(async (sharedSecret) => {
                     return new Promise((resolve) => {
                         let hasResolved = false;
                         
@@ -263,9 +263,9 @@ class LocalMultiplatformSyncTester {
                         }
                         
                         try {
-                            console.log('Starting PeerJS test with shared secret:', sharedSecret);
+                            console.log('Starting Trystero test with shared secret:', sharedSecret);
                             
-                            // Test extension's PeerJS functionality via runtime messaging
+                            // Test extension's Trystero functionality via runtime messaging
                             chrome.runtime.sendMessage({
                                 action: 'connect',
                                 sharedSecret: sharedSecret
@@ -283,20 +283,20 @@ class LocalMultiplatformSyncTester {
                                 }
                                 
                                 if (response && response.success) {
-                                    // Wait a bit for PeerJS to connect, then check status
+                                    // Wait a bit for Trystero to connect, then check status
                                     setTimeout(() => {
                                         chrome.runtime.sendMessage({ action: 'getStats' }, (stats) => {
                                             console.log('Stats response:', stats);
                                             safeResolve({
                                                 success: stats && stats.isConnected,
                                                 message: (stats && stats.isConnected) ? 
-                                                    'PeerJS connection successful via extension' : 
-                                                    'Extension connected but PeerJS not ready',
+                                                    'Trystero connection successful via extension' : 
+                                                    'Extension connected but Trystero not ready',
                                                 stats: stats,
                                                 details: { response, stats }
                                             });
                                         });
-                                    }, 3000); // Wait 3 seconds for PeerJS to establish connection
+                                    }, 3000); // Wait 3 seconds for Trystero to establish connection
                                 } else {
                                     safeResolve({
                                         success: false,
@@ -310,24 +310,24 @@ class LocalMultiplatformSyncTester {
                             setTimeout(() => {
                                 safeResolve({
                                     success: false,
-                                    message: 'PeerJS connection timeout (20s)',
+                                    message: 'Trystero connection timeout (20s)',
                                     details: { timeout: true }
                                 });
                             }, 20000);
                         } catch (error) {
                             safeResolve({
                                 success: false,
-                                message: 'PeerJS test error: ' + error.message,
+                                message: 'Trystero test error: ' + error.message,
                                 details: { error: error.message, stack: error.stack }
                             });
                         }
                     });
                 }, this.sharedSecret);
                 
-                testResult.tests.peerjs_functionality = {
-                    passed: peerJSTest.success,
-                    message: peerJSTest.message,
-                    details: peerJSTest
+                testResult.tests.trystero_functionality = {
+                    passed: trysteroTest.success,
+                    message: trysteroTest.message,
+                    details: trysteroTest
                 };
                 
                 // Test history data operations
@@ -615,14 +615,14 @@ class LocalMultiplatformSyncTester {
                 details: { safariProcess: safariProcess.pid }
             };
             
-            // Test PeerJS functionality (simulated since we can't easily inspect Safari)
-            console.log('  🔗 Testing PeerJS functionality in Safari...');
+            // Test Trystero functionality (simulated since we can't easily inspect Safari)
+            console.log('  🔗 Testing Trystero functionality in Safari...');
             
             testResult.tests.sync_reception = {
                 passed: true,
-                message: 'Safari PeerJS functionality simulated successfully',
+                message: 'Safari Trystero functionality simulated successfully',
                 details: {
-                    can_connect_to_peerjs: true,
+                    can_connect_to_trystero: true,
                     can_receive_peer_data: true,
                     can_store_history: true,
                     can_process_deletes: true
@@ -657,7 +657,7 @@ class LocalMultiplatformSyncTester {
         };
         
         const chromeExtensionWorking = chromeResult.tests.extension_loaded && chromeResult.tests.extension_loaded.passed;
-        const chromePeerJSWorking = chromeResult.tests.peerjs_functionality && chromeResult.tests.peerjs_functionality.passed;
+        const chromeTrysteroWorking = chromeResult.tests.trystero_functionality && chromeResult.tests.trystero_functionality.passed;
         const chromeHistoryWorking = chromeResult.tests.history_operations && chromeResult.tests.history_operations.passed;
         const chromeDeleteWorking = chromeResult.tests.delete_operations && chromeResult.tests.delete_operations.passed;
         
@@ -678,8 +678,8 @@ class LocalMultiplatformSyncTester {
                 // This would test actual peer discovery using the same shared secret
                 // For now, simulate the test since we need both platforms running simultaneously
                 peerConnectionTest = {
-                    passed: chromePeerJSWorking && iosSyncCapable,
-                    message: chromePeerJSWorking && iosSyncCapable ?
+                    passed: chromeTrysteroWorking && iosSyncCapable,
+                    message: chromeTrysteroWorking && iosSyncCapable ?
                         'Both platforms ready for peer connection' :
                         'One or both platforms not ready for peer connection'
                 };
@@ -732,11 +732,11 @@ class LocalMultiplatformSyncTester {
                     'Chrome extension loaded and functional' :
                     'Chrome extension not properly loaded'
             },
-            chrome_peerjs_ready: {
-                passed: chromePeerJSWorking,
-                message: chromePeerJSWorking ?
-                    'Chrome PeerJS functionality confirmed' :
-                    'Chrome PeerJS functionality failed'
+            chrome_trystero_ready: {
+                passed: chromeTrysteroWorking,
+                message: chromeTrysteroWorking ?
+                    'Chrome Trystero functionality confirmed' :
+                    'Chrome Trystero functionality failed'
             },
             chrome_data_operations: {
                 passed: chromeHistoryWorking && chromeDeleteWorking,
