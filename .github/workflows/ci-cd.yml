@@ -40,13 +40,6 @@ jobs:
         cd chrome-extension
         zip -r ../chrome-extension-${{ github.sha }}.zip . -x "*.DS_Store"
         
-    - name: Upload Chrome extension artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: chrome-extension-${{ github.sha }}
-        path: chrome-extension-${{ github.sha }}.zip
-        retention-days: 30
-        
     - name: Verify extension structures
       run: |
         echo "=== Chrome Extension ==="
@@ -87,3 +80,31 @@ jobs:
           echo "PR or non-main branch: Running build test only (no TestFlight upload)"
           npm run ios-build-local
         fi
+        
+    - name: Upload Chrome extension artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: chrome-extension-${{ github.sha }}
+        path: chrome-extension-${{ github.sha }}.zip
+        retention-days: 30
+        
+    - name: Upload iOS IPA artifact
+      uses: actions/upload-artifact@v4
+      if: always() && hashFiles('${{ runner.temp }}/bar123.ipa') != ''
+      with:
+        name: ios-app-${{ github.sha }}
+        path: ${{ runner.temp }}/bar123.ipa
+        retention-days: 30
+        
+    - name: List build artifacts
+      if: always()
+      run: |
+        echo "=== Build Artifacts ==="
+        echo "Chrome extension:"
+        ls -la chrome-extension-*.zip || echo "Chrome extension zip not found"
+        echo ""
+        echo "iOS IPA file:"
+        ls -la "${{ runner.temp }}/bar123.ipa" || echo "IPA file not found"
+        echo ""
+        echo "Build directory contents:"
+        ls -la "${{ runner.temp }}" || echo "Build directory not found"
