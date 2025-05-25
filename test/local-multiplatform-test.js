@@ -52,34 +52,29 @@ class LocalMultiplatformSyncTester {
     }
 
     async takeScreenshot(page, name, description) {
-        try {
-            const filename = `screenshot-${Date.now()}-${name}.png`;
-            const filepath = path.join('test-results/local-multiplatform/screenshots', filename);
-            
-            // Ensure directory exists
-            const dir = path.dirname(filepath);
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-            }
-            
-            await page.screenshot({ path: filepath, fullPage: true });
-            
-            const screenshotData = {
-                name,
-                description,
-                filename,
-                filepath,
-                timestamp: new Date().toISOString()
-            };
-            
-            this.testResults.screenshots.push(screenshotData);
-            console.log(`📸 Screenshot saved: ${name} - ${description}`);
-            
-            return screenshotData;
-        } catch (error) {
-            console.warn(`⚠️  Failed to take screenshot ${name}: ${error.message}`);
-            return null;
+        const filename = `screenshot-${Date.now()}-${name}.png`;
+        const filepath = path.join('test-results/local-multiplatform/screenshots', filename);
+        
+        // Ensure directory exists
+        const dir = path.dirname(filepath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
         }
+        
+        await page.screenshot({ path: filepath, fullPage: true });
+        
+        const screenshotData = {
+            name,
+            description,
+            filename,
+            filepath,
+            timestamp: new Date().toISOString()
+        };
+        
+        this.testResults.screenshots.push(screenshotData);
+        console.log(`📸 Screenshot saved: ${name} - ${description}`);
+        
+        return screenshotData;
     }
 
     async testRealChromeExtension() {
@@ -140,59 +135,37 @@ class LocalMultiplatformSyncTester {
             
             // Take initial screenshot
             const initialScreenshot = await this.takeScreenshot(page, 'chrome-initial', 'Chrome with extension loaded');
-            if (initialScreenshot) testResult.screenshots.push(initialScreenshot);
+            testResult.screenshots.push(initialScreenshot);
             
             // Test extension loading
             console.log('  📋 Verifying extension loading...');
             
+            await page.goto('chrome://extensions/', { waitUntil: 'networkidle' });
+            await page.waitForTimeout(3000);
+            
+            // Enable developer mode
+            const devModeToggle = page.locator('#developerMode');
+            await devModeToggle.check();
+            await page.waitForTimeout(1000);
+            
+            // Take screenshot of extensions page
+            const extPageScreenshot = await this.takeScreenshot(page, 'chrome-extensions', 'Extensions page showing loaded extension');
+            testResult.screenshots.push(extPageScreenshot);
+            
+            // Find our extension
+            const extensionCards = await page.locator('extensions-item').all();
             let extensionFound = false;
             let extensionId = null;
             
-            try {
-                await page.goto('chrome://extensions/', { waitUntil: 'networkidle' });
-                await page.waitForTimeout(3000);
+            for (const card of extensionCards) {
+                const nameElement = await card.locator('#name').first();
+                const name = await nameElement.textContent();
                 
-                // Enable developer mode
-                try {
-                    const devModeToggle = page.locator('#developerMode');
-                    if (await devModeToggle.isVisible()) {
-                        await devModeToggle.check();
-                        await page.waitForTimeout(1000);
-                    }
-                } catch (error) {
-                    console.log('Developer mode toggle not found or already enabled');
-                }
-                
-                // Take screenshot of extensions page
-                const extPageScreenshot = await this.takeScreenshot(page, 'chrome-extensions', 'Extensions page showing loaded extension');
-                if (extPageScreenshot) testResult.screenshots.push(extPageScreenshot);
-                
-                // Find our extension
-                const extensionCards = await page.locator('extensions-item').all();
-                
-                for (const card of extensionCards) {
-                    try {
-                        const nameElement = await card.locator('#name').first();
-                        const name = await nameElement.textContent();
-                        
-                        if (name && (name.includes('History Sync') || name.includes('bar123'))) {
-                            extensionFound = true;
-                            extensionId = await card.getAttribute('id');
-                            console.log(`✅ Found extension: ${name} (ID: ${extensionId})`);
-                            break;
-                        }
-                    } catch (error) {
-                        // Continue checking other cards
-                    }
-                }
-            } catch (error) {
-                console.log('⚠️  Could not navigate to chrome://extensions, testing extension differently');
-                // Try alternative approach - assume extension loaded if manifest exists
-                const manifestPath = path.join(extensionPath, 'manifest.json');
-                if (fs.existsSync(manifestPath)) {
+                if (name && (name.includes('History Sync') || name.includes('bar123'))) {
                     extensionFound = true;
-                    extensionId = 'assumed-loaded';
-                    console.log('✅ Extension assumed loaded based on manifest existence');
+                    extensionId = await card.getAttribute('id');
+                    console.log(`✅ Found extension: ${name} (ID: ${extensionId})`);
+                    break;
                 }
             }
             
@@ -208,83 +181,42 @@ class LocalMultiplatformSyncTester {
                 // Test extension popup
                 console.log('  🎯 Testing extension popup...');
                 
-                try {
-                    // Navigate to extension popup
-                    let popupUrl;
-                    if (extensionId === 'assumed-loaded') {
-                        // Try to find the actual extension ID from the loaded extensions
-                        try {
-                            const extensions = await page.evaluate(() => {
-                                return new Promise((resolve) => {
-                                    chrome.management.getAll((extensions) => {
-                                        resolve(extensions.filter(ext => ext.name.includes('History Sync')));
-                                    });
-                                });
-                            });
-                            if (extensions.length > 0) {
-                                extensionId = extensions[0].id;
-                                popupUrl = `chrome-extension://${extensionId}/popup.html`;
-                            } else {
-                                throw new Error('Extension ID not found via chrome.management');
-                            }
-                        } catch (error) {
-                            // Fallback: create a test page with similar functionality
-                            popupUrl = 'data:text/html,<html><body><h1>Extension Test</h1><input id="sharedSecret"><button id="connectBtn">Connect</button><div id="status">Ready</div></body></html>';
-                        }
-                    } else {
-                        popupUrl = `chrome-extension://${extensionId}/popup.html`;
-                    }
-                    
-                    await page.goto(popupUrl, { waitUntil: 'domcontentloaded' });
-                    await page.waitForTimeout(2000);
-                    
-                    // Take screenshot of popup
-                    const popupScreenshot = await this.takeScreenshot(page, 'chrome-popup', 'Extension popup interface');
-                    if (popupScreenshot) testResult.screenshots.push(popupScreenshot);
-                    
-                    // Test popup functionality
-                    const secretInput = await page.locator('#sharedSecret').first();
-                    const connectButton = await page.locator('#connectBtn').first();
-                    
-                    if (await secretInput.isVisible() && await connectButton.isVisible()) {
-                        // Enter shared secret and connect
-                        await secretInput.fill(this.sharedSecret);
-                        
-                        // Screenshot before connecting
-                        const beforeConnectScreenshot = await this.takeScreenshot(page, 'chrome-before-connect', 'Popup with shared secret entered');
-                        if (beforeConnectScreenshot) testResult.screenshots.push(beforeConnectScreenshot);
-                        
-                        await connectButton.click();
-                        await page.waitForTimeout(5000);
-                        
-                        // Check connection status
-                        const statusElement = await page.locator('#status').first();
-                        const statusText = await statusElement.textContent();
-                        
-                        // Screenshot after connecting
-                        const afterConnectScreenshot = await this.takeScreenshot(page, 'chrome-after-connect', 'Popup after connection attempt');
-                        if (afterConnectScreenshot) testResult.screenshots.push(afterConnectScreenshot);
-                        
-                        testResult.tests.popup_functionality = {
-                            passed: statusText && (statusText.includes('Connected') || statusText.includes('Waiting')),
-                            message: `Popup functionality: ${statusText}`,
-                            details: { statusText, sharedSecret: this.sharedSecret }
-                        };
-                    } else {
-                        testResult.tests.popup_functionality = {
-                            passed: false,
-                            message: 'Popup UI elements not found',
-                            details: { secretInputVisible: await secretInput.isVisible(), connectButtonVisible: await connectButton.isVisible() }
-                        };
-                    }
-                    
-                } catch (error) {
-                    testResult.tests.popup_functionality = {
-                        passed: false,
-                        message: `Popup test failed: ${error.message}`,
-                        details: { error: error.message }
-                    };
-                }
+                // Navigate to extension popup
+                const popupUrl = `chrome-extension://${extensionId}/popup.html`;
+                await page.goto(popupUrl, { waitUntil: 'domcontentloaded' });
+                await page.waitForTimeout(2000);
+                
+                // Take screenshot of popup
+                const popupScreenshot = await this.takeScreenshot(page, 'chrome-popup', 'Extension popup interface');
+                testResult.screenshots.push(popupScreenshot);
+                
+                // Test popup functionality
+                const secretInput = await page.locator('#sharedSecret').first();
+                const connectButton = await page.locator('#connectBtn').first();
+                
+                // Enter shared secret and connect
+                await secretInput.fill(this.sharedSecret);
+                
+                // Screenshot before connecting
+                const beforeConnectScreenshot = await this.takeScreenshot(page, 'chrome-before-connect', 'Popup with shared secret entered');
+                testResult.screenshots.push(beforeConnectScreenshot);
+                
+                await connectButton.click();
+                await page.waitForTimeout(5000);
+                
+                // Check connection status
+                const statusElement = await page.locator('#status').first();
+                const statusText = await statusElement.textContent();
+                
+                // Screenshot after connecting
+                const afterConnectScreenshot = await this.takeScreenshot(page, 'chrome-after-connect', 'Popup after connection attempt');
+                testResult.screenshots.push(afterConnectScreenshot);
+                
+                testResult.tests.popup_functionality = {
+                    passed: statusText && (statusText.includes('Connected') || statusText.includes('Waiting')),
+                    message: `Popup functionality: ${statusText}`,
+                    details: { statusText, sharedSecret: this.sharedSecret }
+                };
                 
                 // Test Trystero functionality via background script
                 console.log('  🔗 Testing Trystero functionality...');
@@ -447,7 +379,7 @@ class LocalMultiplatformSyncTester {
             
             // Final screenshot
             const finalScreenshot = await this.takeScreenshot(page, 'chrome-final', 'Chrome testing completed');
-            if (finalScreenshot) testResult.screenshots.push(finalScreenshot);
+            testResult.screenshots.push(finalScreenshot);
             
             // Determine overall success
             testResult.passed = Object.values(testResult.tests).every(test => test.passed);
@@ -502,20 +434,10 @@ class LocalMultiplatformSyncTester {
             // Find an available iPhone simulator
             console.log('  📱 Finding available iPhone simulator...');
             const deviceList = execSync('xcrun simctl list devices available', { encoding: 'utf8' });
-            
-            // Try multiple patterns for iPhone simulators
-            let iPhoneMatch = deviceList.match(/iPhone.*\(([A-F0-9-]+)\) \(Shutdown\)/);
-            if (!iPhoneMatch) {
-                // Try booted simulators
-                iPhoneMatch = deviceList.match(/iPhone.*\(([A-F0-9-]+)\) \(Booted\)/);
-            }
-            if (!iPhoneMatch) {
-                // Try any iPhone simulator pattern
-                iPhoneMatch = deviceList.match(/iPhone.*\(([A-F0-9-]+)\)/);
-            }
+            const iPhoneMatch = deviceList.match(/iPhone.*\(([A-F0-9-]+)\) \(Shutdown\)/);
             
             if (!iPhoneMatch) {
-                throw new Error('No iPhone simulator found. Available devices:\n' + deviceList);
+                throw new Error('No available iPhone simulator found');
             }
             
             const simulatorUDID = iPhoneMatch[1];
