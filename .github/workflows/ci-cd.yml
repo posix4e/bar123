@@ -72,6 +72,12 @@ jobs:
     - name: Collect comprehensive debugging information
       if: always()
       run: npm run ci:collect-debug
+      
+    - name: Generate showcase page
+      if: always()
+      env:
+        RUNNER_TEMP: ${{ runner.temp }}
+      run: npm run ci:generate-showcase
         
     - name: Upload comprehensive debugging artifacts
       if: always()
@@ -85,6 +91,14 @@ jobs:
           ios-build.log
           testflight-upload.log
           test-results/
+        retention-days: 30
+        
+    - name: Upload showcase page
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: showcase-page-${{ github.sha }}
+        path: showcase/
         retention-days: 30
         
     - name: Upload Chrome extension artifact
@@ -112,6 +126,7 @@ jobs:
           echo "📱 iOS IPA: ios-app-${{ github.sha }} ($(du -h '${{ runner.temp }}/build/bar123.ipa' | cut -f1))"
         fi
         echo "📊 Debug report: debug-report-${{ github.sha }} (always available for analysis)"
+        echo "🌐 Showcase page: showcase-page-${{ github.sha }} (comprehensive project overview)"
         echo ""
         echo "=== Quick Status ==="
         jq -r '.results | "✅ Tests: " + (if .tests.passed then "PASSED" else "FAILED" end) + ", BrowserStack: " + (if .browserstack_tests.ran then (if .browserstack_tests.passed then "PASSED" else "FAILED" end) else "SKIPPED" end) + ", iOS Build: " + (if .ios_build.passed then "PASSED" else "FAILED" end)' build-debug-report.json

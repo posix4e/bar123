@@ -34,6 +34,7 @@
     "ci:build-ios": "npm run ios-build-local 2>&1 | tee ios-build.log; echo \"IOS_BUILD_EXIT_CODE=${PIPESTATUS[0]}\" >> $GITHUB_ENV",
     "ci:upload-testflight": "npm run prepare-profiles && npm run ios-build -- --upload --apple-id $APPLE_ID --app-password $APP_SPECIFIC_PASSWORD 2>&1 | tee testflight-upload.log; echo \"TESTFLIGHT_EXIT_CODE=${PIPESTATUS[0]}\" >> $GITHUB_ENV",
     "ci:collect-debug": "node scripts/collect-debug-info.js",
+    "ci:generate-showcase": "node scripts/generate-showcase-page.js",
     "ci:package-chrome": "echo 'chrome-extension-$GITHUB_SHA.zip'",
     "ci:package-ios": "echo '$RUNNER_TEMP/build/bar123.ipa'"
   },
