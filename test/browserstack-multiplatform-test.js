@@ -416,10 +416,21 @@ class BrowserStackMultiplatformTester {
                     const uploadResult = await this.uploadExtension(chromeExtensionPath, 'chrome-history-sync');
                     chromeAppUrl = uploadResult.app_url;
                 } catch (error) {
-                    console.warn('⚠️  Chrome extension upload failed, will test without extension upload:', error.message);
+                    console.error('❌ Chrome extension upload failed:', error.message);
+                    this.addTestResult('Chrome Extension Upload', false, { error: error.message });
+                    throw new Error(`Failed to upload Chrome extension: ${error.message}`);
                 }
             } else {
-                console.warn('⚠️  Chrome extension not found, will test basic functionality only');
+                console.error('❌ Chrome extension not found - cannot run meaningful BrowserStack tests');
+                this.addTestResult('Chrome Extension Availability', false, { 
+                    error: 'Chrome extension zip file not found',
+                    searched_paths: [
+                        'chrome-extension.zip',
+                        'chrome-extension-*.zip', 
+                        'dist/chrome-extension.zip'
+                    ]
+                });
+                throw new Error('Chrome extension not found - BrowserStack tests require built extension');
             }
             
             // Test each platform
