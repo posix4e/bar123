@@ -3,17 +3,6 @@
 }
 
 body {
-<<<<<<< HEAD
-    width: 100px;
-    padding: 10px;
-
-    font-family: system-ui;
-    text-align: center;
-}
-
-@media (prefers-color-scheme: dark) {
-    /* Dark Mode styles go here. */
-=======
     width: 350px;
     padding: 0;
     margin: 0;
@@ -327,5 +316,4 @@ button {
     .empty-state {
         color: #9ca3af;
     }
->>>>>>> 6a3c53c (Initial Commit)
 }

@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log("Received request: ", request);
-
-    if (request.greeting === "hello")
-        return Promise.resolve({ farewell: "goodbye" });
-});
-=======
 class HistorySyncService {
     constructor() {
         this.isConnected = false;
@@ -526,4 +518,3 @@ class HistorySyncService {
 }
 
 const historySyncService = new HistorySyncService();
->>>>>>> 6a3c53c (Initial Commit)

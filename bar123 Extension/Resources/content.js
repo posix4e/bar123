@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-browser.runtime.sendMessage({ greeting: "hello" }).then((response) => {
-    console.log("Received response: ", response);
-});
-
-browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log("Received request: ", request);
-});
-=======
 class HistoryTracker {
     constructor() {
         this.lastUrl = window.location.href;
@@ -119,4 +110,3 @@ if (document.readyState === 'loading') {
 } else {
     new HistoryTracker();
 }
->>>>>>> 6a3c53c (Initial Commit)
