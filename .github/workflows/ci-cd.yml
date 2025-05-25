@@ -266,4 +266,4 @@ jobs:
         echo "📊 Debug report: debug-report-${{ github.sha }} (always available for analysis)"
         echo ""
         echo "=== Quick Status ==="
-        jq -r '.results | "✅ Tests: \(if .tests.passed then "PASSED" else "FAILED" end), BrowserStack: \(if .browserstack_tests.ran then (if .browserstack_tests.passed then "PASSED" else "FAILED") else "SKIPPED" end), iOS Build: \(if .ios_build.passed then "PASSED" else "FAILED" end)"' build-debug-report.json
+        jq -r '.results | "✅ Tests: " + (if .tests.passed then "PASSED" else "FAILED" end) + ", BrowserStack: " + (if .browserstack_tests.ran then (if .browserstack_tests.passed then "PASSED" else "FAILED" end) else "SKIPPED" end) + ", iOS Build: " + (if .ios_build.passed then "PASSED" else "FAILED" end)' build-debug-report.json
