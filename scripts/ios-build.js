@@ -83,16 +83,29 @@ function getProfileUUIDs() {
   const extProfilePath = path.join(profilesDir, 'extension_profile.mobileprovision');
   
   try {
-    // Extract UUIDs using grep
-    const appProfileUUID = execSync(`grep -a -A 1 UUID "${appProfilePath}" | grep -o "[-A-Za-z0-9]\\{36\\}"`).toString().trim();
-    const extProfileUUID = execSync(`grep -a -A 1 UUID "${extProfilePath}" | grep -o "[-A-Za-z0-9]\\{36\\}"`).toString().trim();
+    // Extract UUIDs using Apple's official security and plutil tools
+    console.log('Extracting UUIDs from provisioning profiles...');
+    const appProfileUUID = execSync(`security cms -D -i "${appProfilePath}" | plutil -extract UUID raw -`).toString().trim();
+    const extProfileUUID = execSync(`security cms -D -i "${extProfilePath}" | plutil -extract UUID raw -`).toString().trim();
     
     console.log(`App Profile UUID: ${appProfileUUID}`);
     console.log(`Extension Profile UUID: ${extProfileUUID}`);
     
+    // Validate UUIDs
+    if (!appProfileUUID || appProfileUUID.length !== 36) {
+      throw new Error(`Invalid app profile UUID: ${appProfileUUID}. Profile may be corrupted or invalid.`);
+    }
+    if (!extProfileUUID || extProfileUUID.length !== 36) {
+      throw new Error(`Invalid extension profile UUID: ${extProfileUUID}. Profile may be corrupted or invalid.`);
+    }
+    
     return { appProfileUUID, extProfileUUID };
   } catch (error) {
-    console.error('Error extracting profile UUIDs:', error.message);
+    console.error('❌ Failed to extract provisioning profile UUIDs:', error.message);
+    console.error('💡 Ensure that:');
+    console.error('  - Provisioning profiles are valid and not corrupted');
+    console.error('  - Profiles are properly base64 decoded');
+    console.error('  - security and plutil commands are available (standard on macOS)');
     process.exit(1);
   }
 }
@@ -203,16 +216,19 @@ function uploadToTestFlight(ipaPath) {
   console.log('Uploading to TestFlight...');
   
   try {
-    execSync(`xcrun altool --upload-app -f "${ipaPath}" \
-      -t ios \
-      -u "${options.appleId}" \
-      -p "${options.appPassword}" \
+    // Use xcrun notarytool for uploading (replaces deprecated altool)
+    execSync(`xcrun notarytool submit "${ipaPath}" \
+      --apple-id "${options.appleId}" \
+      --password "${options.appPassword}" \
+      --team-id "2858MX5336" \
+      --wait \
       --verbose`, 
       { stdio: 'inherit' });
     
     console.log('TestFlight upload complete.');
   } catch (error) {
     console.error('Error uploading to TestFlight:', error.message);
+    console.error('Note: Ensure you have the latest Xcode command line tools installed');
     process.exit(1);
   }
 }
@@ -232,23 +248,61 @@ function cleanup() {
 
 // Main function
 async function main() {
+  let buildSuccess = false;
+  let archivePath = null;
+  let ipaPath = null;
+  
   try {
+    console.log('=== iOS Build Process Starting ===');
+    console.log(`Node version: ${process.version}`);
+    console.log(`Working directory: ${process.cwd()}`);
+    console.log(`Output directory: ${options.output}`);
+    console.log(`Upload to TestFlight: ${options.upload ? 'YES' : 'NO'}`);
+    
     setupCodeSigning();
     const uuids = getProfileUUIDs();
-    const archivePath = buildArchive(uuids);
+    archivePath = buildArchive(uuids);
     const exportOptionsPath = createExportOptions(uuids);
-    const ipaPath = exportIPA(archivePath, exportOptionsPath);
+    ipaPath = exportIPA(archivePath, exportOptionsPath);
+    
+    // Verify IPA was created successfully
+    if (!fs.existsSync(ipaPath)) {
+      throw new Error(`IPA file not found at expected path: ${ipaPath}`);
+    }
+    
+    const ipaStats = fs.statSync(ipaPath);
+    console.log(`IPA created successfully: ${ipaPath} (${(ipaStats.size / 1024 / 1024).toFixed(2)} MB)`);
     
     if (options.upload) {
       uploadToTestFlight(ipaPath);
     }
     
-    console.log('Build process completed successfully!');
+    buildSuccess = true;
+    console.log('=== Build process completed successfully! ===');
   } catch (error) {
-    console.error('Build process failed:', error.message);
+    console.error('=== Build process failed ===');
+    console.error('Error:', error.message);
+    console.error('Stack:', error.stack);
+    
+    // Log build artifacts status
+    if (archivePath && fs.existsSync(archivePath)) {
+      console.log(`Archive exists: ${archivePath}`);
+    }
+    if (ipaPath && fs.existsSync(ipaPath)) {
+      console.log(`IPA exists: ${ipaPath}`);
+    }
+    
     process.exit(1);
   } finally {
     cleanup();
+    
+    // Final status summary
+    console.log('=== Build Summary ===');
+    console.log(`Status: ${buildSuccess ? 'SUCCESS' : 'FAILED'}`);
+    if (ipaPath && fs.existsSync(ipaPath)) {
+      const ipaStats = fs.statSync(ipaPath);
+      console.log(`Final IPA: ${ipaPath} (${(ipaStats.size / 1024 / 1024).toFixed(2)} MB)`);
+    }
   }
 }
 
