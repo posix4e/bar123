@@ -280,20 +280,6 @@ class ShowcasePageGenerator {
             border: 1px solid #dee2e6;
         }
 
-        .screenshot-placeholder {
-            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
-                        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
-                        linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
-                        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-            height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #6c757d;
-            font-style: italic;
-        }
 
         .screenshot-info {
             padding: 15px;
@@ -566,39 +552,8 @@ class ShowcasePageGenerator {
         if (!this.browserstackResults) {
             return `
             <div class="card">
-                <h2>🌐 BrowserStack Multiplatform Testing</h2>
-                <p>BrowserStack test results not available</p>
-                <div class="screenshot-gallery">
-                    <div class="screenshot-card">
-                        <div class="screenshot-placeholder">
-                            Screenshot: Chrome on Windows 11
-                        </div>
-                        <div class="screenshot-info">
-                            <h4>Chrome on Windows 11</h4>
-                            <p>Desktop extension functionality testing</p>
-                        </div>
-                    </div>
-                    
-                    <div class="screenshot-card">
-                        <div class="screenshot-placeholder">
-                            Screenshot: Safari on iPhone 15 Pro
-                        </div>
-                        <div class="screenshot-info">
-                            <h4>Safari on iPhone 15 Pro</h4>
-                            <p>iOS Safari Web Extension testing</p>
-                        </div>
-                    </div>
-                    
-                    <div class="screenshot-card">
-                        <div class="screenshot-placeholder">
-                            Screenshot: Cross-platform sync demo
-                        </div>
-                        <div class="screenshot-info">
-                            <h4>Cross-Platform Sync</h4>
-                            <p>Real-time history synchronization between devices</p>
-                        </div>
-                    </div>
-                </div>
+                <h2>🌐 Local Testing Results</h2>
+                <p>Local multiplatform tests completed - see test results section for details</p>
             </div>`;
         }
 
@@ -623,9 +578,11 @@ class ShowcasePageGenerator {
                 `).join('')}
             </div>
             
+            ${this.generatePlatformScreenshots(platformResults) ? `
             <div class="screenshot-gallery">
                 ${this.generatePlatformScreenshots(platformResults)}
             </div>
+            ` : ''}
             
             ${this.browserstackResults.sync_tests?.length > 0 ? `
             <div style="margin-top: 30px;">
@@ -675,22 +632,8 @@ class ShowcasePageGenerator {
             }).join('');
         }
         
-        // Fallback to platform-based placeholders if no screenshots
-        return platforms.map(platform => `
-            <div class="screenshot-card">
-                <div class="screenshot-placeholder">
-                    Screenshot: ${platform.platform}
-                </div>
-                <div class="screenshot-info">
-                    <h4>${platform.platform}</h4>
-                    <p>${platform.platform_type === 'chrome_desktop' ? 'Desktop browser extension' : 'iOS Safari Web Extension'}</p>
-                    <div style="margin-top: 10px; font-size: 0.9rem; color: #6c757d;">
-                        Tests: ${Object.keys(platform.tests || {}).length} | 
-                        Status: ${platform.passed ? 'Passed' : 'Failed'}
-                    </div>
-                </div>
-            </div>
-        `).join('');
+        // Return empty if no real screenshots available
+        return '';
     }
 
     generateInstallationGuide() {
@@ -819,6 +762,19 @@ class ShowcasePageGenerator {
 
     async generate() {
         console.log('🎨 Generating showcase webpage...');
+        
+        // Check for required screenshots first
+        const screenshotsDir = 'test-results/local-multiplatform/screenshots';
+        if (!fs.existsSync(screenshotsDir)) {
+            throw new Error(`❌ Screenshots directory not found: ${screenshotsDir}. Run tests first to generate screenshots.`);
+        }
+        
+        const screenshotFiles = fs.readdirSync(screenshotsDir).filter(f => f.endsWith('.png'));
+        if (screenshotFiles.length === 0) {
+            throw new Error(`❌ No screenshot files found in ${screenshotsDir}. Run tests first to generate screenshots.`);
+        }
+        
+        console.log(`📸 Found ${screenshotFiles.length} screenshots for showcase`);
         
         // Create output directory
         if (!fs.existsSync(this.outputDir)) {
