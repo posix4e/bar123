@@ -243,6 +243,8 @@ function createDebugReport() {
     const iosExitCode = parseInt(process.env.IOS_BUILD_EXIT_CODE || '0');
     const testflightExitCode = process.env.TESTFLIGHT_EXIT_CODE ? parseInt(process.env.TESTFLIGHT_EXIT_CODE) : null;
     
+    const localMultiplatformExitCode = parseInt(process.env.LOCAL_MULTIPLATFORM_TEST_EXIT_CODE || '0');
+    
     const report = {
         metadata: {
             timestamp: new Date().toISOString(),
@@ -256,6 +258,10 @@ function createDebugReport() {
             tests: {
                 exit_code: testExitCode,
                 passed: testExitCode === 0
+            },
+            local_tests: {
+                exit_code: localMultiplatformExitCode,
+                passed: localMultiplatformExitCode === 0
             },
             browserstack_tests: {
                 exit_code: browserstackExitCode,
