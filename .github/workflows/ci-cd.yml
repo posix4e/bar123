@@ -62,9 +62,9 @@ jobs:
         RUNNER_TEMP: ${{ runner.temp }}
       run: npm run ci:build-ios
       
-    # TestFlight Upload - Only for main branch and tags
+    # TestFlight Upload - For main branch (development) and test-testflight branch
     - name: Upload to TestFlight
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/test-testflight')
       env:
         BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
         P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
@@ -99,9 +99,46 @@ jobs:
           test-results/
         retention-days: 30
         
-    # Deploy to GitHub Pages - Only for main branch
+    # Production Release Assets - Only for git releases/tags
+    - name: Create production release assets
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        echo "🚀 Creating production release assets for tag: ${GITHUB_REF#refs/tags/}"
+        
+        # Create release directory
+        mkdir -p release-assets
+        
+        # Copy Chrome extension with version tag
+        if [ -f "chrome-extension-${{ github.sha }}.zip" ]; then
+          cp "chrome-extension-${{ github.sha }}.zip" "release-assets/bar123-chrome-extension-${GITHUB_REF#refs/tags/}.zip"
+        fi
+        
+        # Copy iOS IPA with version tag  
+        if [ -f "${{ runner.temp }}/build/bar123.ipa" ]; then
+          cp "${{ runner.temp }}/build/bar123.ipa" "release-assets/bar123-ios-${GITHUB_REF#refs/tags/}.ipa"
+        fi
+        
+        # Create release notes from changelog
+        echo "# Release ${GITHUB_REF#refs/tags/}" > release-assets/RELEASE_NOTES.md
+        echo "" >> release-assets/RELEASE_NOTES.md
+        echo "## Downloads" >> release-assets/RELEASE_NOTES.md  
+        echo "- **Chrome Extension**: bar123-chrome-extension-${GITHUB_REF#refs/tags/}.zip" >> release-assets/RELEASE_NOTES.md
+        echo "- **iOS App**: bar123-ios-${GITHUB_REF#refs/tags/}.ipa" >> release-assets/RELEASE_NOTES.md
+        echo "" >> release-assets/RELEASE_NOTES.md
+        echo "Built from commit: ${{ github.sha }}" >> release-assets/RELEASE_NOTES.md
+        
+    # Upload production release assets
+    - name: Upload release assets  
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/upload-artifact@v4
+      with:
+        name: production-release-${GITHUB_REF#refs/tags/}
+        path: release-assets/
+        retention-days: 365
+
+    # Deploy to GitHub Pages - Only for main branch and test-pages branch  
     - name: Deploy showcase to GitHub Pages
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/test-pages')
       run: |
         # Configure git for deployment
         git config --local user.email "action@github.com"

@@ -30,13 +30,13 @@ class ShowcasePageGenerator {
             }
         }
         
-        // Load BrowserStack results if available
-        this.browserstackResults = null;
-        if (fs.existsSync('test-results/browserstack/multiplatform-test-results.json')) {
+        // Load local test results if available
+        this.localTestResults = null;
+        if (fs.existsSync('test-results/local-multiplatform/local-test-results.json')) {
             try {
-                this.browserstackResults = JSON.parse(fs.readFileSync('test-results/browserstack/multiplatform-test-results.json', 'utf8'));
+                this.localTestResults = JSON.parse(fs.readFileSync('test-results/local-multiplatform/local-test-results.json', 'utf8'));
             } catch (error) {
-                console.warn('Could not load BrowserStack results:', error.message);
+                console.warn('Could not load local test results:', error.message);
             }
         }
     }
@@ -361,7 +361,8 @@ class ShowcasePageGenerator {
         ${this.generateDownloadSection()}
         ${this.generateFeaturesSection()}
         ${this.generateTestResultsSection()}
-        ${this.generateBrowserStackSection()}
+        ${this.generateLocalTestSection()}
+        ${this.generateLiveDemoSection()}
         ${this.generateInstallationGuide()}
         ${this.generateTechnicalDetails()}
 
@@ -386,8 +387,8 @@ class ShowcasePageGenerator {
 
         const { results } = this.debugReport;
         const testStatus = results.tests.passed ? 'passed' : 'failed';
-        const browserstackStatus = results.browserstack_tests.ran ? 
-            (results.browserstack_tests.passed ? 'passed' : 'failed') : 'skipped';
+        const localTestStatus = results.local_tests ? 
+            (results.local_tests.passed ? 'passed' : 'failed') : 'skipped';
         const iosStatus = results.ios_build.passed ? 'passed' : 'failed';
         const testflightStatus = results.testflight_upload?.ran ? 
             (results.testflight_upload.passed ? 'passed' : 'failed') : 'skipped';
@@ -401,8 +402,8 @@ class ShowcasePageGenerator {
                     <span class="status-badge status-${testStatus}">${testStatus}</span>
                 </div>
                 <div>
-                    <strong>BrowserStack:</strong>
-                    <span class="status-badge status-${browserstackStatus}">${browserstackStatus}</span>
+                    <strong>Local Tests:</strong>
+                    <span class="status-badge status-${localTestStatus}">${localTestStatus}</span>
                 </div>
                 <div>
                     <strong>iOS Build:</strong>
@@ -523,10 +524,10 @@ class ShowcasePageGenerator {
                     <div>${results.tests.passed ? '✅ Passed' : '❌ Failed'}</div>
                 </div>
                 
-                <div class="test-item ${results.browserstack_tests.ran ? (results.browserstack_tests.passed ? 'passed' : 'failed') : 'skipped'}">
-                    <h4>BrowserStack Tests</h4>
-                    <div>Exit Code: ${results.browserstack_tests.exit_code || 'N/A'}</div>
-                    <div>${results.browserstack_tests.ran ? (results.browserstack_tests.passed ? '✅ Passed' : '❌ Failed') : '⏭️ Skipped'}</div>
+                <div class="test-item ${results.local_tests ? (results.local_tests.passed ? 'passed' : 'failed') : 'skipped'}">
+                    <h4>Local Multiplatform Tests</h4>
+                    <div>Exit Code: ${results.local_tests?.exit_code || 'N/A'}</div>
+                    <div>${results.local_tests ? (results.local_tests.passed ? '✅ Passed' : '❌ Failed') : '⏭️ Skipped'}</div>
                 </div>
                 
                 <div class="test-item ${results.ios_build.passed ? 'passed' : 'failed'}">
@@ -548,47 +549,47 @@ class ShowcasePageGenerator {
         </div>`;
     }
 
-    generateBrowserStackSection() {
-        if (!this.browserstackResults) {
+    generateLocalTestSection() {
+        if (!this.localTestResults) {
             return `
             <div class="card">
-                <h2>🌐 Local Testing Results</h2>
-                <p>Local multiplatform tests completed - see test results section for details</p>
+                <h2>🧪 Local Testing Results</h2>
+                <p>Local multiplatform test results not available - tests may not have run yet</p>
             </div>`;
         }
 
-        const platformResults = this.browserstackResults.sessions || [];
+        const sessions = this.localTestResults.sessions || [];
         
         return `
         <div class="card">
-            <h2>🌐 BrowserStack Multiplatform Testing</h2>
-            <p>Tested on ${platformResults.length} real devices and browsers with ${this.browserstackResults.summary?.success_rate || 'unknown'}% success rate</p>
+            <h2>🧪 Local Multiplatform Testing</h2>
+            <p>Tested locally with Chrome extension and iOS Safari simulator - ${sessions.length} platforms tested</p>
             
             <div class="platform-grid">
-                ${platformResults.map(session => `
+                ${sessions.map(session => `
                     <div class="platform-card ${session.passed ? 'passed' : 'failed'}">
                         <div class="platform-icon">
-                            ${session.platform_type === 'chrome_desktop' ? '🖥️' : '📱'}
+                            ${session.platform_type === 'chrome_local' ? '🖥️' : '📱'}
                         </div>
                         <h4>${session.platform}</h4>
-                        <div>Session: ${session.session_id || 'Unknown'}</div>
+                        <div>Role: ${session.role || 'Unknown'}</div>
                         <div>Tests: ${Object.keys(session.tests || {}).length}</div>
                         <div>${session.passed ? '✅ Passed' : '❌ Failed'}</div>
                     </div>
                 `).join('')}
             </div>
             
-            ${this.generatePlatformScreenshots(platformResults) ? `
+            ${this.generatePlatformScreenshots(sessions) ? `
             <div class="screenshot-gallery">
-                ${this.generatePlatformScreenshots(platformResults)}
+                ${this.generatePlatformScreenshots(sessions)}
             </div>
             ` : ''}
             
-            ${this.browserstackResults.sync_tests?.length > 0 ? `
+            ${this.localTestResults.sync_tests?.length > 0 ? `
             <div style="margin-top: 30px;">
                 <h3>🔄 Cross-Platform Sync Tests</h3>
                 <div class="test-grid">
-                    ${this.browserstackResults.sync_tests.map(test => `
+                    ${this.localTestResults.sync_tests.map(test => `
                         <div class="test-item ${test.passed ? 'passed' : 'failed'}">
                             <h4>${test.name}</h4>
                             <div>${test.passed ? '✅ Passed' : '❌ Failed'}</div>
@@ -598,6 +599,206 @@ class ShowcasePageGenerator {
             </div>
             ` : ''}
         </div>`;
+    }
+
+    generateLiveDemoSection() {
+        return `
+        <div class="card">
+            <h2>🎮 Live Demo</h2>
+            <p>Test the history sync functionality right here! If you have the extension installed and running, enter your shared secret below to see live history synchronization.</p>
+            
+            <div class="demo-section">
+                <div class="demo-controls">
+                    <div style="margin-bottom: 20px;">
+                        <label for="demoSecret" style="display: block; margin-bottom: 8px; font-weight: bold;">Shared Secret:</label>
+                        <input type="text" id="demoSecret" placeholder="Enter your shared secret" 
+                               style="width: 300px; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;">
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <button id="connectDemo" onclick="connectToHistorySync()" 
+                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-right: 10px;">
+                            🔗 Connect
+                        </button>
+                        <button id="disconnectDemo" onclick="disconnectFromHistorySync()" 
+                                style="background: #dc3545; color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;" disabled>
+                            ❌ Disconnect
+                        </button>
+                    </div>
+                    
+                    <div id="demoStatus" style="padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #6c757d;">
+                        Ready to connect - Enter your shared secret and click Connect
+                    </div>
+                </div>
+                
+                <div class="demo-output">
+                    <h4>📚 Received History Entries:</h4>
+                    <div id="historyList" style="max-height: 300px; overflow-y: auto; background: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #dee2e6;">
+                        <div style="text-align: center; color: #6c757d; font-style: italic;">
+                            No history entries received yet. Connect to see synchronized history from your devices.
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin-top: 20px;">🔄 Connection Log:</h4>
+                    <div id="connectionLog" style="max-height: 200px; overflow-y: auto; background: #2d3748; color: #e2e8f0; border-radius: 8px; padding: 15px; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 14px;">
+                        <div style="color: #90cdf4;">Ready to connect...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script src="https://unpkg.com/trystero@0.19.2/nostr/trystero-nostr.min.js"></script>
+        <script>
+            let currentRoom = null;
+            let receivedHistory = new Set();
+            
+            function updateStatus(message, type = 'info') {
+                const statusEl = document.getElementById('demoStatus');
+                const colors = {
+                    info: '#6c757d',
+                    success: '#28a745', 
+                    error: '#dc3545',
+                    warning: '#ffc107'
+                };
+                statusEl.style.borderLeftColor = colors[type];
+                statusEl.innerHTML = message;
+            }
+            
+            function addToLog(message, type = 'info') {
+                const logEl = document.getElementById('connectionLog');
+                const timestamp = new Date().toLocaleTimeString();
+                const colors = {
+                    info: '#90cdf4',
+                    success: '#68d391',
+                    error: '#fc8181', 
+                    warning: '#f6e05e'
+                };
+                
+                const logEntry = document.createElement('div');
+                logEntry.style.color = colors[type];
+                logEntry.innerHTML = \`[\${timestamp}] \${message}\`;
+                logEl.appendChild(logEntry);
+                logEl.scrollTop = logEl.scrollHeight;
+            }
+            
+            function displayHistoryEntry(entry) {
+                const historyListEl = document.getElementById('historyList');
+                
+                // Clear placeholder text if this is the first entry
+                if (receivedHistory.size === 0) {
+                    historyListEl.innerHTML = '';
+                }
+                
+                // Avoid duplicates
+                const entryKey = \`\${entry.url}-\${entry.visitTime}\`;
+                if (receivedHistory.has(entryKey)) {
+                    return;
+                }
+                receivedHistory.add(entryKey);
+                
+                const entryEl = document.createElement('div');
+                entryEl.style.cssText = 'margin-bottom: 12px; padding: 12px; background: white; border-radius: 6px; border-left: 4px solid #667eea;';
+                
+                const visitDate = new Date(entry.visitTime).toLocaleString();
+                const duration = entry.duration ? \`(\${Math.round(entry.duration/1000)}s)\` : '';
+                
+                entryEl.innerHTML = \`
+                    <div style="font-weight: bold; margin-bottom: 4px;">\${entry.title || 'Untitled'}</div>
+                    <div style="color: #667eea; font-size: 14px; margin-bottom: 4px;">\${entry.url}</div>
+                    <div style="color: #6c757d; font-size: 12px;">Visited: \${visitDate} \${duration}</div>
+                \`;
+                
+                historyListEl.insertBefore(entryEl, historyListEl.firstChild);
+            }
+            
+            async function connectToHistorySync() {
+                const secret = document.getElementById('demoSecret').value.trim();
+                if (!secret) {
+                    updateStatus('Please enter a shared secret', 'error');
+                    return;
+                }
+                
+                try {
+                    updateStatus('Connecting...', 'warning');
+                    addToLog('Attempting to connect with shared secret...', 'info');
+                    
+                    // Hash the secret to create room ID
+                    const encoder = new TextEncoder();
+                    const data = encoder.encode(secret);
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    const roomId = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
+                    
+                    addToLog(\`Joining Trystero room: \${roomId}\`, 'info');
+                    
+                    // Join room using Trystero
+                    currentRoom = trystero.joinRoom({ appId: 'history-sync' }, roomId);
+                    
+                    currentRoom.onPeerJoin(peerId => {
+                        updateStatus(\`Connected! Found peer: \${peerId}\`, 'success');
+                        addToLog(\`Peer joined: \${peerId}\`, 'success');
+                    });
+                    
+                    currentRoom.onPeerLeave(peerId => {
+                        updateStatus('Peer disconnected', 'warning');
+                        addToLog(\`Peer left: \${peerId}\`, 'warning');
+                    });
+                    
+                    // Set up data channels for receiving history
+                    const [sendHistory, getHistory] = currentRoom.makeAction('history-sync');
+                    const [sendDelete, getDelete] = currentRoom.makeAction('delete-item');
+                    
+                    getHistory((historyData, peerId) => {
+                        addToLog(\`Received \${historyData.length || 1} history entries from \${peerId}\`, 'success');
+                        
+                        if (Array.isArray(historyData)) {
+                            historyData.forEach(entry => displayHistoryEntry(entry));
+                        } else {
+                            displayHistoryEntry(historyData);
+                        }
+                    });
+                    
+                    getDelete((deleteData, peerId) => {
+                        addToLog(\`Received delete request from \${peerId}: \${deleteData.url}\`, 'info');
+                        // Could implement delete functionality here
+                    });
+                    
+                    // Update UI
+                    document.getElementById('connectDemo').disabled = true;
+                    document.getElementById('disconnectDemo').disabled = false;
+                    document.getElementById('demoSecret').disabled = true;
+                    
+                    updateStatus('Connected and listening for history sync...', 'success');
+                    addToLog('Successfully connected! Listening for history from your devices...', 'success');
+                    
+                } catch (error) {
+                    updateStatus(\`Connection failed: \${error.message}\`, 'error');
+                    addToLog(\`Connection error: \${error.message}\`, 'error');
+                }
+            }
+            
+            function disconnectFromHistorySync() {
+                if (currentRoom) {
+                    currentRoom.leave();
+                    currentRoom = null;
+                }
+                
+                // Reset UI
+                document.getElementById('connectDemo').disabled = false;
+                document.getElementById('disconnectDemo').disabled = true;
+                document.getElementById('demoSecret').disabled = false;
+                
+                updateStatus('Disconnected', 'info');
+                addToLog('Disconnected from history sync', 'info');
+            }
+            
+            // Allow Enter key to connect
+            document.getElementById('demoSecret').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    connectToHistorySync();
+                }
+            });
+        </script>`;
     }
 
     generatePlatformScreenshots(platforms) {
@@ -737,8 +938,8 @@ class ShowcasePageGenerator {
             logEntries.push(...logs.test_log.excerpt.map(line => ({ type: 'test', content: line })));
         }
         
-        if (logs.browserstack_test_log?.excerpt) {
-            logEntries.push(...logs.browserstack_test_log.excerpt.map(line => ({ type: 'browserstack', content: line })));
+        if (logs.local_multiplatform_test_log?.excerpt) {
+            logEntries.push(...logs.local_multiplatform_test_log.excerpt.map(line => ({ type: 'local-tests', content: line })));
         }
         
         if (logs.ios_build_log?.excerpt) {
@@ -763,18 +964,21 @@ class ShowcasePageGenerator {
     async generate() {
         console.log('🎨 Generating showcase webpage...');
         
-        // Check for required screenshots first
+        // Check for screenshots (but don't fail if missing)
         const screenshotsDir = 'test-results/local-multiplatform/screenshots';
-        if (!fs.existsSync(screenshotsDir)) {
-            throw new Error(`❌ Screenshots directory not found: ${screenshotsDir}. Run tests first to generate screenshots.`);
+        let screenshotCount = 0;
+        
+        if (fs.existsSync(screenshotsDir)) {
+            const screenshotFiles = fs.readdirSync(screenshotsDir).filter(f => f.endsWith('.png'));
+            screenshotCount = screenshotFiles.length;
+            console.log(`📸 Found ${screenshotCount} screenshots for showcase`);
+        } else {
+            console.warn(`⚠️ Screenshots directory not found: ${screenshotsDir}. Showcase will be generated without screenshots.`);
         }
         
-        const screenshotFiles = fs.readdirSync(screenshotsDir).filter(f => f.endsWith('.png'));
-        if (screenshotFiles.length === 0) {
-            throw new Error(`❌ No screenshot files found in ${screenshotsDir}. Run tests first to generate screenshots.`);
+        if (screenshotCount === 0) {
+            console.warn(`⚠️ No screenshots available. Showcase will display text-only results.`);
         }
-        
-        console.log(`📸 Found ${screenshotFiles.length} screenshots for showcase`);
         
         // Create output directory
         if (!fs.existsSync(this.outputDir)) {

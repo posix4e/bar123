@@ -46,13 +46,13 @@ function collectLogInfo() {
         };
     }
     
-    // Collect BrowserStack log info  
-    if (fs.existsSync('browserstack-test-output.log')) {
-        const browserstackLogSize = execSync('wc -l < browserstack-test-output.log', { encoding: 'utf8' }).trim();
-        const browserstackLogExcerpt = execSync('tail -20 browserstack-test-output.log | jq -R . | jq -s .', { encoding: 'utf8' });
-        logs.browserstack_test_log = {
-            size_lines: parseInt(browserstackLogSize),
-            excerpt: JSON.parse(browserstackLogExcerpt)
+    // Collect local multiplatform test log info  
+    if (fs.existsSync('local-multiplatform-test-output.log')) {
+        const localTestLogSize = execSync('wc -l < local-multiplatform-test-output.log', { encoding: 'utf8' }).trim();
+        const localTestLogExcerpt = execSync('tail -20 local-multiplatform-test-output.log | jq -R . | jq -s .', { encoding: 'utf8' });
+        logs.local_multiplatform_test_log = {
+            size_lines: parseInt(localTestLogSize),
+            excerpt: JSON.parse(localTestLogExcerpt)
         };
     }
     
@@ -84,7 +84,7 @@ function analyzeErrors() {
     
     const errors = [];
     const testExitCode = parseInt(process.env.TEST_EXIT_CODE || '0');
-    const browserstackExitCode = process.env.BROWSERSTACK_TEST_EXIT_CODE ? parseInt(process.env.BROWSERSTACK_TEST_EXIT_CODE) : null;
+    const localTestExitCode = process.env.LOCAL_MULTIPLATFORM_TEST_EXIT_CODE ? parseInt(process.env.LOCAL_MULTIPLATFORM_TEST_EXIT_CODE) : null;
     const iosExitCode = parseInt(process.env.IOS_BUILD_EXIT_CODE || '0');
     const testflightExitCode = process.env.TESTFLIGHT_EXIT_CODE ? parseInt(process.env.TESTFLIGHT_EXIT_CODE) : null;
     
@@ -120,37 +120,37 @@ function analyzeErrors() {
         });
     }
     
-    // Analyze BrowserStack failures
-    if (browserstackExitCode !== null && browserstackExitCode !== 0) {
-        console.log('Analyzing BrowserStack failures...');
-        let codeSignErrors = [];
-        let buildErrors = [];
+    // Analyze local multiplatform test failures
+    if (localTestExitCode !== null && localTestExitCode !== 0) {
+        console.log('Analyzing local multiplatform test failures...');
+        let testErrors = [];
         
-        if (fs.existsSync('browserstack-test-output.log')) {
+        if (fs.existsSync('local-multiplatform-test-output.log')) {
             try {
-                const browserstackOutput = fs.readFileSync('browserstack-test-output.log', 'utf8');
+                const localTestOutput = fs.readFileSync('local-multiplatform-test-output.log', 'utf8');
                 
-                // Look for extension/upload errors
-                const extensionMatches = browserstackOutput.split('\n')
-                    .filter(line => /extension.*not found|upload.*failed|browserstack.*error/i.test(line))
-                    .slice(0, 3);
+                // Look for test errors
+                const errorMatches = localTestOutput.split('\n')
+                    .filter(line => /error|failed|timeout|screenshot.*failed/i.test(line))
+                    .slice(0, 5);
                 
-                buildErrors = extensionMatches;
+                testErrors = errorMatches;
                 
             } catch (error) {
-                console.warn('Could not analyze BrowserStack output:', error.message);
+                console.warn('Could not analyze local test output:', error.message);
             }
         }
         
         errors.push({
-            type: 'browserstack_failure',
-            exit_code: browserstackExitCode,
-            log_file: 'browserstack-test-output.log',
-            extension_errors: buildErrors,
+            type: 'local_test_failure',
+            exit_code: localTestExitCode,
+            log_file: 'local-multiplatform-test-output.log',
+            test_errors: testErrors,
             suggested_actions: [
-                'Check Chrome extension build process',
-                'Verify BrowserStack credentials',
-                'Review extension upload requirements'
+                'Check Chrome extension loading',
+                'Verify Playwright browser installation',
+                'Review iOS Simulator availability',
+                'Check test screenshot generation'
             ]
         });
     }
@@ -239,7 +239,7 @@ function createDebugReport() {
     console.log('=== Creating comprehensive debug report ===');
     
     const testExitCode = parseInt(process.env.TEST_EXIT_CODE || '0');
-    const browserstackExitCode = process.env.BROWSERSTACK_TEST_EXIT_CODE ? parseInt(process.env.BROWSERSTACK_TEST_EXIT_CODE) : null;
+    const localTestExitCode = process.env.LOCAL_MULTIPLATFORM_TEST_EXIT_CODE ? parseInt(process.env.LOCAL_MULTIPLATFORM_TEST_EXIT_CODE) : null;
     const iosExitCode = parseInt(process.env.IOS_BUILD_EXIT_CODE || '0');
     const testflightExitCode = process.env.TESTFLIGHT_EXIT_CODE ? parseInt(process.env.TESTFLIGHT_EXIT_CODE) : null;
     
@@ -257,10 +257,10 @@ function createDebugReport() {
                 exit_code: testExitCode,
                 passed: testExitCode === 0
             },
-            browserstack_tests: {
-                exit_code: browserstackExitCode,
-                passed: browserstackExitCode === null ? null : browserstackExitCode === 0,
-                ran: browserstackExitCode !== null
+            local_tests: {
+                exit_code: localTestExitCode,
+                passed: localTestExitCode === null ? null : localTestExitCode === 0,
+                ran: localTestExitCode !== null
             },
             ios_build: {
                 exit_code: iosExitCode,
@@ -287,7 +287,7 @@ function createDebugReport() {
     console.log('=== Debug report created ===');
     console.log(`Report size: ${fs.statSync('build-debug-report.json').size} bytes`);
     console.log('Summary:');
-    console.log(`Tests: ${testExitCode} (${testExitCode === 0 ? 'PASSED' : 'FAILED'}), BrowserStack: ${browserstackExitCode === null ? 'SKIPPED' : (browserstackExitCode === 0 ? 'PASSED' : 'FAILED')}, iOS Build: ${iosExitCode} (${iosExitCode === 0 ? 'PASSED' : 'FAILED'})`);
+    console.log(`Tests: ${testExitCode} (${testExitCode === 0 ? 'PASSED' : 'FAILED'}), Local Tests: ${localTestExitCode === null ? 'SKIPPED' : (localTestExitCode === 0 ? 'PASSED' : 'FAILED')}, iOS Build: ${iosExitCode} (${iosExitCode === 0 ? 'PASSED' : 'FAILED'})`);
     console.log(`Errors found: ${report.error_analysis.length}`);
     
     return report;
