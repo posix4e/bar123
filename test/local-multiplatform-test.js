@@ -105,7 +105,10 @@ class LocalMultiplatformSyncTester {
             // Launch Chrome with extension loaded (must be non-headless for extensions)
             const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
             
-            userDataDir = path.join(process.cwd(), 'test-results/local-multiplatform/chrome-profile-' + Date.now());
+            // Generate unique profile directory and ports
+            const testId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            userDataDir = path.join(process.cwd(), 'test-results/local-multiplatform/chrome-profile-' + testId);
+            const debuggingPort = 9222 + Math.floor(Math.random() * 1000); // Random port to avoid conflicts
             
             browser = await chromium.launchPersistentContext(userDataDir, {
                 headless: false, // Extensions require non-headless mode
@@ -118,6 +121,10 @@ class LocalMultiplatformSyncTester {
                     '--no-first-run',
                     '--disable-features=VizDisplayCompositor,VizServiceDisplay',
                     '--disable-blink-features=AutomationControlled',
+                    `--remote-debugging-port=${debuggingPort}`,
+                    '--no-default-browser-check',
+                    '--disable-default-apps',
+                    '--disable-component-extensions-with-background-pages',
                     ...(isCI ? [
                         '--disable-gpu',
                         '--disable-dev-shm-usage', 
@@ -391,20 +398,43 @@ class LocalMultiplatformSyncTester {
                 details: { error: error.message, stack: error.stack }
             };
         } finally {
-            // Cleanup browser
+            // Cleanup browser with proper error handling and timeout
             if (browser) {
                 try {
-                    await browser.close();
+                    console.log('🧹 Closing Chrome browser...');
+                    await Promise.race([
+                        browser.close(),
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Browser close timeout')), 10000)
+                        )
+                    ]);
+                    console.log('✅ Chrome browser closed successfully');
                 } catch (error) {
                     console.warn('Warning: Browser close failed:', error.message);
+                    
+                    // Force kill any remaining Chrome processes started by this test
+                    try {
+                        const { execSync } = require('child_process');
+                        if (userDataDir && userDataDir.includes('chrome-profile-')) {
+                            const profileId = userDataDir.split('chrome-profile-')[1];
+                            // Kill any Chrome processes using our test profile
+                            execSync(`pkill -f "chrome-profile-${profileId}" || true`, { stdio: 'ignore' });
+                        }
+                    } catch (killError) {
+                        console.warn('Warning: Force kill failed:', killError.message);
+                    }
                 }
             }
+            
+            // Wait a moment for processes to fully terminate
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
             // Cleanup user data directory
             if (userDataDir && fs.existsSync(userDataDir)) {
                 try {
                     console.log(`🧹 Cleaning up Chrome profile: ${userDataDir}`);
                     this.removeDirectory(userDataDir);
+                    console.log('✅ Chrome profile cleaned up');
                 } catch (error) {
                     console.warn(`Warning: Failed to cleanup Chrome profile: ${error.message}`);
                 }
@@ -851,6 +881,48 @@ class LocalMultiplatformSyncTester {
         fs.rmdirSync(dirPath);
     }
 
+    async performPreTestCleanup() {
+        console.log('🧹 Performing pre-test cleanup...');
+        
+        try {
+            // Kill any lingering Chrome processes from previous tests
+            const { execSync } = require('child_process');
+            try {
+                execSync('pkill -f "chrome-profile-" || true', { stdio: 'ignore' });
+                console.log('🧹 Cleaned up any lingering Chrome test processes');
+            } catch (error) {
+                // Expected to fail if no processes found
+            }
+            
+            // Clean up old test artifacts
+            const testResultsDir = path.join(process.cwd(), 'test-results/local-multiplatform');
+            if (fs.existsSync(testResultsDir)) {
+                const files = fs.readdirSync(testResultsDir);
+                for (const file of files) {
+                    if (file.startsWith('chrome-profile-') || file.startsWith('safari-test-')) {
+                        const filePath = path.join(testResultsDir, file);
+                        try {
+                            if (fs.lstatSync(filePath).isDirectory()) {
+                                this.removeDirectory(filePath);
+                            } else {
+                                fs.unlinkSync(filePath);
+                            }
+                            console.log(`🧹 Pre-cleaned: ${file}`);
+                        } catch (error) {
+                            console.warn(`Warning: Failed to pre-cleanup ${file}: ${error.message}`);
+                        }
+                    }
+                }
+            }
+            
+            // Wait for cleanup to complete
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+        } catch (error) {
+            console.warn(`Warning: Pre-test cleanup failed: ${error.message}`);
+        }
+    }
+
     async performFinalCleanup() {
         console.log('🧹 Performing final cleanup...');
         
@@ -885,6 +957,9 @@ class LocalMultiplatformSyncTester {
         console.log('================================================');
         
         try {
+            // Clean up any artifacts from previous test runs
+            await this.performPreTestCleanup();
+            
             // Run both platforms simultaneously for real P2P testing
             console.log(`\n⚡ Starting simultaneous Chrome and iOS testing for real P2P sync...`);
             
