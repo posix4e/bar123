@@ -363,16 +363,86 @@ class ShowcasePageGenerator {
             }
         }
 
-        .demo-container {
+        .viewer-container {
             margin-top: 20px;
         }
 
-        .device-panels {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-            align-items: start;
+        .connection-panel {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .room-input-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .room-input-section label {
+            font-weight: bold;
+            min-width: 100px;
+        }
+
+        .room-input-section input {
+            flex-grow: 1;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .history-viewer {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .viewer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .viewer-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .peer-count {
+            background-color: #e7f3ff;
+            color: #0066cc;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .history-feed {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .no-history {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 40px 20px;
+        }
+
+        .viewer-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
         }
 
         .device-panel {
@@ -585,110 +655,141 @@ class ShowcasePageGenerator {
         </footer>
     </div>
 
+    <script src="./trystero-bundle.js"></script>
     <script>
-        let demoActive = false;
-        let historyCounter = 0;
-        
-        const sampleSites = [
-            { title: 'GitHub', url: 'https://github.com', icon: '🐙' },
-            { title: 'Stack Overflow', url: 'https://stackoverflow.com', icon: '📚' },
-            { title: 'MDN Web Docs', url: 'https://developer.mozilla.org', icon: '📖' },
-            { title: 'YouTube', url: 'https://youtube.com', icon: '📺' },
-            { title: 'Reddit', url: 'https://reddit.com', icon: '🔴' },
-            { title: 'Twitter', url: 'https://twitter.com', icon: '🐦' },
-            { title: 'Wikipedia', url: 'https://wikipedia.org', icon: '📰' },
-            { title: 'Google', url: 'https://google.com', icon: '🔍' },
-        ];
+        let room = null;
+        let currentRoomSecret = null;
+        let [sendHistory, getHistory] = [null, null];
 
-        function startDemo() {
-            demoActive = true;
-            document.getElementById('start-demo').textContent = 'Demo Running...';
-            document.getElementById('start-demo').disabled = true;
-            
-            // Simulate connection process
-            setTimeout(() => {
-                document.getElementById('chrome-status').textContent = 'Connected';
-                document.getElementById('chrome-status').className = 'connection-status connected';
-                document.getElementById('safari-status').textContent = 'Connected';
-                document.getElementById('safari-status').className = 'connection-status connected';
-                document.getElementById('sync-status').textContent = 'P2P Connection Established';
-            }, 1500);
-        }
-
-        function simulateBrowsing(device) {
-            if (!demoActive) {
-                alert('Please start the demo first!');
+        async function connectToRoom() {
+            const roomSecret = document.getElementById('room-secret').value.trim();
+            if (!roomSecret) {
+                alert('Please enter a room secret');
                 return;
             }
 
-            const site = sampleSites[Math.floor(Math.random() * sampleSites.length)];
-            const timestamp = new Date().toLocaleTimeString();
-            historyCounter++;
-            
-            const historyItem = {
-                id: historyCounter,
-                title: site.title,
-                url: site.url,
-                icon: site.icon,
-                timestamp: timestamp,
-                device: device
-            };
-            
-            // Add to originating device first
-            addHistoryItem(device, historyItem, 'local');
-            
-            // Simulate sync delay and add to other device
-            setTimeout(() => {
-                const otherDevice = device === 'chrome' ? 'safari' : 'chrome';
-                addHistoryItem(otherDevice, historyItem, 'synced');
-            }, Math.random() * 1000 + 500);
+            try {
+                updateConnectionStatus('Connecting...', 'connecting');
+                
+                // Hash the room secret like the extension does
+                const encoder = new TextEncoder();
+                const data = encoder.encode(roomSecret);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashedSecret = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                
+                // Create room using Trystero
+                room = window.Trystero.joinRoom({
+                    appId: 'bar123-history-sync'
+                }, hashedSecret);
+                
+                // Set up history sync channel (read-only)
+                [sendHistory, getHistory] = room.makeAction('history');
+                
+                // Listen for history updates from other peers
+                getHistory((historyData, peerId) => {
+                    console.log('Received history from peer:', peerId, historyData);
+                    addHistoryToFeed(historyData, peerId);
+                });
+
+                // Track peer connections
+                room.onPeerJoin(peerId => {
+                    console.log('Peer joined:', peerId);
+                    updatePeerCount();
+                });
+
+                room.onPeerLeave(peerId => {
+                    console.log('Peer left:', peerId);
+                    updatePeerCount();
+                });
+
+                currentRoomSecret = roomSecret;
+                updateConnectionStatus('Connected to room', 'connected');
+                showHistoryViewer();
+                
+                document.getElementById('connect-btn').disabled = true;
+                document.getElementById('disconnect-btn').disabled = false;
+                document.getElementById('room-secret').disabled = true;
+                
+            } catch (error) {
+                console.error('Connection failed:', error);
+                updateConnectionStatus('Connection failed: ' + error.message, 'error');
+            }
         }
 
-        function addHistoryItem(device, item, type) {
-            const listId = device + '-history-list';
-            const historyList = document.getElementById(listId);
+        function disconnectFromRoom() {
+            if (room) {
+                room.leave();
+                room = null;
+                currentRoomSecret = null;
+                [sendHistory, getHistory] = [null, null];
+            }
             
-            const historyElement = document.createElement('div');
-            historyElement.className = 'history-item ' + (type === 'synced' ? 'syncing' : '');
-            historyElement.innerHTML = \`
-                <span style="font-size: 1.2rem;">\${item.icon}</span>
-                <div style="flex-grow: 1;">
-                    <div style="font-weight: bold; font-size: 0.9rem;">\${item.title}</div>
-                    <div style="font-size: 0.8rem; color: #666;">\${item.url}</div>
-                    <div style="font-size: 0.7rem; color: #999;">\${item.timestamp} • From \${item.device === device ? 'local' : item.device}</div>
+            updateConnectionStatus('Disconnected', 'disconnected');
+            hideHistoryViewer();
+            
+            document.getElementById('connect-btn').disabled = false;
+            document.getElementById('disconnect-btn').disabled = true;
+            document.getElementById('room-secret').disabled = false;
+        }
+
+        function updateConnectionStatus(message, type) {
+            const statusEl = document.getElementById('connection-status');
+            statusEl.textContent = message;
+            statusEl.className = 'connection-status ' + type;
+        }
+
+        function showHistoryViewer() {
+            document.getElementById('history-viewer').style.display = 'block';
+            document.getElementById('history-feed').innerHTML = '<div class="no-history">Listening for history updates...</div>';
+        }
+
+        function hideHistoryViewer() {
+            document.getElementById('history-viewer').style.display = 'none';
+        }
+
+        function updatePeerCount() {
+            const count = room ? room.getPeers().length : 0;
+            document.getElementById('peer-count').textContent = count;
+        }
+
+        function addHistoryToFeed(historyData, peerId) {
+            const historyFeed = document.getElementById('history-feed');
+            
+            // Remove "no history" message
+            const noHistory = historyFeed.querySelector('.no-history');
+            if (noHistory) {
+                noHistory.remove();
+            }
+            
+            // Create history item element
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const favicon = historyData.url ? \`https://www.google.com/s2/favicons?domain=\${new URL(historyData.url).hostname}\` : '';
+            
+            historyItem.innerHTML = \`
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    \${favicon ? \`<img src="\${favicon}" width="16" height="16" style="border-radius: 2px;" onerror="this.style.display='none'"/>\` : '<span>🌐</span>'}
+                    <div style="flex-grow: 1;">
+                        <div style="font-weight: bold; font-size: 0.9rem;">\${historyData.title || 'No title'}</div>
+                        <div style="font-size: 0.8rem; color: #666; word-break: break-all;">\${historyData.url || 'No URL'}</div>
+                        <div style="font-size: 0.7rem; color: #999;">\${timestamp} • From peer \${peerId.substring(0, 8)}</div>
+                    </div>
                 </div>
             \`;
             
-            historyList.insertBefore(historyElement, historyList.firstChild);
+            // Add to top of feed
+            historyFeed.insertBefore(historyItem, historyFeed.firstChild);
             
-            if (type === 'synced') {
-                setTimeout(() => {
-                    historyElement.classList.remove('syncing');
-                    historyElement.classList.add('synced');
-                }, 1000);
+            // Keep only last 20 items
+            while (historyFeed.children.length > 20) {
+                historyFeed.removeChild(historyFeed.lastChild);
             }
             
-            // Keep only last 5 items
-            while (historyList.children.length > 5) {
-                historyList.removeChild(historyList.lastChild);
-            }
-        }
-
-        function resetDemo() {
-            demoActive = false;
-            historyCounter = 0;
-            
-            document.getElementById('start-demo').textContent = 'Start Demo';
-            document.getElementById('start-demo').disabled = false;
-            
-            document.getElementById('chrome-status').textContent = 'Disconnected';
-            document.getElementById('chrome-status').className = 'connection-status';
-            document.getElementById('safari-status').textContent = 'Disconnected';
-            document.getElementById('safari-status').className = 'connection-status';
-            document.getElementById('sync-status').textContent = 'Connection Closed';
-            
-            document.getElementById('chrome-history-list').innerHTML = '';
-            document.getElementById('safari-history-list').innerHTML = '';
+            // Add animation
+            historyItem.style.animation = 'fadeIn 0.5s ease-in';
         }
     </script>
 </body>
@@ -972,65 +1073,44 @@ class ShowcasePageGenerator {
     generateP2PDemo() {
         return `
         <div class="card">
-            <h2>🔄 Live P2P History Sync Demo</h2>
-            <p>Experience real-time history synchronization between Chrome desktop and Safari iOS in read-only mode</p>
+            <h2>👁️ Live P2P History Viewer</h2>
+            <p>Connect to a real history sync room and view shared browsing history in read-only mode</p>
             
-            <div class="demo-container">
-                <div class="device-panels">
-                    <div class="device-panel chrome-device">
-                        <div class="device-header">
-                            <div class="device-icon">🖥️</div>
-                            <h3>Chrome Desktop</h3>
-                            <div class="connection-status" id="chrome-status">Connecting...</div>
-                        </div>
-                        <div class="history-panel" id="chrome-history">
-                            <div class="history-header">📚 Recent History</div>
-                            <div class="history-list" id="chrome-history-list">
-                                <!-- Will be populated by demo -->
-                            </div>
-                        </div>
-                        <div class="demo-controls">
-                            <button onclick="simulateBrowsing('chrome')" class="demo-button">Simulate Browsing</button>
-                        </div>
+            <div class="viewer-container">
+                <div class="connection-panel">
+                    <div class="room-input-section">
+                        <label for="room-secret">Room Secret:</label>
+                        <input type="text" id="room-secret" placeholder="Enter shared secret to view history" />
+                        <button onclick="connectToRoom()" class="demo-button primary" id="connect-btn">Connect</button>
+                        <button onclick="disconnectFromRoom()" class="demo-button" id="disconnect-btn" disabled>Disconnect</button>
                     </div>
+                    <div class="connection-status" id="connection-status">Enter a room secret to connect</div>
+                </div>
 
-                    <div class="sync-indicator">
-                        <div class="sync-arrow" id="sync-arrow">⟷</div>
-                        <div class="sync-status" id="sync-status">Establishing P2P Connection...</div>
+                <div class="history-viewer" id="history-viewer" style="display: none;">
+                    <div class="viewer-header">
+                        <h3>📚 Shared History Stream</h3>
+                        <div class="peer-count">Peers: <span id="peer-count">0</span></div>
                     </div>
-
-                    <div class="device-panel safari-device">
-                        <div class="device-header">
-                            <div class="device-icon">📱</div>
-                            <h3>Safari iOS</h3>
-                            <div class="connection-status" id="safari-status">Connecting...</div>
-                        </div>
-                        <div class="history-panel" id="safari-history">
-                            <div class="history-header">📚 Recent History</div>
-                            <div class="history-list" id="safari-history-list">
-                                <!-- Will be populated by demo -->
-                            </div>
-                        </div>
-                        <div class="demo-controls">
-                            <button onclick="simulateBrowsing('safari')" class="demo-button">Simulate Browsing</button>
-                        </div>
+                    
+                    <div class="history-feed" id="history-feed">
+                        <div class="no-history">No history entries yet. History will appear here when users browse with this room secret.</div>
                     </div>
                 </div>
 
-                <div class="demo-info">
-                    <h4>🎯 How it Works</h4>
+                <div class="viewer-info">
+                    <h4>🎯 How to Use</h4>
                     <ul>
-                        <li><strong>WebRTC P2P:</strong> Direct device-to-device connection using Trystero</li>
-                        <li><strong>Shared Secret:</strong> Both devices use the same room key for discovery</li>
-                        <li><strong>Real-time Sync:</strong> History items appear instantly on both devices</li>
-                        <li><strong>No Server Storage:</strong> All data stays between your devices</li>
-                        <li><strong>End-to-End Encrypted:</strong> Secure peer-to-peer communication</li>
+                        <li><strong>Get a room secret:</strong> Ask someone using the extension to share their room secret</li>
+                        <li><strong>Connect:</strong> Enter the secret above to join their P2P room</li>
+                        <li><strong>View history:</strong> See real browsing activity as it happens</li>
+                        <li><strong>Read-only:</strong> You can only view, not send history data</li>
+                        <li><strong>Private:</strong> Your connection doesn't reveal your browsing history</li>
                     </ul>
-                </div>
-
-                <div class="demo-controls-main">
-                    <button onclick="startDemo()" class="demo-button primary" id="start-demo">Start Demo</button>
-                    <button onclick="resetDemo()" class="demo-button">Reset Demo</button>
+                    
+                    <div style="margin-top: 15px; padding: 10px; background-color: #fff3cd; border-radius: 6px; border-left: 4px solid #ffc107;">
+                        <strong>⚠️ Privacy Note:</strong> Only connect to room secrets you trust. You'll see all browsing activity shared in that room.
+                    </div>
                 </div>
             </div>
         </div>`;
@@ -1192,6 +1272,12 @@ class ShowcasePageGenerator {
         if (fs.existsSync(ipaPath)) {
             fs.copyFileSync(ipaPath, path.join(this.outputDir, `bar123-${this.commitSha}.ipa`));
             console.log(`📱 Copied iOS IPA: bar123-${this.commitSha}.ipa`);
+        }
+
+        // Copy Trystero bundle for P2P functionality
+        if (fs.existsSync('dist/trystero-bundle.js')) {
+            fs.copyFileSync('dist/trystero-bundle.js', path.join(this.outputDir, 'trystero-bundle.js'));
+            console.log(`🔗 Copied Trystero P2P bundle`);
         }
 
         // Copy any additional assets
