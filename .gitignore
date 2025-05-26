@@ -1,6 +1,13 @@
 build
 node_modules
 bar123 Extension/Resources/peerjs.min.js
+dist/
+chrome-extension/trystero-bundle.js
+bar123 Extension/Resources/trystero-bundle.js
+chrome-extension/simplepeer-bundle.js
+chrome-extension/socket.io-bundle.js
+bar123 Extension/Resources/simplepeer-bundle.js
+bar123 Extension/Resources/socket.io-bundle.js
 
 # CI/CD logs and artifacts
 *.log
