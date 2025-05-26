@@ -19,6 +19,7 @@
     "test": "node test/cross-platform-sync-test.js",
     "test-local-multiplatform": "node test/local-multiplatform-test.js",
     "test-all": "npm run test-local-multiplatform",
+    "launch-chrome": "node launch-chrome-extension.js",
     "prepare-profiles": "node scripts/prepare-profiles.js",
     "ios-build": "node scripts/ios-build.js --certificate $RUNNER_TEMP/ios-profiles/certificate.p12 --password $P12_PASSWORD --app-profile $RUNNER_TEMP/ios-profiles/app_profile.mobileprovision --ext-profile $RUNNER_TEMP/ios-profiles/extension_profile.mobileprovision --output $RUNNER_TEMP/build",
     "ios-build-testflight": "npm run prepare-profiles && npm run ios-build -- --upload --apple-id $APPLE_ID --app-password $APP_SPECIFIC_PASSWORD",
