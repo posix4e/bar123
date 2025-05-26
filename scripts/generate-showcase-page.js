@@ -362,6 +362,80 @@ class ShowcasePageGenerator {
                 padding: 20px;
             }
         }
+
+        .code-explorer {
+            margin-top: 20px;
+        }
+
+        .code-tabs {
+            display: flex;
+            background-color: #f8f9fa;
+            border-radius: 8px 8px 0 0;
+            padding: 5px;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .code-tab {
+            background: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .code-tab:hover {
+            background-color: #e9ecef;
+        }
+
+        .code-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .code-content {
+            background-color: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+            padding: 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .code-file {
+            display: none;
+            background-color: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
+        .code-file.active {
+            display: block;
+        }
+
+        .code-file .keyword {
+            color: #f56565;
+        }
+
+        .code-file .string {
+            color: #68d391;
+        }
+
+        .code-file .comment {
+            color: #a0aec0;
+            font-style: italic;
+        }
+
+        .code-file .function {
+            color: #63b3ed;
+        }
     </style>
 </head>
 <body>
@@ -376,6 +450,7 @@ class ShowcasePageGenerator {
         ${this.generateFeaturesSection()}
         ${this.generateTestResultsSection()}
         ${this.generateBrowserStackSection()}
+        ${this.generateCodeExplorer()}
         ${this.generateInstallationGuide()}
         ${this.generateTechnicalDetails()}
 
@@ -383,6 +458,32 @@ class ShowcasePageGenerator {
             <p>Generated ${new Date().toISOString()} | Commit ${this.commitSha.substring(0, 8)} | Build #${this.runId}</p>
         </footer>
     </div>
+
+    <script>
+        function showCodeFile(event, filename) {
+            // Hide all code files
+            const codeFiles = document.querySelectorAll('.code-file');
+            codeFiles.forEach(file => file.classList.remove('active'));
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.code-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected file and activate tab
+            document.getElementById('code-' + filename).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        // Initialize first tab as active
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstTab = document.querySelector('.code-tab');
+            const firstFile = document.querySelector('.code-file');
+            if (firstTab && firstFile) {
+                firstTab.classList.add('active');
+                firstFile.classList.add('active');
+            }
+        });
+    </script>
 </body>
 </html>`;
 
@@ -659,6 +760,96 @@ class ShowcasePageGenerator {
                 </div>
             </div>
         `).join('');
+    }
+
+    generateCodeExplorer() {
+        const codeFiles = [
+            {
+                name: 'background.js',
+                path: 'chrome-extension/background.js',
+                description: 'Service worker handling P2P connections and history sync'
+            },
+            {
+                name: 'popup.js',
+                path: 'chrome-extension/popup.js', 
+                description: 'Extension popup interface for room management'
+            },
+            {
+                name: 'content.js',
+                path: 'chrome-extension/content.js',
+                description: 'Content script tracking page visits and navigation'
+            },
+            {
+                name: 'manifest.json',
+                path: 'chrome-extension/manifest.json',
+                description: 'Chrome extension manifest configuration'
+            },
+            {
+                name: 'Safari background.js',
+                path: 'bar123 Extension/Resources/background.js',
+                description: 'Safari Web Extension background script'
+            },
+            {
+                name: 'Safari manifest.json',
+                path: 'bar123 Extension/Resources/manifest.json',
+                description: 'Safari Web Extension manifest'
+            }
+        ];
+
+        let availableFiles = [];
+        let codeContent = '';
+
+        codeFiles.forEach(file => {
+            try {
+                if (fs.existsSync(file.path)) {
+                    const content = fs.readFileSync(file.path, 'utf8');
+                    const escapedContent = content
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#39;');
+                    
+                    availableFiles.push(file);
+                    codeContent += `
+                    <div class="code-file" id="code-${file.name.replace(/[^a-zA-Z0-9]/g, '')}">
+                        <div style="color: #a0aec0; margin-bottom: 15px; border-bottom: 1px solid #4a5568; padding-bottom: 10px;">
+                            📄 ${file.path} - ${file.description}
+                        </div>
+                        <pre>${escapedContent}</pre>
+                    </div>`;
+                }
+            } catch (error) {
+                console.warn(`Could not read ${file.path}:`, error.message);
+            }
+        });
+
+        if (availableFiles.length === 0) {
+            return `
+            <div class="card">
+                <h2>💻 Source Code</h2>
+                <p>Source code files not available in this build</p>
+            </div>`;
+        }
+
+        const tabs = availableFiles.map(file => 
+            `<button class="code-tab" onclick="showCodeFile(event, '${file.name.replace(/[^a-zA-Z0-9]/g, '')}')">${file.name}</button>`
+        ).join('');
+
+        return `
+        <div class="card">
+            <h2>💻 Source Code Explorer</h2>
+            <p>Browse the key source files that power the cross-platform history sync extension</p>
+            
+            <div class="code-explorer">
+                <div class="code-tabs">
+                    ${tabs}
+                </div>
+                <div class="code-content">
+                    ${codeContent}
+                </div>
+            </div>
+        </div>`;
     }
 
     generateInstallationGuide() {
