@@ -4,37 +4,60 @@ console.log('Connection page loaded');
 let trysteroRoom = null;
 let isConnected = false;
 
-// Wait for DOM to be ready before signaling
+// Wait for DOM and Chrome APIs to be ready
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing connection page');
     updateStatus('Connection page loaded - waiting for init message');
     
-    // Signal to background script that we're ready
-    chrome.runtime.sendMessage({ action: 'connectionPageReady' });
+    // Wait for chrome.runtime to be available
+    function waitForChromeRuntime() {
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+            console.log('Chrome runtime available, signaling ready');
+            // Signal to background script that we're ready
+            chrome.runtime.sendMessage({ action: 'connectionPageReady' });
+        } else {
+            console.log('Waiting for Chrome runtime...');
+            setTimeout(waitForChromeRuntime, 100);
+        }
+    }
+    
+    waitForChromeRuntime();
 });
 
-// Listen for connection requests from background script
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'initConnection') {
-        initTrysteroConnection(request.roomId, request.sharedSecret)
-            .then(() => {
+// Setup message listener when Chrome APIs are ready
+function setupMessageListener() {
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+        // Listen for connection requests from background script
+        chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+            if (request.action === 'initConnection') {
+                initTrysteroConnection(request.roomId, request.sharedSecret)
+                    .then(() => {
+                        sendResponse({ success: true });
+                    })
+                    .catch(error => {
+                        sendResponse({ success: false, error: error.message });
+                    });
+                return true; // Keep message channel open for async response
+            } else if (request.action === 'disconnect') {
+                if (trysteroRoom) {
+                    trysteroRoom.leave();
+                    trysteroRoom = null;
+                    isConnected = false;
+                    console.log('Disconnected from Trystero room');
+                    updateStatus('Disconnected');
+                }
                 sendResponse({ success: true });
-            })
-            .catch(error => {
-                sendResponse({ success: false, error: error.message });
-            });
-        return true; // Keep message channel open for async response
-    } else if (request.action === 'disconnect') {
-        if (trysteroRoom) {
-            trysteroRoom.leave();
-            trysteroRoom = null;
-            isConnected = false;
-            console.log('Disconnected from Trystero room');
-            updateStatus('Disconnected');
-        }
-        sendResponse({ success: true });
+            }
+        });
+        console.log('Message listener setup complete');
+    } else {
+        console.log('Chrome runtime not ready, retrying...');
+        setTimeout(setupMessageListener, 100);
     }
-});
+}
+
+// Initialize message listener
+setupMessageListener();
 
 async function initTrysteroConnection(roomId, sharedSecret) {
     try {
@@ -65,10 +88,12 @@ async function initTrysteroConnection(roomId, sharedSecret) {
             updateStatus(`Connected to peer: ${peerId}`);
             
             // Notify background script
-            chrome.runtime.sendMessage({
-                action: 'peerJoined',
-                peerId: peerId
-            });
+            if (chrome.runtime && chrome.runtime.sendMessage) {
+                chrome.runtime.sendMessage({
+                    action: 'peerJoined',
+                    peerId: peerId
+                });
+            }
         });
         
         // Add error handling for connection issues
@@ -77,10 +102,12 @@ async function initTrysteroConnection(roomId, sharedSecret) {
             updateStatus('Peer disconnected');
             
             // Notify background script
-            chrome.runtime.sendMessage({
-                action: 'peerLeft',
-                peerId: peerId
-            });
+            if (chrome.runtime && chrome.runtime.sendMessage) {
+                chrome.runtime.sendMessage({
+                    action: 'peerLeft',
+                    peerId: peerId
+                });
+            }
         });
         
         // Log room activity
@@ -106,22 +133,26 @@ async function initTrysteroConnection(roomId, sharedSecret) {
             console.log('Received history from', peerId);
             
             // Forward to background script
-            chrome.runtime.sendMessage({
-                action: 'receivedHistory',
-                historyData: historyData,
-                peerId: peerId
-            });
+            if (chrome.runtime && chrome.runtime.sendMessage) {
+                chrome.runtime.sendMessage({
+                    action: 'receivedHistory',
+                    historyData: historyData,
+                    peerId: peerId
+                });
+            }
         });
         
         getDelete((deleteData, peerId) => {
             console.log('Received delete from', peerId);
             
             // Forward to background script
-            chrome.runtime.sendMessage({
-                action: 'receivedDelete',
-                deleteData: deleteData,
-                peerId: peerId
-            });
+            if (chrome.runtime && chrome.runtime.sendMessage) {
+                chrome.runtime.sendMessage({
+                    action: 'receivedDelete',
+                    deleteData: deleteData,
+                    peerId: peerId
+                });
+            }
         });
         
         updateStatus('Ready for P2P connections');
