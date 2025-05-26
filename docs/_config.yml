@@ -1,0 +1,23 @@
+# GitHub Pages Configuration for Bar123 History Sync Extension
+title: "Bar123 - Cross-Platform History Sync"
+description: "Real-time browser history synchronization using P2P WebRTC"
+url: "https://posix4e.github.io"
+baseurl: "/bar123"
+
+# GitHub Pages settings
+plugins:
+  - jekyll-relative-links
+  - jekyll-optional-front-matter
+
+# Markdown settings
+markdown: kramdown
+relative_links:
+  enabled: true
+  collections: true
+
+# Include showcase page
+include:
+  - index.html
+  - images
+  - "*.zip"
+  - "*.ipa"

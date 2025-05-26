@@ -2,6 +2,10 @@
 
 A Safari iOS extension and Chrome extension that enables real-time history synchronization across devices using P2P technology and Trystero.
 
+## 🚀 [Live Demo & Downloads](https://posix4e.github.io/bar123/)
+
+View the interactive showcase with live build artifacts, test results, and download links.
+
 ## 🚀 Quick Start
 
 ### 1. Install Dependencies and Build
