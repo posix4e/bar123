@@ -89,6 +89,15 @@ class HistorySyncService {
                     this.localHistory.push(request.entry);
                     chrome.storage.local.set({ localHistory: this.localHistory });
                     break;
+                    
+                case 'connectionPageReady':
+                    console.log('Connection page is ready');
+                    if (this.pendingConnection) {
+                        console.log('Sending pending connection request');
+                        chrome.tabs.sendMessage(sender.tab.id, this.pendingConnection);
+                        this.pendingConnection = null;
+                    }
+                    break;
             }
         });
     }
@@ -98,42 +107,19 @@ class HistorySyncService {
         this.roomId = await this.hashSecret(sharedSecret);
         
         try {
-            // Create or find a tab to handle the WebRTC connection
-            const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (tabs.length > 0) {
-                this.connectionTab = tabs[0].id;
-            } else {
-                // Create a new tab for the connection
-                const tab = await chrome.tabs.create({ url: 'chrome://newtab/', active: false });
-                this.connectionTab = tab.id;
-            }
+            // Create a connection page tab
+            const connectionUrl = chrome.runtime.getURL('connection.html');
+            const tab = await chrome.tabs.create({ url: connectionUrl, active: false });
+            this.connectionTab = tab.id;
             
-            // Wait for tab to be ready, then send connection request
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Store the connection request to send when page is ready
+            this.pendingConnection = {
+                action: 'initConnection',
+                roomId: this.roomId,
+                sharedSecret: sharedSecret
+            };
             
-            try {
-                await chrome.tabs.sendMessage(this.connectionTab, {
-                    action: 'initConnection',
-                    roomId: this.roomId,
-                    sharedSecret: sharedSecret
-                });
-            } catch (error) {
-                // If content script not ready, inject it manually
-                await chrome.scripting.executeScript({
-                    target: { tabId: this.connectionTab },
-                    files: ['content.js']
-                });
-                
-                // Wait a bit more and try again
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                await chrome.tabs.sendMessage(this.connectionTab, {
-                    action: 'initConnection',
-                    roomId: this.roomId,
-                    sharedSecret: sharedSecret
-                });
-            }
-            
-            console.log('Connection initiated via content script');
+            console.log('Connection page created, waiting for ready signal');
             this.isConnected = true;
         } catch (error) {
             throw new Error('Failed to connect: ' + error.message);

@@ -1,12 +1,14 @@
 const { chromium } = require('playwright');
 const path = require('path');
+const fs = require('fs');
 
 async function debugChromeExtension() {
     console.log('🚀 Starting Chrome extension debug session...');
     
     // Launch Chrome with extension and developer mode
     const extensionPath = path.resolve(__dirname, 'chrome-extension');
-    const context = await chromium.launchPersistentContext('', {
+    const userDataDir = path.join(__dirname, 'test-results', 'chrome-debug-' + Date.now());
+    const context = await chromium.launchPersistentContext(userDataDir, {
         headless: false,
         args: [
             `--disable-extensions-except=${extensionPath}`,
@@ -112,7 +114,34 @@ async function debugChromeExtension() {
         
     } catch (error) {
         console.error('❌ Debug error:', error.message);
+    } finally {
+        // Clean up user data directory
+        try {
+            if (fs.existsSync(userDataDir)) {
+                console.log(`🧹 Cleaning up debug profile: ${userDataDir}`);
+                removeDirectory(userDataDir);
+            }
+        } catch (error) {
+            console.warn(`Warning: Failed to cleanup debug profile: ${error.message}`);
+        }
     }
+}
+
+function removeDirectory(dirPath) {
+    if (!fs.existsSync(dirPath)) return;
+    
+    const files = fs.readdirSync(dirPath);
+    for (const file of files) {
+        const filePath = path.join(dirPath, file);
+        const stat = fs.lstatSync(filePath);
+        
+        if (stat.isDirectory()) {
+            removeDirectory(filePath);
+        } else {
+            fs.unlinkSync(filePath);
+        }
+    }
+    fs.rmdirSync(dirPath);
 }
 
 if (require.main === module) {

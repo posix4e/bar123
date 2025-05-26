@@ -91,6 +91,7 @@ class LocalMultiplatformSyncTester {
         };
         
         let browser, context, page;
+        let userDataDir = null;
         
         try {
             // Find Chrome extension directory
@@ -104,7 +105,7 @@ class LocalMultiplatformSyncTester {
             // Launch Chrome with extension loaded (must be non-headless for extensions)
             const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
             
-            const userDataDir = path.join(process.cwd(), 'test-results/local-multiplatform/chrome-profile');
+            userDataDir = path.join(process.cwd(), 'test-results/local-multiplatform/chrome-profile-' + Date.now());
             
             browser = await chromium.launchPersistentContext(userDataDir, {
                 headless: false, // Extensions require non-headless mode
@@ -143,9 +144,7 @@ class LocalMultiplatformSyncTester {
             await page.goto('chrome://extensions/', { waitUntil: 'networkidle' });
             await page.waitForTimeout(3000);
             
-            // Enable developer mode
-            const devModeToggle = page.locator('#developerMode');
-            await devModeToggle.check();
+            // Developer mode should already be enabled for loaded extensions
             await page.waitForTimeout(1000);
             
             // Take screenshot of extensions page
@@ -392,8 +391,23 @@ class LocalMultiplatformSyncTester {
                 details: { error: error.message, stack: error.stack }
             };
         } finally {
+            // Cleanup browser
             if (browser) {
-                await browser.close();
+                try {
+                    await browser.close();
+                } catch (error) {
+                    console.warn('Warning: Browser close failed:', error.message);
+                }
+            }
+            
+            // Cleanup user data directory
+            if (userDataDir && fs.existsSync(userDataDir)) {
+                try {
+                    console.log(`🧹 Cleaning up Chrome profile: ${userDataDir}`);
+                    this.removeDirectory(userDataDir);
+                } catch (error) {
+                    console.warn(`Warning: Failed to cleanup Chrome profile: ${error.message}`);
+                }
             }
         }
         
@@ -413,6 +427,9 @@ class LocalMultiplatformSyncTester {
             timestamp: new Date().toISOString(),
             screenshots: []
         };
+        
+        let testPagePath = null;
+        let simulatorUDID = null;
         
         try {
             // Check if iOS Simulator tools are available
@@ -434,21 +451,32 @@ class LocalMultiplatformSyncTester {
             // Find an available iPhone simulator
             console.log('  📱 Finding available iPhone simulator...');
             const deviceList = execSync('xcrun simctl list devices available', { encoding: 'utf8' });
-            const iPhoneMatch = deviceList.match(/iPhone.*\(([A-F0-9-]+)\) \(Shutdown\)/);
+            let iPhoneMatch = deviceList.match(/iPhone.*\(([A-F0-9-]+)\) \(Shutdown\)/);
             
+            // If no shutdown simulator, use a booted one
             if (!iPhoneMatch) {
-                throw new Error('No available iPhone simulator found');
+                iPhoneMatch = deviceList.match(/iPhone.*\(([A-F0-9-]+)\) \(Booted\)/);
             }
             
-            const simulatorUDID = iPhoneMatch[1];
+            if (!iPhoneMatch) {
+                throw new Error('No iPhone simulator found');
+            }
+            
+            simulatorUDID = iPhoneMatch[1];
             console.log(`  📱 Using iPhone simulator: ${simulatorUDID}`);
             
-            // Boot the simulator
-            console.log('  🚀 Booting iOS Simulator...');
-            execSync(`xcrun simctl boot ${simulatorUDID}`, { encoding: 'utf8' });
+            // Boot the simulator if not already booted
+            console.log('  🚀 Ensuring iOS Simulator is booted...');
+            const isAlreadyBooted = deviceList.includes(`${simulatorUDID}) (Booted)`);
             
-            // Wait for simulator to be ready
-            await new Promise(resolve => setTimeout(resolve, 10000));
+            if (!isAlreadyBooted) {
+                execSync(`xcrun simctl boot ${simulatorUDID}`, { encoding: 'utf8' });
+                // Wait for simulator to be ready
+                await new Promise(resolve => setTimeout(resolve, 10000));
+            } else {
+                console.log('  📱 Simulator already booted');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
             
             testResult.tests.simulator_boot = {
                 passed: true,
@@ -458,7 +486,7 @@ class LocalMultiplatformSyncTester {
             
             // Create a test HTML page for Safari
             console.log('  🌐 Creating test page for Safari...');
-            const testPagePath = path.join(process.cwd(), 'test-results/local-multiplatform/safari-test.html');
+            testPagePath = path.join(process.cwd(), 'test-results/local-multiplatform/safari-test-' + Date.now() + '.html');
             const testPageContent = `
 <!DOCTYPE html>
 <html>
@@ -609,6 +637,16 @@ class LocalMultiplatformSyncTester {
                 message: `iOS Safari Simulator test error: ${error.message}`,
                 details: { error: error.message, stack: error.stack }
             };
+        } finally {
+            // Cleanup test page
+            if (testPagePath && fs.existsSync(testPagePath)) {
+                try {
+                    console.log(`🧹 Cleaning up test page: ${testPagePath}`);
+                    fs.unlinkSync(testPagePath);
+                } catch (error) {
+                    console.warn(`Warning: Failed to cleanup test page: ${error.message}`);
+                }
+            }
         }
         
         console.log(`${testResult.passed ? '✅' : '❌'} iOS Safari Simulator test: ${testResult.passed ? 'PASSED' : 'FAILED'}`);
@@ -768,6 +806,52 @@ class LocalMultiplatformSyncTester {
         return null;
     }
 
+    removeDirectory(dirPath) {
+        if (!fs.existsSync(dirPath)) return;
+        
+        const files = fs.readdirSync(dirPath);
+        for (const file of files) {
+            const filePath = path.join(dirPath, file);
+            const stat = fs.lstatSync(filePath);
+            
+            if (stat.isDirectory()) {
+                this.removeDirectory(filePath);
+            } else {
+                fs.unlinkSync(filePath);
+            }
+        }
+        fs.rmdirSync(dirPath);
+    }
+
+    async performFinalCleanup() {
+        console.log('🧹 Performing final cleanup...');
+        
+        try {
+            // Clean up old Chrome profiles
+            const testResultsDir = path.join(process.cwd(), 'test-results/local-multiplatform');
+            if (fs.existsSync(testResultsDir)) {
+                const files = fs.readdirSync(testResultsDir);
+                for (const file of files) {
+                    if (file.startsWith('chrome-profile-') || file.startsWith('safari-test-')) {
+                        const filePath = path.join(testResultsDir, file);
+                        try {
+                            if (fs.lstatSync(filePath).isDirectory()) {
+                                this.removeDirectory(filePath);
+                            } else {
+                                fs.unlinkSync(filePath);
+                            }
+                            console.log(`🧹 Cleaned up: ${file}`);
+                        } catch (error) {
+                            console.warn(`Warning: Failed to cleanup ${file}: ${error.message}`);
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn(`Warning: Final cleanup failed: ${error.message}`);
+        }
+    }
+
     async runLocalMultiplatformTests() {
         console.log('🏠 Starting Local Multiplatform Sync Tests...');
         console.log('================================================');
@@ -819,6 +903,9 @@ class LocalMultiplatformSyncTester {
                 error: error.message,
                 timestamp: new Date().toISOString()
             });
+        } finally {
+            // Final cleanup
+            await this.performFinalCleanup();
         }
         
         return this.testResults;

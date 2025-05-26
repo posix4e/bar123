@@ -43,7 +43,7 @@
   ],
   
   "web_accessible_resources": [{
-    "resources": ["trystero-bundle.js"],
+    "resources": ["trystero-bundle.js", "connection.html", "connection.js"],
     "matches": ["<all_urls>"]
   }]
 }
