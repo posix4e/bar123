@@ -145,10 +145,12 @@ class HistorySyncService {
             }
             
             console.log('Connecting to Trystero room:', this.roomId);
+            console.log('Joining Trystero room with config:', { appId: 'history-sync' });
+            console.log('Trystero version:', trystero.version || 'unknown');
             
             // Use Nostr strategy (default, serverless) - MUST match Chrome extension
             this.room = trystero.joinRoom({ appId: 'history-sync' }, this.roomId);
-            console.log('Room created:', this.room);
+            console.log('Room created, waiting for peers...', this.room);
         
             // Set up peer connection handlers
             this.room.onPeerJoin(peerId => {
@@ -172,6 +174,20 @@ class HistorySyncService {
                 this.peers.delete(peerId);
                 this.updateStorageAndUI();
             });
+            
+            // Log room activity
+            console.log('🔍 Room setup complete. Actively looking for peers...');
+            console.log('💡 Make sure both devices use the same shared secret!');
+            
+            // Timeout warning
+            setTimeout(() => {
+                if (this.peers.size === 0) {
+                    console.warn('⚠️  No peers found after 30 seconds. Check:');
+                    console.warn('   1. Same shared secret on both devices');
+                    console.warn('   2. Network connectivity');
+                    console.warn('   3. Browser console for errors');
+                }
+            }, 30000);
             
             // Set up history sync channels
             const [sendHistory, getHistory] = this.room.makeAction('history-sync');

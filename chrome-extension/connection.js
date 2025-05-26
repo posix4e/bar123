@@ -48,15 +48,19 @@ async function initTrysteroConnection(roomId, sharedSecret) {
             throw new Error('Trystero not loaded');
         }
         
-        // Join room
+        // Join room with explicit config
+        console.log('Joining Trystero room with config:', { appId: 'history-sync' });
+        console.log('Room ID:', roomId);
+        console.log('Trystero version:', trystero.version || 'unknown');
+        
         trysteroRoom = trystero.joinRoom({ appId: 'history-sync' }, roomId);
-        console.log('Joined Trystero room');
+        console.log('Joined Trystero room, waiting for peers...');
         
         updateStatus('Waiting for peers...');
         
         // Set up peer handlers
         trysteroRoom.onPeerJoin(peerId => {
-            console.log('Peer joined:', peerId);
+            console.log('🎉 Peer joined:', peerId);
             isConnected = true;
             updateStatus(`Connected to peer: ${peerId}`);
             
@@ -67,8 +71,9 @@ async function initTrysteroConnection(roomId, sharedSecret) {
             });
         });
         
+        // Add error handling for connection issues
         trysteroRoom.onPeerLeave(peerId => {
-            console.log('Peer left:', peerId);
+            console.log('👋 Peer left:', peerId);
             updateStatus('Peer disconnected');
             
             // Notify background script
@@ -77,6 +82,21 @@ async function initTrysteroConnection(roomId, sharedSecret) {
                 peerId: peerId
             });
         });
+        
+        // Log room activity
+        console.log('🔍 Room setup complete. Actively looking for peers...');
+        console.log('💡 Make sure both devices use the same shared secret!');
+        
+        // Timeout warning
+        setTimeout(() => {
+            if (!isConnected) {
+                console.warn('⚠️  No peers found after 30 seconds. Check:');
+                console.warn('   1. Same shared secret on both devices');
+                console.warn('   2. Network connectivity');
+                console.warn('   3. Browser console for errors');
+                updateStatus('Waiting for peers... (check console for debugging)');
+            }
+        }, 30000);
         
         // Set up data channels
         const [sendHistory, getHistory] = trysteroRoom.makeAction('history-sync');
