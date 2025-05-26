@@ -4,7 +4,9 @@ A Safari iOS extension and Chrome extension that enables real-time history synch
 
 ## 🚀 [Live Demo & Downloads](https://posix4e.github.io/bar123/)
 
-View the interactive showcase with live build artifacts, test results, and download links.
+**Interactive P2P Demo**: Enter your shared secret on the showcase page to see live history synchronization from your devices in real-time! The demo uses the same Trystero protocol as the actual extensions.
+
+View the showcase for live build artifacts, test results, screenshots, and download links.
 
 ## 🚀 Quick Start
 
@@ -204,8 +206,16 @@ test/                          # Integration tests
 - Check service worker is running
 - Verify WebRTC permissions
 
-## 🚀 CI/CD Commands
+## 🚀 CI/CD & Release Workflow
 
+### Branch Strategy
+- **Feature PRs** → Build + test, no uploads
+- **`main` branch** → TestFlight uploads (development/beta testing)
+- **`test-testflight`** → TestFlight testing branch  
+- **`test-pages`** → GitHub Pages testing branch
+- **Git releases/tags** → Production release assets
+
+### Development Commands
 ```bash
 # CI-specific builds
 npm run ci:build-chrome        # Chrome extension build + zip
@@ -218,8 +228,13 @@ npm run ci:test-local-multiplatform  # Local multiplatform with logging
 
 # Debug and artifact collection
 npm run ci:collect-debug      # Collect debugging information
-npm run ci:generate-showcase  # Generate showcase documentation
+npm run ci:generate-showcase  # Generate showcase documentation with live demo
 ```
+
+### Release Process
+1. **Development**: Merge to `main` → TestFlight upload for beta testing
+2. **Production**: Create git release (v1.0.0) → Versioned production assets
+3. **Testing**: Use `test-testflight` and `test-pages` branches for isolated testing
 
 ## 📝 License
 
