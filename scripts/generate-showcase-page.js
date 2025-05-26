@@ -437,7 +437,7 @@ class ShowcasePageGenerator {
 
     generateDownloadSection() {
         const chromeAvailable = this.debugReport?.artifacts?.chrome_extension || fs.existsSync(`chrome-extension-${this.commitSha}.zip`);
-        const iosAvailable = this.debugReport?.artifacts?.ios_ipa || fs.existsSync(`${process.env.RUNNER_TEMP || ''}/build/bar123.ipa`);
+        const iosAvailable = this.debugReport?.artifacts?.ios_ipa || fs.existsSync(`${process.env.RUNNER_TEMP || ''}/build/bar123-${this.commitSha}.ipa`);
 
         return `
         <div class="card">
@@ -461,7 +461,7 @@ class ShowcasePageGenerator {
                     <h3>iOS Safari Extension</h3>
                     <p>Native iOS app with Safari Web Extension</p>
                     ${iosAvailable ? 
-                        `<a href="./bar123.ipa" class="download-button">Download IPA</a>` :
+                        `<a href="./bar123-${this.commitSha}.ipa" class="download-button">Download IPA</a>` :
                         `<div style="opacity: 0.7; margin-top: 15px;">IPA not available</div>`
                     }
                     <div style="margin-top: 15px; font-size: 0.9rem; opacity: 0.8;">
@@ -813,10 +813,10 @@ class ShowcasePageGenerator {
         }
 
         // Copy iOS IPA if available
-        const ipaPath = `${process.env.RUNNER_TEMP || ''}/build/bar123.ipa`;
+        const ipaPath = `${process.env.RUNNER_TEMP || ''}/build/bar123-${this.commitSha}.ipa`;
         if (fs.existsSync(ipaPath)) {
-            fs.copyFileSync(ipaPath, path.join(this.outputDir, 'bar123.ipa'));
-            console.log(`📱 Copied iOS IPA: bar123.ipa`);
+            fs.copyFileSync(ipaPath, path.join(this.outputDir, `bar123-${this.commitSha}.ipa`));
+            console.log(`📱 Copied iOS IPA: bar123-${this.commitSha}.ipa`);
         }
 
         // Copy any additional assets

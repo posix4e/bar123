@@ -191,10 +191,20 @@ function exportIPA(archivePath, exportOptionsPath) {
       -exportPath "${options.output}"`, 
       { stdio: 'inherit' });
     
-    const ipaPath = path.join(options.output, 'bar123.ipa');
-    console.log('IPA export complete:', ipaPath);
+    const originalIpaPath = path.join(options.output, 'bar123.ipa');
+    const gitSha = process.env.GITHUB_SHA || 'local';
+    const hashedIpaPath = path.join(options.output, `bar123-${gitSha}.ipa`);
     
-    return ipaPath;
+    // Rename the IPA to include git hash
+    if (fs.existsSync(originalIpaPath)) {
+      fs.renameSync(originalIpaPath, hashedIpaPath);
+      console.log('IPA export complete:', hashedIpaPath);
+    } else {
+      console.error('Expected IPA file not found:', originalIpaPath);
+      throw new Error('IPA file not created by Xcode export');
+    }
+    
+    return hashedIpaPath;
   } catch (error) {
     console.error('Error exporting IPA:', error.message);
     process.exit(1);

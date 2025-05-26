@@ -83,7 +83,7 @@ jobs:
         name: build-artifacts-${{ github.sha }}
         path: |
           chrome-extension-${{ github.sha }}.zip
-          ${{ runner.temp }}/build/bar123.ipa
+          ${{ runner.temp }}/build/bar123-${{ github.sha }}.ipa
           build-debug-report.json
           test-output.log
           local-multiplatform-test-output.log
@@ -112,8 +112,8 @@ jobs:
       run: |
         echo "=== Available Artifacts ==="
         echo "📱 Chrome extension: chrome-extension-${{ github.sha }}.zip"
-        if [ -f "${{ runner.temp }}/build/bar123.ipa" ]; then
-          echo "📱 iOS IPA: ios-app-${{ github.sha }} ($(du -h '${{ runner.temp }}/build/bar123.ipa' | cut -f1))"
+        if [ -f "${{ runner.temp }}/build/bar123-${{ github.sha }}.ipa" ]; then
+          echo "📱 iOS IPA: bar123-${{ github.sha }}.ipa ($(du -h '${{ runner.temp }}/build/bar123-${{ github.sha }}.ipa' | cut -f1))"
         fi
         echo "📊 Debug report: debug-report-${{ github.sha }} (always available for analysis)"
         echo "🌐 Showcase page: showcase-page-${{ github.sha }} (comprehensive project overview)"
