@@ -15,8 +15,7 @@
     },
 
     "background": {
-        "scripts": [ "peerjs.min.js", "background.js" ],
-        "type": "module"
+        "scripts": [ "trystero-bundle.js", "background.js" ]
     },
 
     "content_scripts": [{

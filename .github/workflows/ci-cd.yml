@@ -1,0 +1,133 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test-deploy:
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build Safari extension assets
+      run: npm run build
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '16.2'
+        
+    # Testing Phase - Always runs
+    - name: Run cross-platform sync tests
+      run: npm run ci:test
+      
+    # Building Phase - Only run if tests pass
+    - name: Build Chrome extension
+      run: npm run ci:build-chrome
+      
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium
+      
+    - name: Run local multiplatform tests
+      run: npm run ci:test-local-multiplatform
+      
+    # iOS Build - Always runs (creates IPA)
+    - name: Build iOS app
+      continue-on-error: true
+      env:
+        BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+        APP_PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_PROVISIONING_PROFILE_BASE64 }}
+        EXTENSION_PROVISIONING_PROFILE_BASE64: ${{ secrets.EXTENSION_PROVISIONING_PROFILE_BASE64 }}
+        RUNNER_TEMP: ${{ runner.temp }}
+      run: npm run ci:build-ios
+      
+    # TestFlight Upload - Only for main branch and tags
+    - name: Upload to TestFlight
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+      env:
+        BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+        APP_PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_PROVISIONING_PROFILE_BASE64 }}
+        EXTENSION_PROVISIONING_PROFILE_BASE64: ${{ secrets.EXTENSION_PROVISIONING_PROFILE_BASE64 }}
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
+        RUNNER_TEMP: ${{ runner.temp }}
+      run: npm run ci:upload-testflight
+        
+    - name: Collect comprehensive debugging information
+      if: always()
+      run: npm run ci:collect-debug
+      
+    - name: Generate showcase page
+      if: always()
+      env:
+        RUNNER_TEMP: ${{ runner.temp }}
+      run: npm run ci:generate-showcase
+        
+    - name: Upload comprehensive debugging artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: debug-report-${{ github.sha }}
+        path: |
+          build-debug-report.json
+          test-output.log
+          local-multiplatform-test-output.log
+          ios-build.log
+          testflight-upload.log
+          test-results/
+        retention-days: 30
+        
+    - name: Upload showcase page
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: showcase-page-${{ github.sha }}
+        path: showcase/
+        retention-days: 30
+        
+    - name: Upload Chrome extension artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: chrome-extension-${{ github.sha }}
+        path: chrome-extension-${{ github.sha }}.zip
+        retention-days: 30
+        
+    - name: Upload iOS IPA artifact
+      if: hashFiles('${{ runner.temp }}/build/bar123.ipa') != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-app-${{ github.sha }}
+        path: ${{ runner.temp }}/build/bar123.ipa
+        retention-days: 30
+        if-no-files-found: ignore
+        
+    - name: Build success summary
+      run: |
+        echo "🎉 Build completed successfully!"
+        echo "=== Available Artifacts ==="
+        echo "📱 Chrome extension: chrome-extension-${{ github.sha }}.zip"
+        if [ -f "${{ runner.temp }}/build/bar123.ipa" ]; then
+          echo "📱 iOS IPA: ios-app-${{ github.sha }} ($(du -h '${{ runner.temp }}/build/bar123.ipa' | cut -f1))"
+        fi
+        echo "📊 Debug report: debug-report-${{ github.sha }} (always available for analysis)"
+        echo "🌐 Showcase page: showcase-page-${{ github.sha }} (comprehensive project overview)"
+        echo ""
+        echo "=== Quick Status ==="
+        jq -r '.results | "✅ Tests: " + (if .tests.passed then "PASSED" else "FAILED" end) + ", Local Tests: " + (if .local_tests.passed then "PASSED" else "FAILED" end) + ", iOS Build: " + (if .ios_build.passed then "PASSED" else "FAILED" end)' build-debug-report.json

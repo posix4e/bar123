@@ -5,25 +5,34 @@
   "main": "index.js",
   "scripts": {
     "install-deps": "npm install",
-    "build": "npm run bundle-peerjs && npm run copy-assets",
-    "bundle-peerjs": "cp node_modules/peerjs/dist/peerjs.min.js 'bar123 Extension/Resources/'",
+    "build": "npm run bundle-trystero && npm run copy-assets",
+    "bundle-trystero": "npm run build-trystero-bundle && cp dist/trystero-bundle.js 'bar123 Extension/Resources/' && cp dist/trystero-bundle.js chrome-extension/",
+    "build-chrome": "npm run bundle-trystero && npm run copy-chrome-assets",
+    "build-trystero-bundle": "mkdir -p dist && npx esbuild node_modules/trystero/src/index.js --bundle --format=iife --global-name=trystero --outfile=dist/trystero-bundle.js",
+    "copy-chrome-assets": "mkdir -p chrome-extension/images && cp 'bar123 Extension/Resources/images/'* chrome-extension/images/ 2>/dev/null || echo 'Images copied or not found'",
     "copy-assets": "echo 'Assets ready'",
     "dev": "npm run build && npm run serve",
     "serve": "python3 -m http.server 8081 --directory test-pages",
     "clean": "rm -f 'bar123 Extension/Resources/peerjs.min.js'",
     "xcode": "npm run build && open bar123.xcodeproj",
     "test-peerjs": "open quick-peerjs-test.html",
-    "test": "node test-runner.js",
-    "test-integration": "node test-runner.js --integration-only", 
-    "test-ui": "npm run build && xcodebuild test -project bar123.xcodeproj -scheme bar123UITests -destination 'platform=iOS Simulator,name=iPhone 15'",
-    "test-full": "npm run test-integration && npm run test",
-    "test-real": "node real-simulator-test.js",
-    "test-verify": "node real-simulator-test.js --verify-only",
-    
+    "test": "node test/cross-platform-sync-test.js",
+    "test-local-multiplatform": "node test/local-multiplatform-test.js",
+    "test-all": "npm run test-local-multiplatform",
+    "launch-chrome": "node launch-chrome-extension.js",
     "prepare-profiles": "node scripts/prepare-profiles.js",
     "ios-build": "node scripts/ios-build.js --certificate $RUNNER_TEMP/ios-profiles/certificate.p12 --password $P12_PASSWORD --app-profile $RUNNER_TEMP/ios-profiles/app_profile.mobileprovision --ext-profile $RUNNER_TEMP/ios-profiles/extension_profile.mobileprovision --output $RUNNER_TEMP/build",
     "ios-build-testflight": "npm run prepare-profiles && npm run ios-build -- --upload --apple-id $APPLE_ID --app-password $APP_SPECIFIC_PASSWORD",
-    "ios-build-local": "npm run prepare-profiles && npm run ios-build"
+    "ios-build-local": "npm run prepare-profiles && npm run ios-build",
+    "ci:test": "npm run test 2>&1 | tee test-output.log; TEST_EXIT=${PIPESTATUS[0]}; echo \"TEST_EXIT_CODE=$TEST_EXIT\" >> $GITHUB_ENV; exit $TEST_EXIT",
+    "ci:test-local-multiplatform": "npm run test-local-multiplatform 2>&1 | tee local-multiplatform-test-output.log; LOCAL_TEST_EXIT=${PIPESTATUS[0]}; echo \"LOCAL_MULTIPLATFORM_TEST_EXIT_CODE=$LOCAL_TEST_EXIT\" >> $GITHUB_ENV; exit $LOCAL_TEST_EXIT",
+    "ci:build-chrome": "npm run build-chrome && cd chrome-extension && zip -r ../chrome-extension-$GITHUB_SHA.zip * && cd ..",
+    "ci:build-ios": "npm run ios-build-local 2>&1 | tee ios-build.log; IOS_EXIT=${PIPESTATUS[0]}; echo \"IOS_BUILD_EXIT_CODE=$IOS_EXIT\" >> $GITHUB_ENV; exit $IOS_EXIT",
+    "ci:upload-testflight": "npm run prepare-profiles && npm run ios-build -- --upload --apple-id $APPLE_ID --app-password $APP_SPECIFIC_PASSWORD 2>&1 | tee testflight-upload.log; echo \"TESTFLIGHT_EXIT_CODE=${PIPESTATUS[0]}\" >> $GITHUB_ENV",
+    "ci:collect-debug": "node scripts/collect-debug-info.js",
+    "ci:generate-showcase": "node scripts/generate-showcase-page.js",
+    "ci:package-chrome": "echo 'chrome-extension-$GITHUB_SHA.zip'",
+    "ci:package-ios": "echo '$RUNNER_TEMP/build/bar123.ipa'"
   },
   "keywords": [
     "safari",
@@ -35,10 +44,20 @@
     "webrtc"
   ],
   "dependencies": {
-    "peerjs": "^1.4.7"
+    "peerjs": "^1.5.4",
+    "trystero": "^0.21.4"
   },
   "devDependencies": {
-    "commander": "^11.1.0"
+    "@playwright/test": "^1.52.0",
+    "commander": "^11.1.0",
+    "esbuild": "^0.25.4",
+    "playwright": "^1.52.0",
+    "puppeteer": "^22.8.2",
+    "selenium-webdriver": "^4.15.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
   },
   "author": "History Sync Extension",
   "license": "MIT"
