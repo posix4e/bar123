@@ -30,7 +30,7 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
-    - name: Build extensions
+    - name: Build Chrome extension
       run: |
         npm run build
         npm run ci:build-chrome
