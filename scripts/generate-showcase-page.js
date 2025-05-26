@@ -363,78 +363,204 @@ class ShowcasePageGenerator {
             }
         }
 
-        .code-explorer {
+        .demo-container {
             margin-top: 20px;
         }
 
-        .code-tabs {
-            display: flex;
-            background-color: #f8f9fa;
-            border-radius: 8px 8px 0 0;
-            padding: 5px;
-            gap: 5px;
-            flex-wrap: wrap;
+        .device-panels {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+            align-items: start;
         }
 
-        .code-tab {
+        .device-panel {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .chrome-device {
+            border-left: 4px solid #4285f4;
+        }
+
+        .safari-device {
+            border-left: 4px solid #007aff;
+        }
+
+        .device-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .device-icon {
+            font-size: 1.5rem;
+        }
+
+        .device-header h3 {
+            margin: 0;
+            color: #333;
+            flex-grow: 1;
+        }
+
+        .connection-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .connection-status.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .connection-status.connecting {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .history-panel {
             background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            min-height: 200px;
+        }
+
+        .history-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            background-color: #f8f9fa;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .history-item.syncing {
+            background-color: #fff3cd;
+            animation: pulse 1s infinite;
+        }
+
+        .history-item.synced {
+            background-color: #d4edda;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .sync-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 10px;
+        }
+
+        .sync-arrow {
+            font-size: 2rem;
+            color: #28a745;
+            animation: syncPulse 2s infinite;
+        }
+
+        @keyframes syncPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .sync-status {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            text-align: center;
+            color: #666;
+        }
+
+        .demo-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             border: none;
             padding: 8px 16px;
             border-radius: 6px;
             cursor: pointer;
-            font-family: 'Monaco', 'Consolas', monospace;
             font-size: 0.9rem;
             transition: all 0.2s ease;
         }
 
-        .code-tab:hover {
-            background-color: #e9ecef;
+        .demo-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
-        .code-tab.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .demo-button.primary {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
         }
 
-        .code-content {
-            background-color: #f8f9fa;
-            border-radius: 0 0 8px 8px;
-            padding: 0;
-            max-height: 400px;
-            overflow-y: auto;
+        .demo-controls-main {
+            text-align: center;
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
         }
 
-        .code-file {
-            display: none;
-            background-color: #2d3748;
-            color: #e2e8f0;
+        .demo-info {
+            background: #f8f9fa;
+            border-radius: 8px;
             padding: 20px;
-            font-family: 'Monaco', 'Consolas', monospace;
-            font-size: 0.85rem;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            overflow-x: auto;
+            margin: 20px 0;
         }
 
-        .code-file.active {
-            display: block;
+        .demo-info h4 {
+            margin-top: 0;
+            color: #333;
         }
 
-        .code-file .keyword {
-            color: #f56565;
+        .demo-info ul {
+            margin: 0;
+            padding-left: 20px;
         }
 
-        .code-file .string {
-            color: #68d391;
+        .demo-info li {
+            margin-bottom: 8px;
         }
 
-        .code-file .comment {
-            color: #a0aec0;
-            font-style: italic;
-        }
-
-        .code-file .function {
-            color: #63b3ed;
+        @media (max-width: 768px) {
+            .device-panels {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .sync-indicator {
+                order: -1;
+                padding: 10px;
+            }
+            
+            .sync-arrow {
+                transform: rotate(90deg);
+            }
         }
     </style>
 </head>
@@ -450,7 +576,7 @@ class ShowcasePageGenerator {
         ${this.generateFeaturesSection()}
         ${this.generateTestResultsSection()}
         ${this.generateBrowserStackSection()}
-        ${this.generateCodeExplorer()}
+        ${this.generateP2PDemo()}
         ${this.generateInstallationGuide()}
         ${this.generateTechnicalDetails()}
 
@@ -460,29 +586,110 @@ class ShowcasePageGenerator {
     </div>
 
     <script>
-        function showCodeFile(event, filename) {
-            // Hide all code files
-            const codeFiles = document.querySelectorAll('.code-file');
-            codeFiles.forEach(file => file.classList.remove('active'));
-            
-            // Remove active class from all tabs
-            const tabs = document.querySelectorAll('.code-tab');
-            tabs.forEach(tab => tab.classList.remove('active'));
-            
-            // Show selected file and activate tab
-            document.getElementById('code-' + filename).classList.add('active');
-            event.target.classList.add('active');
-        }
+        let demoActive = false;
+        let historyCounter = 0;
         
-        // Initialize first tab as active
-        document.addEventListener('DOMContentLoaded', function() {
-            const firstTab = document.querySelector('.code-tab');
-            const firstFile = document.querySelector('.code-file');
-            if (firstTab && firstFile) {
-                firstTab.classList.add('active');
-                firstFile.classList.add('active');
+        const sampleSites = [
+            { title: 'GitHub', url: 'https://github.com', icon: '🐙' },
+            { title: 'Stack Overflow', url: 'https://stackoverflow.com', icon: '📚' },
+            { title: 'MDN Web Docs', url: 'https://developer.mozilla.org', icon: '📖' },
+            { title: 'YouTube', url: 'https://youtube.com', icon: '📺' },
+            { title: 'Reddit', url: 'https://reddit.com', icon: '🔴' },
+            { title: 'Twitter', url: 'https://twitter.com', icon: '🐦' },
+            { title: 'Wikipedia', url: 'https://wikipedia.org', icon: '📰' },
+            { title: 'Google', url: 'https://google.com', icon: '🔍' },
+        ];
+
+        function startDemo() {
+            demoActive = true;
+            document.getElementById('start-demo').textContent = 'Demo Running...';
+            document.getElementById('start-demo').disabled = true;
+            
+            // Simulate connection process
+            setTimeout(() => {
+                document.getElementById('chrome-status').textContent = 'Connected';
+                document.getElementById('chrome-status').className = 'connection-status connected';
+                document.getElementById('safari-status').textContent = 'Connected';
+                document.getElementById('safari-status').className = 'connection-status connected';
+                document.getElementById('sync-status').textContent = 'P2P Connection Established';
+            }, 1500);
+        }
+
+        function simulateBrowsing(device) {
+            if (!demoActive) {
+                alert('Please start the demo first!');
+                return;
             }
-        });
+
+            const site = sampleSites[Math.floor(Math.random() * sampleSites.length)];
+            const timestamp = new Date().toLocaleTimeString();
+            historyCounter++;
+            
+            const historyItem = {
+                id: historyCounter,
+                title: site.title,
+                url: site.url,
+                icon: site.icon,
+                timestamp: timestamp,
+                device: device
+            };
+            
+            // Add to originating device first
+            addHistoryItem(device, historyItem, 'local');
+            
+            // Simulate sync delay and add to other device
+            setTimeout(() => {
+                const otherDevice = device === 'chrome' ? 'safari' : 'chrome';
+                addHistoryItem(otherDevice, historyItem, 'synced');
+            }, Math.random() * 1000 + 500);
+        }
+
+        function addHistoryItem(device, item, type) {
+            const listId = device + '-history-list';
+            const historyList = document.getElementById(listId);
+            
+            const historyElement = document.createElement('div');
+            historyElement.className = 'history-item ' + (type === 'synced' ? 'syncing' : '');
+            historyElement.innerHTML = \`
+                <span style="font-size: 1.2rem;">\${item.icon}</span>
+                <div style="flex-grow: 1;">
+                    <div style="font-weight: bold; font-size: 0.9rem;">\${item.title}</div>
+                    <div style="font-size: 0.8rem; color: #666;">\${item.url}</div>
+                    <div style="font-size: 0.7rem; color: #999;">\${item.timestamp} • From \${item.device === device ? 'local' : item.device}</div>
+                </div>
+            \`;
+            
+            historyList.insertBefore(historyElement, historyList.firstChild);
+            
+            if (type === 'synced') {
+                setTimeout(() => {
+                    historyElement.classList.remove('syncing');
+                    historyElement.classList.add('synced');
+                }, 1000);
+            }
+            
+            // Keep only last 5 items
+            while (historyList.children.length > 5) {
+                historyList.removeChild(historyList.lastChild);
+            }
+        }
+
+        function resetDemo() {
+            demoActive = false;
+            historyCounter = 0;
+            
+            document.getElementById('start-demo').textContent = 'Start Demo';
+            document.getElementById('start-demo').disabled = false;
+            
+            document.getElementById('chrome-status').textContent = 'Disconnected';
+            document.getElementById('chrome-status').className = 'connection-status';
+            document.getElementById('safari-status').textContent = 'Disconnected';
+            document.getElementById('safari-status').className = 'connection-status';
+            document.getElementById('sync-status').textContent = 'Connection Closed';
+            
+            document.getElementById('chrome-history-list').innerHTML = '';
+            document.getElementById('safari-history-list').innerHTML = '';
+        }
     </script>
 </body>
 </html>`;
@@ -762,91 +969,68 @@ class ShowcasePageGenerator {
         `).join('');
     }
 
-    generateCodeExplorer() {
-        const codeFiles = [
-            {
-                name: 'background.js',
-                path: 'chrome-extension/background.js',
-                description: 'Service worker handling P2P connections and history sync'
-            },
-            {
-                name: 'popup.js',
-                path: 'chrome-extension/popup.js', 
-                description: 'Extension popup interface for room management'
-            },
-            {
-                name: 'content.js',
-                path: 'chrome-extension/content.js',
-                description: 'Content script tracking page visits and navigation'
-            },
-            {
-                name: 'manifest.json',
-                path: 'chrome-extension/manifest.json',
-                description: 'Chrome extension manifest configuration'
-            },
-            {
-                name: 'Safari background.js',
-                path: 'bar123 Extension/Resources/background.js',
-                description: 'Safari Web Extension background script'
-            },
-            {
-                name: 'Safari manifest.json',
-                path: 'bar123 Extension/Resources/manifest.json',
-                description: 'Safari Web Extension manifest'
-            }
-        ];
-
-        let availableFiles = [];
-        let codeContent = '';
-
-        codeFiles.forEach(file => {
-            try {
-                if (fs.existsSync(file.path)) {
-                    const content = fs.readFileSync(file.path, 'utf8');
-                    const escapedContent = content
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;')
-                        .replace(/"/g, '&quot;')
-                        .replace(/'/g, '&#39;');
-                    
-                    availableFiles.push(file);
-                    codeContent += `
-                    <div class="code-file" id="code-${file.name.replace(/[^a-zA-Z0-9]/g, '')}">
-                        <div style="color: #a0aec0; margin-bottom: 15px; border-bottom: 1px solid #4a5568; padding-bottom: 10px;">
-                            📄 ${file.path} - ${file.description}
-                        </div>
-                        <pre>${escapedContent}</pre>
-                    </div>`;
-                }
-            } catch (error) {
-                console.warn(`Could not read ${file.path}:`, error.message);
-            }
-        });
-
-        if (availableFiles.length === 0) {
-            return `
-            <div class="card">
-                <h2>💻 Source Code</h2>
-                <p>Source code files not available in this build</p>
-            </div>`;
-        }
-
-        const tabs = availableFiles.map(file => 
-            `<button class="code-tab" onclick="showCodeFile(event, '${file.name.replace(/[^a-zA-Z0-9]/g, '')}')">${file.name}</button>`
-        ).join('');
-
+    generateP2PDemo() {
         return `
         <div class="card">
-            <h2>💻 Source Code Explorer</h2>
-            <p>Browse the key source files that power the cross-platform history sync extension</p>
+            <h2>🔄 Live P2P History Sync Demo</h2>
+            <p>Experience real-time history synchronization between Chrome desktop and Safari iOS in read-only mode</p>
             
-            <div class="code-explorer">
-                <div class="code-tabs">
-                    ${tabs}
+            <div class="demo-container">
+                <div class="device-panels">
+                    <div class="device-panel chrome-device">
+                        <div class="device-header">
+                            <div class="device-icon">🖥️</div>
+                            <h3>Chrome Desktop</h3>
+                            <div class="connection-status" id="chrome-status">Connecting...</div>
+                        </div>
+                        <div class="history-panel" id="chrome-history">
+                            <div class="history-header">📚 Recent History</div>
+                            <div class="history-list" id="chrome-history-list">
+                                <!-- Will be populated by demo -->
+                            </div>
+                        </div>
+                        <div class="demo-controls">
+                            <button onclick="simulateBrowsing('chrome')" class="demo-button">Simulate Browsing</button>
+                        </div>
+                    </div>
+
+                    <div class="sync-indicator">
+                        <div class="sync-arrow" id="sync-arrow">⟷</div>
+                        <div class="sync-status" id="sync-status">Establishing P2P Connection...</div>
+                    </div>
+
+                    <div class="device-panel safari-device">
+                        <div class="device-header">
+                            <div class="device-icon">📱</div>
+                            <h3>Safari iOS</h3>
+                            <div class="connection-status" id="safari-status">Connecting...</div>
+                        </div>
+                        <div class="history-panel" id="safari-history">
+                            <div class="history-header">📚 Recent History</div>
+                            <div class="history-list" id="safari-history-list">
+                                <!-- Will be populated by demo -->
+                            </div>
+                        </div>
+                        <div class="demo-controls">
+                            <button onclick="simulateBrowsing('safari')" class="demo-button">Simulate Browsing</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="code-content">
-                    ${codeContent}
+
+                <div class="demo-info">
+                    <h4>🎯 How it Works</h4>
+                    <ul>
+                        <li><strong>WebRTC P2P:</strong> Direct device-to-device connection using Trystero</li>
+                        <li><strong>Shared Secret:</strong> Both devices use the same room key for discovery</li>
+                        <li><strong>Real-time Sync:</strong> History items appear instantly on both devices</li>
+                        <li><strong>No Server Storage:</strong> All data stays between your devices</li>
+                        <li><strong>End-to-End Encrypted:</strong> Secure peer-to-peer communication</li>
+                    </ul>
+                </div>
+
+                <div class="demo-controls-main">
+                    <button onclick="startDemo()" class="demo-button primary" id="start-demo">Start Demo</button>
+                    <button onclick="resetDemo()" class="demo-button">Reset Demo</button>
                 </div>
             </div>
         </div>`;
