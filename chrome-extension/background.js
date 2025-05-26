@@ -107,23 +107,49 @@ class HistorySyncService {
         this.roomId = await this.hashSecret(sharedSecret);
         
         try {
-            // Create a connection page tab
-            const connectionUrl = chrome.runtime.getURL('connection.html');
-            const tab = await chrome.tabs.create({ url: connectionUrl, active: false });
-            this.connectionTab = tab.id;
+            // Create offscreen document for WebRTC (Chrome MV3 compatible)
+            await this.createOffscreenDocument();
             
-            // Store the connection request to send when page is ready
-            this.pendingConnection = {
+            console.log('Connecting to Trystero room:', this.roomId);
+            
+            // Send connection request to offscreen document
+            const response = await chrome.runtime.sendMessage({
                 action: 'initConnection',
                 roomId: this.roomId,
                 sharedSecret: sharedSecret
-            };
+            });
             
-            console.log('Connection page created, waiting for ready signal');
-            this.isConnected = true;
+            if (response.success) {
+                this.isConnected = true;
+                console.log('✅ Connection initiated successfully');
+            } else {
+                throw new Error(response.error);
+            }
         } catch (error) {
             throw new Error('Failed to connect: ' + error.message);
         }
+    }
+    
+    async createOffscreenDocument() {
+        // Check if offscreen document already exists
+        const existingContexts = await chrome.runtime.getContexts({
+            contextTypes: ['OFFSCREEN_DOCUMENT'],
+            documentUrls: [chrome.runtime.getURL('offscreen.html')]
+        });
+        
+        if (existingContexts.length > 0) {
+            console.log('Offscreen document already exists');
+            return;
+        }
+        
+        // Create offscreen document
+        await chrome.offscreen.createDocument({
+            url: 'offscreen.html',
+            reasons: ['BLOBS', 'DOM_SCRAPING'], // Required reasons for offscreen document
+            justification: 'Required for WebRTC P2P connections using Trystero'
+        });
+        
+        console.log('Offscreen document created');
     }
 
     async hashSecret(secret) {
@@ -136,16 +162,16 @@ class HistorySyncService {
 
     // Trystero initialization moved to content script due to WebRTC restrictions in service workers
 
-    disconnect() {
-        if (this.connectionTab) {
-            // Send disconnect message to content script
-            chrome.tabs.sendMessage(this.connectionTab, {
-                action: 'disconnect'
-            }).catch(() => {
-                // Tab might be closed, ignore error
-            });
-            this.connectionTab = null;
+    async disconnect() {
+        console.log('Disconnecting from Trystero...');
+        
+        try {
+            // Send disconnect message to offscreen document
+            await chrome.runtime.sendMessage({ action: 'disconnect' });
+        } catch (error) {
+            console.log('Failed to send disconnect to offscreen:', error.message);
         }
+        
         this.peers.clear();
         this.isConnected = false;
         console.log('Disconnected from Trystero');

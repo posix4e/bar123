@@ -35,7 +35,8 @@
     "tabs", 
     "history",
     "activeTab",
-    "scripting"
+    "scripting",
+    "offscreen"
   ],
   
   "host_permissions": [
