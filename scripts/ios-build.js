@@ -83,7 +83,8 @@ function getProfileUUIDs() {
   const extProfilePath = path.join(profilesDir, 'extension_profile.mobileprovision');
   
   try {
-    // Extract UUIDs using security command for more reliable parsing
+    // Extract UUIDs using Apple's official security and plutil tools
+    console.log('Extracting UUIDs from provisioning profiles...');
     const appProfileUUID = execSync(`security cms -D -i "${appProfilePath}" | plutil -extract UUID raw -`).toString().trim();
     const extProfileUUID = execSync(`security cms -D -i "${extProfilePath}" | plutil -extract UUID raw -`).toString().trim();
     
@@ -92,30 +93,20 @@ function getProfileUUIDs() {
     
     // Validate UUIDs
     if (!appProfileUUID || appProfileUUID.length !== 36) {
-      throw new Error(`Invalid app profile UUID: ${appProfileUUID}`);
+      throw new Error(`Invalid app profile UUID: ${appProfileUUID}. Profile may be corrupted or invalid.`);
     }
     if (!extProfileUUID || extProfileUUID.length !== 36) {
-      throw new Error(`Invalid extension profile UUID: ${extProfileUUID}`);
+      throw new Error(`Invalid extension profile UUID: ${extProfileUUID}. Profile may be corrupted or invalid.`);
     }
     
     return { appProfileUUID, extProfileUUID };
   } catch (error) {
-    console.error('Error extracting profile UUIDs:', error.message);
-    console.error('Trying fallback method with grep...');
-    
-    try {
-      // Fallback to grep method
-      const appProfileUUID = execSync(`grep -a -A 1 UUID "${appProfilePath}" | grep -o "[-A-Za-z0-9]\\{36\\}"`).toString().trim();
-      const extProfileUUID = execSync(`grep -a -A 1 UUID "${extProfilePath}" | grep -o "[-A-Za-z0-9]\\{36\\}"`).toString().trim();
-      
-      console.log(`Fallback - App Profile UUID: ${appProfileUUID}`);
-      console.log(`Fallback - Extension Profile UUID: ${extProfileUUID}`);
-      
-      return { appProfileUUID, extProfileUUID };
-    } catch (fallbackError) {
-      console.error('Fallback method also failed:', fallbackError.message);
-      process.exit(1);
-    }
+    console.error('❌ Failed to extract provisioning profile UUIDs:', error.message);
+    console.error('💡 Ensure that:');
+    console.error('  - Provisioning profiles are valid and not corrupted');
+    console.error('  - Profiles are properly base64 decoded');
+    console.error('  - security and plutil commands are available (standard on macOS)');
+    process.exit(1);
   }
 }
 
