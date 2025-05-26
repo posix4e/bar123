@@ -66,6 +66,13 @@ class HistorySyncService {
                     });
                     break;
                     
+                case 'getHistory':
+                    sendResponse({
+                        success: true,
+                        history: this.localHistory.slice(0, 50) // Return last 50 entries
+                    });
+                    break;
+                    
                 case 'peerJoined':
                     console.log('Peer joined:', request.peerId);
                     this.peers.set(request.peerId, { connected: true });
