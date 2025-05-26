@@ -217,17 +217,35 @@ function uploadToTestFlight(ipaPath) {
   
   try {
     // Use xcrun notarytool for uploading (replaces deprecated altool)
-    execSync(`xcrun notarytool submit "${ipaPath}" \
+    const result = execSync(`xcrun notarytool submit "${ipaPath}" \
       --apple-id "${options.appleId}" \
       --password "${options.appPassword}" \
       --team-id "2858MX5336" \
       --wait \
       --verbose`, 
-      { stdio: 'inherit' });
+      { encoding: 'utf-8' });
     
-    console.log('TestFlight upload complete.');
+    // Check for Invalid status in the output
+    if (result.includes('status: Invalid')) {
+      console.error('❌ TestFlight upload FAILED: Apple rejected the submission with "Invalid" status');
+      console.error('');
+      console.error('🔧 Common causes and solutions:');
+      console.error('   • Missing Export Compliance: Set encryption usage to "No" in App Store Connect');
+      console.error('   • Missing Content Rights: Declare third-party content usage');
+      console.error('   • Bundle ID mismatch: Ensure Bundle ID matches App Store Connect app');
+      console.error('   • Missing metadata: Complete all required app information fields');
+      console.error('');
+      console.error('📋 Next steps:');
+      console.error('   1. Go to App Store Connect → Your App → App Information');
+      console.error('   2. Set Export Compliance to "No" (most common fix)');
+      console.error('   3. Complete any missing required fields');
+      console.error('   4. Re-run the build');
+      process.exit(1);
+    }
+    
+    console.log('✅ TestFlight upload completed successfully.');
   } catch (error) {
-    console.error('Error uploading to TestFlight:', error.message);
+    console.error('❌ Error uploading to TestFlight:', error.message);
     console.error('Note: Ensure you have the latest Xcode command line tools installed');
     process.exit(1);
   }
@@ -302,6 +320,11 @@ async function main() {
     if (ipaPath && fs.existsSync(ipaPath)) {
       const ipaStats = fs.statSync(ipaPath);
       console.log(`Final IPA: ${ipaPath} (${(ipaStats.size / 1024 / 1024).toFixed(2)} MB)`);
+    }
+    if (options.upload && buildSuccess) {
+      console.log('TestFlight: Upload completed successfully ✅');
+    } else if (options.upload && !buildSuccess) {
+      console.log('TestFlight: Upload FAILED ❌');
     }
   }
 }
