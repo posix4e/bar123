@@ -644,6 +644,38 @@ class ShowcasePageGenerator {
     }
 
     generatePlatformScreenshots(platforms) {
+        // Use actual test screenshots if available
+        const screenshotsDir = 'screenshots';
+        let actualScreenshots = [];
+        
+        if (fs.existsSync('test-results/local-multiplatform/screenshots')) {
+            const files = fs.readdirSync('test-results/local-multiplatform/screenshots');
+            actualScreenshots = files.filter(f => f.endsWith('.png'));
+        }
+        
+        if (actualScreenshots.length > 0) {
+            return actualScreenshots.slice(0, 6).map((screenshot, index) => {
+                const screenshotName = screenshot.replace('screenshot-', '').replace('.png', '');
+                const isChrome = screenshotName.includes('chrome');
+                const isSafari = screenshotName.includes('safari');
+                
+                return `
+                <div class="screenshot-card">
+                    <img src="./${screenshotsDir}/${screenshot}" 
+                         alt="${screenshotName}" 
+                         style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px 10px 0 0;">
+                    <div class="screenshot-info">
+                        <h4>${isChrome ? '🖥️ Chrome Extension' : isSafari ? '📱 Safari Extension' : '🔧 Test Screenshot'}</h4>
+                        <p>Real test screenshot: ${screenshotName}</p>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: #6c757d;">
+                            File: ${screenshot}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        
+        // Fallback to platform-based placeholders if no screenshots
         return platforms.map(platform => `
             <div class="screenshot-card">
                 <div class="screenshot-placeholder">
@@ -805,11 +837,15 @@ class ShowcasePageGenerator {
     }
 
     copyArtifacts() {
-        // Copy Chrome extension if available
+        console.log('📦 Copying build artifacts to GitHub Pages...');
+        
+        // Copy Chrome extension zip if available
         const chromeZip = `chrome-extension-${this.commitSha}.zip`;
         if (fs.existsSync(chromeZip)) {
             fs.copyFileSync(chromeZip, path.join(this.outputDir, chromeZip));
             console.log(`📦 Copied Chrome extension: ${chromeZip}`);
+        } else {
+            console.warn(`⚠️ Chrome extension not found: ${chromeZip}`);
         }
 
         // Copy iOS IPA if available
@@ -817,15 +853,61 @@ class ShowcasePageGenerator {
         if (fs.existsSync(ipaPath)) {
             fs.copyFileSync(ipaPath, path.join(this.outputDir, 'bar123.ipa'));
             console.log(`📱 Copied iOS IPA: bar123.ipa`);
+        } else {
+            console.warn(`⚠️ iOS IPA not found: ${ipaPath}`);
         }
 
-        // Copy any additional assets
+        // Copy test result screenshots if available
+        const screenshotsDir = 'test-results/local-multiplatform/screenshots';
+        if (fs.existsSync(screenshotsDir)) {
+            const outputScreenshotsDir = path.join(this.outputDir, 'screenshots');
+            if (!fs.existsSync(outputScreenshotsDir)) {
+                fs.mkdirSync(outputScreenshotsDir, { recursive: true });
+            }
+            
+            const screenshotFiles = fs.readdirSync(screenshotsDir);
+            screenshotFiles.forEach(file => {
+                if (file.endsWith('.png')) {
+                    fs.copyFileSync(
+                        path.join(screenshotsDir, file),
+                        path.join(outputScreenshotsDir, file)
+                    );
+                }
+            });
+            console.log(`📸 Copied ${screenshotFiles.length} test screenshots`);
+        }
+
+        // Copy debug reports
+        if (fs.existsSync('build-debug-report.json')) {
+            fs.copyFileSync('build-debug-report.json', path.join(this.outputDir, 'build-debug-report.json'));
+            console.log(`📊 Copied debug report`);
+        }
+
+        // Copy test results
+        if (fs.existsSync('test-results')) {
+            const testResultsDir = path.join(this.outputDir, 'test-results');
+            if (!fs.existsSync(testResultsDir)) {
+                fs.mkdirSync(testResultsDir, { recursive: true });
+            }
+            
+            // Copy JSON test results
+            const testFiles = ['test-results/local-multiplatform/local-test-results.json', 'test-results/sync/test-results.json'];
+            testFiles.forEach(file => {
+                if (fs.existsSync(file)) {
+                    const filename = path.basename(file);
+                    fs.copyFileSync(file, path.join(testResultsDir, filename));
+                    console.log(`📋 Copied test results: ${filename}`);
+                }
+            });
+        }
+
+        // Copy extension icons and assets for display
         if (fs.existsSync('chrome-extension/images')) {
             const imagesDir = path.join(this.outputDir, 'images');
             if (!fs.existsSync(imagesDir)) {
-                fs.mkdirSync(imagesDir);
+                fs.mkdirSync(imagesDir, { recursive: true });
             }
-            // Copy extension icons for display
+            
             const iconFiles = fs.readdirSync('chrome-extension/images');
             iconFiles.forEach(file => {
                 fs.copyFileSync(
@@ -833,7 +915,7 @@ class ShowcasePageGenerator {
                     path.join(imagesDir, file)
                 );
             });
-            console.log(`🖼️ Copied extension images`);
+            console.log(`🖼️ Copied ${iconFiles.length} extension images`);
         }
     }
 }

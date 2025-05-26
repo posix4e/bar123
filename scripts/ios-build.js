@@ -216,12 +216,12 @@ function uploadToTestFlight(ipaPath) {
   console.log('Uploading to TestFlight...');
   
   try {
-    // Use xcrun notarytool for uploading (replaces deprecated altool)
-    execSync(`xcrun notarytool submit "${ipaPath}" \
-      --apple-id "${options.appleId}" \
+    // Use xcrun altool for TestFlight uploads (notarytool is for notarization, not TestFlight)
+    execSync(`xcrun altool --upload-app \
+      --type ios \
+      --file "${ipaPath}" \
+      --username "${options.appleId}" \
       --password "${options.appPassword}" \
-      --team-id "2858MX5336" \
-      --wait \
       --verbose`, 
       { stdio: 'inherit' });
     
