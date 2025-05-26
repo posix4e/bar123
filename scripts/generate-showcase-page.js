@@ -13,7 +13,7 @@ const { execSync } = require('child_process');
 
 class ShowcasePageGenerator {
     constructor() {
-        this.outputDir = 'showcase';
+        this.outputDir = 'docs';  // GitHub Pages serves from docs/ directory
         this.packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
         this.commitSha = process.env.GITHUB_SHA || 'local';
         this.runId = process.env.GITHUB_RUN_ID || 'local';
