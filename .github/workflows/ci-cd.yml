@@ -11,14 +11,15 @@ jobs:
   build-test-deploy:
     runs-on: macos-14
     permissions:
-      contents: write  # Allow pushing to repository for GitHub Pages deployment
+      contents: read
+      pages: write
+      id-token: write
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Fetch full history for proper git operations
-        token: ${{ secrets.GITHUB_TOKEN }}  # Use GitHub token for authentication
+        fetch-depth: 0
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -29,29 +30,22 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
-    - name: Build Safari extension assets
-      run: npm run build
+    - name: Build extensions
+      run: |
+        npm run build
+        npm run ci:build-chrome
       
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: '16.2'
         
-    # Testing Phase - Always runs
-    - name: Run cross-platform sync tests
-      run: npm run ci:test
+    - name: Run tests
+      run: |
+        npm run ci:test
+        npx playwright install --with-deps chromium
+        npm run ci:test-local-multiplatform
       
-    # Building Phase - Only run if tests pass
-    - name: Build Chrome extension
-      run: npm run ci:build-chrome
-      
-    - name: Install Playwright browsers
-      run: npx playwright install --with-deps chromium
-      
-    - name: Run local multiplatform tests
-      run: npm run ci:test-local-multiplatform
-      
-    # iOS Build - Always runs (creates IPA)
     - name: Build iOS app
       continue-on-error: true
       env:
@@ -62,9 +56,8 @@ jobs:
         RUNNER_TEMP: ${{ runner.temp }}
       run: npm run ci:build-ios
       
-    # TestFlight Upload - Only for main branch and tags
     - name: Upload to TestFlight
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+      if: github.ref == 'refs/heads/main'
       env:
         BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
         P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
@@ -75,22 +68,22 @@ jobs:
         RUNNER_TEMP: ${{ runner.temp }}
       run: npm run ci:upload-testflight
         
-    - name: Collect comprehensive debugging information
-      if: always()
-      run: npm run ci:collect-debug
-      
-    - name: Generate showcase page
+    - name: Collect artifacts and generate showcase
       if: always()
       env:
         RUNNER_TEMP: ${{ runner.temp }}
-      run: npm run ci:generate-showcase
+      run: |
+        npm run ci:collect-debug
+        npm run ci:generate-showcase
         
-    - name: Upload comprehensive debugging artifacts
+    - name: Upload artifacts
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: debug-report-${{ github.sha }}
+        name: build-artifacts-${{ github.sha }}
         path: |
+          chrome-extension-${{ github.sha }}.zip
+          ${{ runner.temp }}/build/bar123.ipa
           build-debug-report.json
           test-output.log
           local-multiplatform-test-output.log
@@ -98,59 +91,25 @@ jobs:
           testflight-upload.log
           test-results/
         retention-days: 30
-        
-    # Deploy to GitHub Pages - Only for main branch
-    - name: Deploy showcase to GitHub Pages
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      run: |
-        # Configure git for deployment
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        
-        # Add and commit the docs directory
-        git add docs/
-        if git diff --staged --quiet; then
-          echo "No changes to deploy"
-        else
-          git commit -m "Deploy showcase page for build ${{ github.sha }}
-
-          🤖 Auto-generated GitHub Pages deployment
-          
-          Build: ${{ github.run_id }}
-          Commit: ${{ github.sha }}
-          Event: ${{ github.event_name }}"
-          
-          # Push to main branch to trigger GitHub Pages
-          git push origin main
-        fi
-        
-    - name: Upload showcase page artifact
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: showcase-page-${{ github.sha }}
-        path: docs/
-        retention-days: 30
-        
-    - name: Upload Chrome extension artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: chrome-extension-${{ github.sha }}
-        path: chrome-extension-${{ github.sha }}.zip
-        retention-days: 30
-        
-    - name: Upload iOS IPA artifact
-      if: hashFiles('${{ runner.temp }}/build/bar123.ipa') != ''
-      uses: actions/upload-artifact@v4
-      with:
-        name: ios-app-${{ github.sha }}
-        path: ${{ runner.temp }}/build/bar123.ipa
-        retention-days: 30
         if-no-files-found: ignore
         
-    - name: Build success summary
+    - name: Setup Pages
+      if: github.ref == 'refs/heads/main'
+      uses: actions/configure-pages@v4
+      
+    - name: Upload to Pages
+      if: github.ref == 'refs/heads/main'
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: docs/
+        
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: actions/deploy-pages@v4
+        
+    - name: Build summary and final status check
+      if: always()
       run: |
-        echo "🎉 Build completed successfully!"
         echo "=== Available Artifacts ==="
         echo "📱 Chrome extension: chrome-extension-${{ github.sha }}.zip"
         if [ -f "${{ runner.temp }}/build/bar123.ipa" ]; then
@@ -159,5 +118,23 @@ jobs:
         echo "📊 Debug report: debug-report-${{ github.sha }} (always available for analysis)"
         echo "🌐 Showcase page: showcase-page-${{ github.sha }} (comprehensive project overview)"
         echo ""
-        echo "=== Quick Status ==="
-        jq -r '.results | "✅ Tests: " + (if .tests.passed then "PASSED" else "FAILED" end) + ", Local Tests: " + (if .local_tests.passed then "PASSED" else "FAILED" end) + ", iOS Build: " + (if .ios_build.passed then "PASSED" else "FAILED" end)' build-debug-report.json
+        echo "=== Final Status Check ==="
+        
+        # Check if any critical builds failed
+        TESTS_PASSED=$(jq -r '.results.tests.passed // false' build-debug-report.json)
+        LOCAL_TESTS_PASSED=$(jq -r '.results.local_tests.passed // false' build-debug-report.json)
+        IOS_BUILD_PASSED=$(jq -r '.results.ios_build.passed // false' build-debug-report.json)
+        
+        echo "✅ Tests: $TESTS_PASSED"
+        echo "✅ Local Tests: $LOCAL_TESTS_PASSED" 
+        echo "✅ iOS Build: $IOS_BUILD_PASSED"
+        
+        # Fail the pipeline if any critical component failed
+        if [ "$TESTS_PASSED" = "false" ] || [ "$LOCAL_TESTS_PASSED" = "false" ] || [ "$IOS_BUILD_PASSED" = "false" ]; then
+          echo ""
+          echo "❌ Build pipeline FAILED - check debug report for details"
+          exit 1
+        else
+          echo ""
+          echo "🎉 Build completed successfully!"
+        fi
