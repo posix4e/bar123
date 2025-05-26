@@ -12,7 +12,7 @@ bar123 Extension/Resources/socket.io-bundle.js
 # CI/CD logs and artifacts
 *.log
 test-output.log
-browserstack-test-output.log
+local-multiplatform-test-output.log
 ios-build.log
 testflight-upload.log
 build-debug-report.json

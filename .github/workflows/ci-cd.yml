@@ -88,7 +88,7 @@ jobs:
         path: |
           build-debug-report.json
           test-output.log
-          browserstack-test-output.log
+          local-multiplatform-test-output.log
           ios-build.log
           testflight-upload.log
           test-results/
@@ -130,4 +130,4 @@ jobs:
         echo "🌐 Showcase page: showcase-page-${{ github.sha }} (comprehensive project overview)"
         echo ""
         echo "=== Quick Status ==="
-        jq -r '.results | "✅ Tests: " + (if .tests.passed then "PASSED" else "FAILED" end) + ", BrowserStack: " + (if .browserstack_tests.ran then (if .browserstack_tests.passed then "PASSED" else "FAILED" end) else "SKIPPED" end) + ", iOS Build: " + (if .ios_build.passed then "PASSED" else "FAILED" end)' build-debug-report.json
+        jq -r '.results | "✅ Tests: " + (if .tests.passed then "PASSED" else "FAILED" end) + ", Local Tests: " + (if .local_tests.passed then "PASSED" else "FAILED" end) + ", iOS Build: " + (if .ios_build.passed then "PASSED" else "FAILED" end)' build-debug-report.json
