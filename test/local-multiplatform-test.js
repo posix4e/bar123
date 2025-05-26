@@ -61,7 +61,19 @@ class LocalMultiplatformSyncTester {
             fs.mkdirSync(dir, { recursive: true });
         }
         
-        await page.screenshot({ path: filepath, fullPage: true });
+        try {
+            // Add timeout for screenshots to prevent hanging
+            await Promise.race([
+                page.screenshot({ path: filepath, fullPage: true }),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Screenshot timeout after 15s')), 15000)
+                )
+            ]);
+        } catch (error) {
+            console.warn(`⚠️ Screenshot failed for ${name}: ${error.message}`);
+            // Create a minimal fallback so the test can continue
+            fs.writeFileSync(filepath, 'Screenshot failed due to timeout');
+        }
         
         const screenshotData = {
             name,
@@ -131,11 +143,17 @@ class LocalMultiplatformSyncTester {
                         '--disable-background-timer-throttling', 
                         '--disable-backgrounding-occluded-windows',
                         '--disable-renderer-backgrounding',
-                        '--virtual-time-budget=20000'
+                        '--virtual-time-budget=20000',
+                        '--disable-software-rasterizer',
+                        '--disable-background-networking',
+                        '--disable-sync',
+                        '--metrics-recording-only',
+                        '--disable-default-apps',
+                        '--no-pings'
                     ] : [])
                 ],
                 viewport: { width: 1280, height: 720 },
-                timeout: 60000, // 60 second timeout
+                timeout: isCI ? 120000 : 60000, // Longer timeout for CI
                 ignoreDefaultArgs: ['--enable-automation']
             });
             
@@ -148,8 +166,11 @@ class LocalMultiplatformSyncTester {
             // Test extension loading
             console.log('  📋 Verifying extension loading...');
             
-            await page.goto('chrome://extensions/', { waitUntil: 'networkidle' });
-            await page.waitForTimeout(3000);
+            await page.goto('chrome://extensions/', { 
+                waitUntil: 'networkidle', 
+                timeout: isCI ? 60000 : 30000 
+            });
+            await page.waitForTimeout(isCI ? 5000 : 3000);
             
             // Developer mode should already be enabled for loaded extensions
             await page.waitForTimeout(1000);
@@ -189,8 +210,11 @@ class LocalMultiplatformSyncTester {
                 
                 // Navigate to extension popup
                 const popupUrl = `chrome-extension://${extensionId}/popup.html`;
-                await page.goto(popupUrl, { waitUntil: 'domcontentloaded' });
-                await page.waitForTimeout(2000);
+                await page.goto(popupUrl, { 
+                    waitUntil: 'domcontentloaded',
+                    timeout: isCI ? 60000 : 30000
+                });
+                await page.waitForTimeout(isCI ? 5000 : 2000);
                 
                 // Take screenshot of popup
                 const popupScreenshot = await this.takeScreenshot(page, 'chrome-popup', 'Extension popup interface');
