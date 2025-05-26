@@ -18,3 +18,9 @@ testflight-upload.log
 build-debug-report.json
 chrome-extension-*.zip
 test-results/
+
+# Temporary Chrome profiles from testing
+temp-chrome-profile-*/
+
+# Showcase page (should be generated, not committed)
+showcase/
