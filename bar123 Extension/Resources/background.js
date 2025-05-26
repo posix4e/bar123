@@ -146,8 +146,8 @@ class HistorySyncService {
             
             console.log('Connecting to Trystero room:', this.roomId);
             
-            // Use Nostr strategy (default, serverless)
-            this.room = trystero.joinRoom({ appId: 'history-sync-safari' }, this.roomId);
+            // Use Nostr strategy (default, serverless) - MUST match Chrome extension
+            this.room = trystero.joinRoom({ appId: 'history-sync' }, this.roomId);
             console.log('Room created:', this.room);
         
             // Set up peer connection handlers
