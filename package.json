@@ -29,6 +29,8 @@
     "ci:build-chrome": "npm run build-chrome && cd chrome-extension && zip -r ../chrome-extension-$GITHUB_SHA.zip * && cd ..",
     "ci:build-ios": "npm run ios-build-local 2>&1 | tee ios-build.log; IOS_EXIT=${PIPESTATUS[0]}; echo \"IOS_BUILD_EXIT_CODE=$IOS_EXIT\" >> $GITHUB_ENV; exit $IOS_EXIT",
     "ci:upload-testflight": "npm run prepare-profiles && npm run ios-build -- --upload --apple-id $APPLE_ID --app-password $APP_SPECIFIC_PASSWORD 2>&1 | tee testflight-upload.log; echo \"TESTFLIGHT_EXIT_CODE=${PIPESTATUS[0]}\" >> $GITHUB_ENV",
+    "ci:xcode-cloud-status": "node scripts/xcode-cloud-testflight-integration.js --apple-id $APPLE_ID --app-password $APP_SPECIFIC_PASSWORD --bundle-id xyz.foo.bar123 --status-only",
+    "ci:xcode-cloud-wait": "node scripts/xcode-cloud-testflight-integration.js --apple-id $APPLE_ID --app-password $APP_SPECIFIC_PASSWORD --bundle-id xyz.foo.bar123 --wait 30 --output $RUNNER_TEMP/build",
     "ci:collect-debug": "node scripts/collect-debug-info.js",
     "ci:generate-showcase": "node scripts/generate-showcase-page.js",
     "ci:package-chrome": "echo 'chrome-extension-$GITHUB_SHA.zip'",
