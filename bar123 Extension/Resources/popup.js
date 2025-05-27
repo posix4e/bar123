@@ -54,9 +54,28 @@ class HistorySyncUI {
   }
 
   async saveSettings() {
+    const secret = this.sharedSecretInput.value;
+    
+    // Save to browser storage
     await browser.storage.local.set({
-      sharedSecret: this.sharedSecretInput.value
+      sharedSecret: secret
     });
+    
+    // Also save to App Group storage for iOS app access
+    try {
+      const response = await browser.runtime.sendNativeMessage({
+        type: 'saveSharedSecret',
+        secret: secret
+      });
+      
+      if (response && response.success) {
+        console.log('Successfully saved shared secret to App Group storage');
+      } else {
+        console.warn('Failed to save shared secret to App Group storage:', response);
+      }
+    } catch (error) {
+      console.warn('Native messaging not available or failed:', error);
+    }
   }
 
   async connect() {

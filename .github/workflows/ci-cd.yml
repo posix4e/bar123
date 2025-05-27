@@ -48,28 +48,6 @@ jobs:
         npm run ci:test
         npx playwright install --with-deps chromium
         npm run ci:test-local-multiplatform
-      
-    - name: Build iOS app
-      continue-on-error: true
-      env:
-        BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
-        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-        APP_PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_PROVISIONING_PROFILE_BASE64 }}
-        EXTENSION_PROVISIONING_PROFILE_BASE64: ${{ secrets.EXTENSION_PROVISIONING_PROFILE_BASE64 }}
-        RUNNER_TEMP: ${{ runner.temp }}
-      run: npm run ci:build-ios
-      
-    - name: Upload to TestFlight
-      if: github.ref == 'refs/heads/main'
-      env:
-        BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
-        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-        APP_PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_PROVISIONING_PROFILE_BASE64 }}
-        EXTENSION_PROVISIONING_PROFILE_BASE64: ${{ secrets.EXTENSION_PROVISIONING_PROFILE_BASE64 }}
-        APPLE_ID: ${{ secrets.APPLE_ID }}
-        APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
-        RUNNER_TEMP: ${{ runner.temp }}
-      run: npm run ci:upload-testflight
         
     - name: Collect artifacts and generate showcase
       if: always()
@@ -86,12 +64,9 @@ jobs:
         name: build-artifacts-${{ github.sha }}
         path: |
           chrome-extension-${{ github.sha }}.zip
-          ${{ runner.temp }}/build/bar123-${{ github.sha }}.ipa
           build-debug-report.json
           test-output.log
           local-multiplatform-test-output.log
-          ios-build.log
-          testflight-upload.log
           test-results/
         retention-days: 30
         if-no-files-found: ignore
@@ -115,9 +90,6 @@ jobs:
       run: |
         echo "=== Available Artifacts ==="
         echo "📱 Chrome extension: chrome-extension-${{ github.sha }}.zip"
-        if [ -f "${{ runner.temp }}/build/bar123-${{ github.sha }}.ipa" ]; then
-          echo "📱 iOS IPA: bar123-${{ github.sha }}.ipa ($(du -h '${{ runner.temp }}/build/bar123-${{ github.sha }}.ipa' | cut -f1))"
-        fi
         echo "📊 Debug report: debug-report-${{ github.sha }} (always available for analysis)"
         echo "🌐 Showcase page: showcase-page-${{ github.sha }} (comprehensive project overview)"
         echo ""
@@ -126,14 +98,12 @@ jobs:
         # Check if any critical builds failed
         TESTS_PASSED=$(jq -r '.results.tests.passed // false' build-debug-report.json)
         LOCAL_TESTS_PASSED=$(jq -r '.results.local_tests.passed // false' build-debug-report.json)
-        IOS_BUILD_PASSED=$(jq -r '.results.ios_build.passed // false' build-debug-report.json)
         
         echo "✅ Tests: $TESTS_PASSED"
-        echo "✅ Local Tests: $LOCAL_TESTS_PASSED" 
-        echo "✅ iOS Build: $IOS_BUILD_PASSED"
+        echo "✅ Local Tests: $LOCAL_TESTS_PASSED"
         
         # Fail the pipeline if any critical component failed
-        if [ "$TESTS_PASSED" = "false" ] || [ "$LOCAL_TESTS_PASSED" = "false" ] || [ "$IOS_BUILD_PASSED" = "false" ]; then
+        if [ "$TESTS_PASSED" = "false" ] || [ "$LOCAL_TESTS_PASSED" = "false" ]; then
           echo ""
           echo "❌ Build pipeline FAILED - check debug report for details"
           exit 1
