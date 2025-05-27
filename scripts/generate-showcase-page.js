@@ -1058,49 +1058,24 @@ class ShowcasePageGenerator {
   }
 
   generateFallbackScreenshots() {
-    // Try to find any available screenshots first
-    const availableScreenshots = this.findAllAvailableScreenshots();
-    
+    // When no BrowserStack results are available, show only placeholders
     const fallbackPlatforms = [
       { name: 'Chrome on Desktop', type: 'chrome_desktop', description: 'Desktop extension functionality testing' },
       { name: 'Safari on iOS', type: 'safari_ios', description: 'iOS Safari Web Extension testing' },
       { name: 'Cross-platform sync demo', type: 'sync_demo', description: 'Real-time history synchronization between devices' }
     ];
     
-    return fallbackPlatforms.map((platform, index) => {
-      const screenshotFile = availableScreenshots[index] || null;
-      
-      return `
+    return fallbackPlatforms.map(platform => `
             <div class="screenshot-card">
-                ${screenshotFile ? 
-                  `<img src="./screenshots/${screenshotFile}" alt="Screenshot: ${platform.name}" style="width: 100%; height: 200px; object-fit: cover;" onerror="this.parentElement.innerHTML='<div class=\\"screenshot-placeholder\\">Screenshot: ${platform.name}</div>'" />` :
-                  `<div class="screenshot-placeholder">Screenshot: ${platform.name}</div>`
-                }
+                <div class="screenshot-placeholder">Screenshot: ${platform.name}</div>
                 <div class="screenshot-info">
                     <h4>${platform.name}</h4>
                     <p>${platform.description}</p>
                 </div>
             </div>
-        `;
-    }).join('');
+        `).join('');
   }
 
-  findAllAvailableScreenshots() {
-    const screenshotDirs = [
-      'test-results/local-multiplatform/screenshots',
-      'test-results/browserstack/screenshots', 
-      'test-results/screenshots'
-    ];
-    
-    const allScreenshots = [];
-    for (const dir of screenshotDirs) {
-      if (fs.existsSync(dir)) {
-        const files = fs.readdirSync(dir).filter(f => f.endsWith('.png'));
-        allScreenshots.push(...files);
-      }
-    }
-    return allScreenshots;
-  }
 
   generatePlatformScreenshots(platforms) {
     return platforms.map(platform => {
