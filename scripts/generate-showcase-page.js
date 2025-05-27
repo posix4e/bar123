@@ -962,7 +962,9 @@ class ShowcasePageGenerator {
   }
 
   getLocalTestStatus() {
-    if (!this.localTestResults) return 'skipped';
+    if (!this.localTestResults) {
+      return 'skipped';
+    }
     return this.localTestResults.summary?.passed ? 'passed' : 'failed';
   }
 
