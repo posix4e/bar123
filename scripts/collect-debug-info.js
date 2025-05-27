@@ -26,7 +26,7 @@ function collectEnvironmentInfo() {
 function getCommand(command, fallback) {
   try {
     return execSync(command, { encoding: 'utf8' }).trim();
-  } catch (error) {
+  } catch {
     return fallback;
   }
 }
@@ -123,7 +123,7 @@ function analyzeErrors() {
   // Analyze BrowserStack failures
   if (browserstackExitCode !== null && browserstackExitCode !== 0) {
     console.log('Analyzing BrowserStack failures...');
-    const codeSignErrors = [];
+    // const codeSignErrors = []; // unused variable
     let buildErrors = [];
         
     if (fs.existsSync('browserstack-test-output.log')) {

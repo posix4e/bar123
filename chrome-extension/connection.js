@@ -59,7 +59,7 @@ function setupMessageListener() {
 // Initialize message listener
 setupMessageListener();
 
-async function initTrysteroConnection(roomId, sharedSecret) {
+async function initTrysteroConnection(roomId, _sharedSecret) {
   try {
     console.log('Initializing Trystero connection');
     console.log('Room ID:', roomId);
@@ -126,8 +126,8 @@ async function initTrysteroConnection(roomId, sharedSecret) {
     }, 30000);
         
     // Set up data channels
-    const [sendHistory, getHistory] = trysteroRoom.makeAction('history-sync');
-    const [sendDelete, getDelete] = trysteroRoom.makeAction('delete-item');
+    const [, getHistory] = trysteroRoom.makeAction('history-sync');
+    const [, getDelete] = trysteroRoom.makeAction('delete-item');
         
     getHistory((historyData, peerId) => {
       console.log('Received history from', peerId);

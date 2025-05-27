@@ -11,7 +11,7 @@ class SignalingAdapter {
     throw new Error('connect() must be implemented');
   }
 
-  send(message) {
+  send(_message) {
     throw new Error('send() must be implemented');
   }
 
@@ -155,7 +155,7 @@ class PeerJSSignalingAdapter extends SignalingAdapter {
       if (conn) {
         this.setupConnection(conn);
       }
-    } catch (error) {
+    } catch {
       // Room peer doesn't exist, create it
       console.log('No existing room peer found');
     }
@@ -304,7 +304,8 @@ class GistSignalingAdapter extends SignalingAdapter {
 }
 
 // Factory function to create appropriate adapter
-function createSignalingAdapter(type, config) {
+// eslint-disable-next-line no-unused-vars
+function _createSignalingAdapter(type, config) {
   switch (type) {
   case 'firebase':
     return new FirebaseSignalingAdapter(config);
