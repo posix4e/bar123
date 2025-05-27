@@ -43,11 +43,10 @@
     "p2p",
     "history",
     "sync",
-    "peerjs",
+    "trystero",
     "webrtc"
   ],
   "dependencies": {
-    "peerjs": "^1.5.4",
     "trystero": "^0.21.4"
   },
   "devDependencies": {

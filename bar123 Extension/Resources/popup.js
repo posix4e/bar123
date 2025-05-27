@@ -142,7 +142,7 @@ class HistorySyncUI {
     this.disconnectBtn.style.display = isConnected ? 'block' : 'none';
   }
 
-  // PeerJS automatically handles the signaling service
+  // Trystero handles P2P connections via multiple strategies
 
   async updateUI() {
     const stats = await browser.runtime.sendMessage({ action: 'getStats' });

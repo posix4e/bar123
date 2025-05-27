@@ -4,7 +4,7 @@
  * Showcase Page Generator
  * 
  * Creates a comprehensive webpage showcasing the multiplatform history sync extension
- * with artifacts, test results, BrowserStack screenshots, and installation instructions.
+ * with artifacts, test results, screenshots, and installation instructions using Trystero P2P technology.
  */
 
 const fs = require('fs');
@@ -30,15 +30,6 @@ class ShowcasePageGenerator {
       }
     }
         
-    // Load BrowserStack results if available
-    this.browserstackResults = null;
-    if (fs.existsSync('test-results/browserstack/real-multiplatform-test-results.json')) {
-      try {
-        this.browserstackResults = JSON.parse(fs.readFileSync('test-results/browserstack/real-multiplatform-test-results.json', 'utf8'));
-      } catch (error) {
-        console.warn('Could not load BrowserStack results:', error.message);
-      }
-    }
 
     // Load local test results if available
     this.localTestResults = null;
@@ -641,7 +632,7 @@ class ShowcasePageGenerator {
         ${this.generateDownloadSection()}
         ${this.generateFeaturesSection()}
         ${this.generateTestResultsSection()}
-        ${this.generateBrowserStackSection()}
+        ${this.generateLocalTestSection()}
         ${this.generateP2PDemo()}
         ${this.generateInstallationGuide()}
         ${this.generateTechnicalDetails()}
@@ -810,8 +801,6 @@ class ShowcasePageGenerator {
 
     const { results } = this.debugReport;
     const testStatus = results.tests.passed ? 'passed' : 'failed';
-    const browserstackStatus = results.browserstack_tests.ran ? 
-      (results.browserstack_tests.passed ? 'passed' : 'failed') : 'skipped';
     const iosStatus = results.ios_build.passed ? 'passed' : 'failed';
     const testflightStatus = results.testflight_upload?.ran ? 
       (results.testflight_upload.passed ? 'passed' : 'failed') : 'skipped';
@@ -825,8 +814,8 @@ class ShowcasePageGenerator {
                     <span class="status-badge status-${testStatus}">${testStatus}</span>
                 </div>
                 <div>
-                    <strong>BrowserStack:</strong>
-                    <span class="status-badge status-${browserstackStatus}">${browserstackStatus}</span>
+                    <strong>Local Tests:</strong>
+                    <span class="status-badge status-${this.getLocalTestStatus()}">${this.getLocalTestStatus()}</span>
                 </div>
                 <div>
                     <strong>iOS Build:</strong>
@@ -947,10 +936,10 @@ class ShowcasePageGenerator {
                     <div>${results.tests.passed ? '✅ Passed' : '❌ Failed'}</div>
                 </div>
                 
-                <div class="test-item ${results.browserstack_tests.ran ? (results.browserstack_tests.passed ? 'passed' : 'failed') : 'skipped'}">
-                    <h4>BrowserStack Tests</h4>
-                    <div>Exit Code: ${results.browserstack_tests.exit_code || 'N/A'}</div>
-                    <div>${results.browserstack_tests.ran ? (results.browserstack_tests.passed ? '✅ Passed' : '❌ Failed') : '⏭️ Skipped'}</div>
+                <div class="test-item ${this.getLocalTestStatus() === 'passed' ? 'passed' : 'failed'}">
+                    <h4>Local Multiplatform Tests</h4>
+                    <div>Status: ${this.localTestResults ? 'Available' : 'Not Available'}</div>
+                    <div>${this.getLocalTestStatus() === 'passed' ? '✅ Passed' : this.getLocalTestStatus() === 'failed' ? '❌ Failed' : '⏭️ Skipped'}</div>
                 </div>
                 
                 <div class="test-item ${results.ios_build.passed ? 'passed' : 'failed'}">
@@ -972,21 +961,29 @@ class ShowcasePageGenerator {
         </div>`;
   }
 
-  generateBrowserStackSection() {
-    if (!this.browserstackResults) {
+  getLocalTestStatus() {
+    if (!this.localTestResults) return 'skipped';
+    return this.localTestResults.summary?.passed ? 'passed' : 'failed';
+  }
+
+  generateLocalTestSection() {
+    if (!this.localTestResults) {
       return `
             <div class="card">
-                <h2>🌐 BrowserStack Multiplatform Testing</h2>
-                <p>BrowserStack test results not available</p>
+                <h2>🧪 Local Multiplatform Testing</h2>
+                <p>Local test results not available</p>
+                <div class="screenshot-gallery">
+                    ${this.generatePlaceholderScreenshots()}
+                </div>
             </div>`;
     }
 
-    const platformResults = this.browserstackResults.sessions || [];
+    const platformResults = this.localTestResults.sessions || [];
         
     return `
         <div class="card">
-            <h2>🌐 BrowserStack Multiplatform Testing</h2>
-            <p>Tested on ${platformResults.length} real devices and browsers with ${this.browserstackResults.summary?.success_rate || 'unknown'}% success rate</p>
+            <h2>🧪 Local Multiplatform Testing</h2>
+            <p>Tested locally on ${platformResults.length} platforms using Trystero P2P connections with ${this.localTestResults.summary?.success_rate || 'unknown'}% success rate</p>
             
             <div class="platform-grid">
                 ${platformResults.map(session => `
@@ -995,7 +992,7 @@ class ShowcasePageGenerator {
                             ${session.platform_type === 'chrome_desktop' ? '🖥️' : '📱'}
                         </div>
                         <h4>${session.platform}</h4>
-                        <div>Session: ${session.session_id || 'Unknown'}</div>
+                        <div>Session: ${session.session_id || 'Local'}</div>
                         <div>Tests: ${Object.keys(session.tests || {}).length}</div>
                         <div>${session.passed ? '✅ Passed' : '❌ Failed'}</div>
                     </div>
@@ -1003,14 +1000,14 @@ class ShowcasePageGenerator {
             </div>
             
             <div class="screenshot-gallery">
-                ${this.generatePlatformScreenshots(platformResults)}
+                ${this.generateLocalScreenshots()}
             </div>
             
-            ${this.browserstackResults.sync_tests?.length > 0 ? `
+            ${this.localTestResults.sync_tests?.length > 0 ? `
             <div style="margin-top: 30px;">
                 <h3>🔄 Cross-Platform Sync Tests</h3>
                 <div class="test-grid">
-                    ${this.browserstackResults.sync_tests.map(test => `
+                    ${this.localTestResults.sync_tests.map(test => `
                         <div class="test-item ${test.passed ? 'passed' : 'failed'}">
                             <h4>${test.name}</h4>
                             <div>${test.passed ? '✅ Passed' : '❌ Failed'}</div>
@@ -1026,7 +1023,6 @@ class ShowcasePageGenerator {
     // Look for screenshots in test results directories
     const screenshotDirs = [
       'test-results/local-multiplatform/screenshots',
-      'test-results/browserstack/screenshots',
       'test-results/screenshots'
     ];
     
@@ -1049,25 +1045,8 @@ class ShowcasePageGenerator {
 
 
 
-  generatePlatformScreenshots(platforms) {
+  generateLocalScreenshots() {
     const screenshots = [];
-    
-    // Add BrowserStack screenshots
-    if (platforms && platforms.length > 0) {
-      platforms.forEach(platform => {
-        const screenshotFile = this.findScreenshotForPlatform(platform);
-        if (screenshotFile) {
-          screenshots.push({
-            file: screenshotFile,
-            platform: platform.platform,
-            type: platform.platform_type === 'chrome_desktop' ? 'Desktop browser extension' : 'iOS Safari Web Extension',
-            tests: Object.keys(platform.tests || {}).length,
-            status: platform.passed ? 'Passed' : 'Failed',
-            source: 'BrowserStack'
-          });
-        }
-      });
-    }
     
     // Add local test screenshots
     if (this.localTestResults && this.localTestResults.sessions) {
@@ -1086,6 +1065,10 @@ class ShowcasePageGenerator {
       });
     }
     
+    if (screenshots.length === 0) {
+      return this.generatePlaceholderScreenshots();
+    }
+    
     return screenshots.map(screenshot => `
         <div class="screenshot-card">
             <img src="./screenshots/${screenshot.file}" alt="Screenshot: ${screenshot.platform}" style="width: 100%; height: 200px; object-fit: cover;" />
@@ -1098,6 +1081,49 @@ class ShowcasePageGenerator {
             </div>
         </div>
     `).join('');
+  }
+
+  generatePlaceholderScreenshots() {
+    return `
+        <div class="screenshot-card">
+            <div class="screenshot-placeholder">
+                Screenshot: Chrome on Desktop
+            </div>
+            <div class="screenshot-info">
+                <h4>Chrome on Desktop</h4>
+                <p>Desktop extension functionality testing</p>
+                <div style="margin-top: 10px; font-size: 0.9rem; color: #6c757d;">
+                    Local Trystero P2P testing
+                </div>
+            </div>
+        </div>
+        
+        <div class="screenshot-card">
+            <div class="screenshot-placeholder">
+                Screenshot: Safari on iOS
+            </div>
+            <div class="screenshot-info">
+                <h4>Safari on iOS</h4>
+                <p>iOS Safari Web Extension testing</p>
+                <div style="margin-top: 10px; font-size: 0.9rem; color: #6c757d;">
+                    Local Trystero P2P testing
+                </div>
+            </div>
+        </div>
+        
+        <div class="screenshot-card">
+            <div class="screenshot-placeholder">
+                Screenshot: Cross-platform sync demo
+            </div>
+            <div class="screenshot-info">
+                <h4>Cross-Platform Sync</h4>
+                <p>Real-time history synchronization between devices</p>
+                <div style="margin-top: 10px; font-size: 0.9rem; color: #6c757d;">
+                    Trystero P2P WebRTC connections
+                </div>
+            </div>
+        </div>
+    `;
   }
 
   generateP2PDemo() {
@@ -1201,7 +1227,7 @@ class ShowcasePageGenerator {
                 <h3>Architecture</h3>
                 <ul style="margin-left: 20px; margin-top: 10px;">
                     <li><strong>Protocol:</strong> WebRTC peer-to-peer connections</li>
-                    <li><strong>Discovery:</strong> PeerJS signaling server</li>
+                    <li><strong>Discovery:</strong> Trystero signaling adapters</li>
                     <li><strong>Security:</strong> SHA-256 hashed shared secrets</li>
                     <li><strong>Chrome:</strong> Manifest V3 service worker extension</li>
                     <li><strong>iOS:</strong> Native app with Safari Web Extension</li>
@@ -1247,8 +1273,8 @@ class ShowcasePageGenerator {
       logEntries.push(...logs.test_log.excerpt.map(line => ({ type: 'test', content: line })));
     }
         
-    if (logs.browserstack_test_log?.excerpt) {
-      logEntries.push(...logs.browserstack_test_log.excerpt.map(line => ({ type: 'browserstack', content: line })));
+    if (logs.local_multiplatform_test_log?.excerpt) {
+      logEntries.push(...logs.local_multiplatform_test_log.excerpt.map(line => ({ type: 'local-test', content: line })));
     }
         
     if (logs.ios_build_log?.excerpt) {
@@ -1292,7 +1318,6 @@ class ShowcasePageGenerator {
   copyScreenshots() {
     const screenshotDirs = [
       'test-results/local-multiplatform/screenshots',
-      'test-results/browserstack/screenshots',
       'test-results/screenshots'
     ];
     
