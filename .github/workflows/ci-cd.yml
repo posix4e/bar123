@@ -43,10 +43,12 @@ jobs:
       with:
         xcode-version: '16.2'
         
+    - name: Install Playwright
+      run: npx playwright install --with-deps chromium
+      
     - name: Run tests
       run: |
         npm run ci:test
-        npx playwright install --with-deps chromium
         npm run ci:test-local-multiplatform
       
     - name: Build iOS app
