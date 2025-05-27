@@ -983,35 +983,7 @@ class ShowcasePageGenerator {
                 <h2>🌐 BrowserStack Multiplatform Testing</h2>
                 <p>BrowserStack test results not available</p>
                 <div class="screenshot-gallery">
-                    <div class="screenshot-card">
-                        <div class="screenshot-placeholder">
-                            Screenshot: Chrome on Windows 11
-                        </div>
-                        <div class="screenshot-info">
-                            <h4>Chrome on Windows 11</h4>
-                            <p>Desktop extension functionality testing</p>
-                        </div>
-                    </div>
-                    
-                    <div class="screenshot-card">
-                        <div class="screenshot-placeholder">
-                            Screenshot: Safari on iPhone 15 Pro
-                        </div>
-                        <div class="screenshot-info">
-                            <h4>Safari on iPhone 15 Pro</h4>
-                            <p>iOS Safari Web Extension testing</p>
-                        </div>
-                    </div>
-                    
-                    <div class="screenshot-card">
-                        <div class="screenshot-placeholder">
-                            Screenshot: Cross-platform sync demo
-                        </div>
-                        <div class="screenshot-info">
-                            <h4>Cross-Platform Sync</h4>
-                            <p>Real-time history synchronization between devices</p>
-                        </div>
-                    </div>
+                    ${this.generateFallbackScreenshots()}
                 </div>
             </div>`;
     }
@@ -1057,12 +1029,65 @@ class ShowcasePageGenerator {
         </div>`;
   }
 
-  generatePlatformScreenshots(platforms) {
-    return platforms.map(platform => `
+  findScreenshotForPlatform(platform) {
+    // Look for screenshots in test results directories
+    const screenshotDirs = [
+      'test-results/local-multiplatform/screenshots',
+      'test-results/browserstack/screenshots',
+      'test-results/screenshots'
+    ];
+    
+    for (const dir of screenshotDirs) {
+      if (fs.existsSync(dir)) {
+        const files = fs.readdirSync(dir).filter(f => f.endsWith('.png'));
+        // Try to find a screenshot that matches the platform name
+        const matchingFile = files.find(f => {
+          const lowerFile = f.toLowerCase();
+          const lowerPlatform = platform.platform?.toLowerCase() || '';
+          return lowerFile.includes('chrome') && lowerPlatform.includes('chrome') ||
+                 lowerFile.includes('safari') && lowerPlatform.includes('safari') ||
+                 lowerFile.includes('ios') && lowerPlatform.includes('ios');
+        });
+        if (matchingFile) {return matchingFile;}
+        
+        // If no specific match, return the first screenshot found
+        if (files.length > 0) {return files[0];}
+      }
+    }
+    return null;
+  }
+
+  generateFallbackScreenshots() {
+    // When no BrowserStack results are available, show only placeholders
+    const fallbackPlatforms = [
+      { name: 'Chrome on Desktop', type: 'chrome_desktop', description: 'Desktop extension functionality testing' },
+      { name: 'Safari on iOS', type: 'safari_ios', description: 'iOS Safari Web Extension testing' },
+      { name: 'Cross-platform sync demo', type: 'sync_demo', description: 'Real-time history synchronization between devices' }
+    ];
+    
+    return fallbackPlatforms.map(platform => `
             <div class="screenshot-card">
-                <div class="screenshot-placeholder">
-                    Screenshot: ${platform.platform}
+                <div class="screenshot-placeholder">Screenshot: ${platform.name}</div>
+                <div class="screenshot-info">
+                    <h4>${platform.name}</h4>
+                    <p>${platform.description}</p>
                 </div>
+            </div>
+        `).join('');
+  }
+
+
+  generatePlatformScreenshots(platforms) {
+    return platforms.map(platform => {
+      // Look for actual screenshots for this platform
+      const screenshotFile = this.findScreenshotForPlatform(platform);
+      
+      return `
+            <div class="screenshot-card">
+                ${screenshotFile ? 
+    `<img src="./screenshots/${screenshotFile}" alt="Screenshot: ${platform.platform}" style="width: 100%; height: 200px; object-fit: cover;" onerror="this.parentElement.innerHTML='<div class=\\"screenshot-placeholder\\">Screenshot: ${platform.platform}</div>'" />` :
+    `<div class="screenshot-placeholder">Screenshot: ${platform.platform}</div>`
+}
                 <div class="screenshot-info">
                     <h4>${platform.platform}</h4>
                     <p>${platform.platform_type === 'chrome_desktop' ? 'Desktop browser extension' : 'iOS Safari Web Extension'}</p>
@@ -1072,7 +1097,8 @@ class ShowcasePageGenerator {
                     </div>
                 </div>
             </div>
-        `).join('');
+        `;
+    }).join('');
   }
 
   generateP2PDemo() {
@@ -1264,6 +1290,40 @@ class ShowcasePageGenerator {
     return path.join(this.outputDir, 'index.html');
   }
 
+  copyScreenshots() {
+    const screenshotDirs = [
+      'test-results/local-multiplatform/screenshots',
+      'test-results/browserstack/screenshots',
+      'test-results/screenshots'
+    ];
+    
+    const outputScreenshotDir = path.join(this.outputDir, 'screenshots');
+    if (!fs.existsSync(outputScreenshotDir)) {
+      fs.mkdirSync(outputScreenshotDir, { recursive: true });
+    }
+    
+    let copiedCount = 0;
+    for (const dir of screenshotDirs) {
+      if (fs.existsSync(dir)) {
+        const files = fs.readdirSync(dir).filter(f => f.endsWith('.png'));
+        files.forEach(file => {
+          const sourcePath = path.join(dir, file);
+          const destPath = path.join(outputScreenshotDir, file);
+          try {
+            fs.copyFileSync(sourcePath, destPath);
+            copiedCount++;
+          } catch (error) {
+            console.warn(`⚠️ Failed to copy screenshot ${file}: ${error.message}`);
+          }
+        });
+      }
+    }
+    
+    if (copiedCount > 0) {
+      console.log(`📸 Copied ${copiedCount} screenshots to GitHub Pages`);
+    }
+  }
+
   copyArtifacts() {
     // Copy Chrome extension if available
     const chromeZip = `chrome-extension-${this.commitSha}.zip`;
@@ -1284,6 +1344,9 @@ class ShowcasePageGenerator {
       fs.copyFileSync('dist/trystero-bundle.js', path.join(this.outputDir, 'trystero-bundle.js'));
       console.log('🔗 Copied Trystero P2P bundle');
     }
+
+    // Copy screenshots from test results
+    this.copyScreenshots();
 
     // Copy any additional assets
     if (fs.existsSync('chrome-extension/images')) {
