@@ -46,6 +46,12 @@ jobs:
     - name: Install Playwright
       run: npx playwright install --with-deps chromium
       
+    - name: Setup display for Chrome extensions on macOS
+      run: |
+        # Enable GUI applications in CI
+        sudo /usr/sbin/DevToolsSecurity --enable
+        sudo dscl . -append /Groups/_developer GroupMembership $(whoami)
+      
     - name: Run tests
       run: |
         npm run ci:test
