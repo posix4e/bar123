@@ -46,17 +46,17 @@ function setupCodeSigning() {
   
   try {
     // Create temporary keychain
-    execSync(`security create-keychain -p "temp-password" signing_temp.keychain`);
-    execSync(`security set-keychain-settings -lut 21600 signing_temp.keychain`);
-    execSync(`security unlock-keychain -p "temp-password" signing_temp.keychain`);
+    execSync('security create-keychain -p "temp-password" signing_temp.keychain');
+    execSync('security set-keychain-settings -lut 21600 signing_temp.keychain');
+    execSync('security unlock-keychain -p "temp-password" signing_temp.keychain');
     
     // Import certificate
     execSync(`security import "${options.certificate}" -k signing_temp.keychain -f pkcs12 -A -T /usr/bin/codesign -T /usr/bin/security -P "${options.password}"`);
     
     // Set keychain search list
-    execSync(`security list-keychains -d user -s signing_temp.keychain $(security list-keychains -d user | sed s/\\"//g)`);
-    execSync(`security default-keychain -s signing_temp.keychain`);
-    execSync(`security set-key-partition-list -S apple-tool:,apple: -s -k "temp-password" signing_temp.keychain`);
+    execSync('security list-keychains -d user -s signing_temp.keychain $(security list-keychains -d user | sed s/\\"//g)');
+    execSync('security default-keychain -s signing_temp.keychain');
+    execSync('security set-key-partition-list -S apple-tool:,apple: -s -k "temp-password" signing_temp.keychain');
     
     // Install provisioning profiles
     const profilesDir = path.join(process.env.HOME, 'Library/MobileDevice/Provisioning Profiles');
@@ -128,7 +128,7 @@ function buildArchive(uuids) {
       PROVISIONING_PROFILE="${uuids.appProfileUUID}" \
       "PROVISIONING_PROFILE[sdk=iphoneos*]"="${uuids.appProfileUUID}" \
       PROVISIONING_PROFILE_xyz_foo_bar123_Extension="${uuids.extProfileUUID}"`, 
-      { stdio: 'inherit' });
+    { stdio: 'inherit' });
     
     console.log('Archive build complete.');
     return archivePath;
@@ -189,7 +189,7 @@ function exportIPA(archivePath, exportOptionsPath) {
       -archivePath "${archivePath}" \
       -exportOptionsPlist "${exportOptionsPath}" \
       -exportPath "${options.output}"`, 
-      { stdio: 'inherit' });
+    { stdio: 'inherit' });
     
     const originalIpaPath = path.join(options.output, 'bar123.ipa');
     const gitSha = process.env.GITHUB_SHA || 'local';
@@ -233,7 +233,7 @@ function uploadToTestFlight(ipaPath) {
       --team-id "2858MX5336" \
       --wait \
       --verbose`, 
-      { encoding: 'utf-8' });
+    { encoding: 'utf-8' });
     
     // Check for Invalid status in the output
     if (result.includes('status: Invalid')) {
