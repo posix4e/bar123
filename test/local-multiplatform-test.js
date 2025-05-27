@@ -61,18 +61,13 @@ class LocalMultiplatformSyncTester {
       fs.mkdirSync(dir, { recursive: true });
     }
         
-    try {
-      // Add timeout for screenshots to prevent hanging
-      await Promise.race([
-        page.screenshot({ path: filepath, fullPage: true }),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Screenshot timeout after 15s')), 15000)
-        )
-      ]);
-    } catch (error) {
-      console.warn(`⚠️ Screenshot failed for ${name}: ${error.message}`);
-      // Do not create fallback - just continue test without screenshot
-    }
+    // Add timeout for screenshots to prevent hanging
+    await Promise.race([
+      page.screenshot({ path: filepath, fullPage: true }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Screenshot timeout after 15s')), 15000)
+      )
+    ]);
         
     const screenshotData = {
       name,

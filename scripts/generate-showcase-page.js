@@ -972,9 +972,6 @@ class ShowcasePageGenerator {
             <div class="card">
                 <h2>🧪 Local Multiplatform Testing</h2>
                 <p>Local test results not available</p>
-                <div class="screenshot-gallery">
-                    ${this.generatePlaceholderScreenshots()}
-                </div>
             </div>`;
     }
 
@@ -1083,48 +1080,6 @@ class ShowcasePageGenerator {
     `).join('');
   }
 
-  generatePlaceholderScreenshots() {
-    return `
-        <div class="screenshot-card">
-            <div class="screenshot-placeholder">
-                Screenshot: Chrome on Desktop
-            </div>
-            <div class="screenshot-info">
-                <h4>Chrome on Desktop</h4>
-                <p>Desktop extension functionality testing</p>
-                <div style="margin-top: 10px; font-size: 0.9rem; color: #6c757d;">
-                    Local Trystero P2P testing
-                </div>
-            </div>
-        </div>
-        
-        <div class="screenshot-card">
-            <div class="screenshot-placeholder">
-                Screenshot: Safari on iOS
-            </div>
-            <div class="screenshot-info">
-                <h4>Safari on iOS</h4>
-                <p>iOS Safari Web Extension testing</p>
-                <div style="margin-top: 10px; font-size: 0.9rem; color: #6c757d;">
-                    Local Trystero P2P testing
-                </div>
-            </div>
-        </div>
-        
-        <div class="screenshot-card">
-            <div class="screenshot-placeholder">
-                Screenshot: Cross-platform sync demo
-            </div>
-            <div class="screenshot-info">
-                <h4>Cross-Platform Sync</h4>
-                <p>Real-time history synchronization between devices</p>
-                <div style="margin-top: 10px; font-size: 0.9rem; color: #6c757d;">
-                    Trystero P2P WebRTC connections
-                </div>
-            </div>
-        </div>
-    `;
-  }
 
   generateP2PDemo() {
     return `
