@@ -48,14 +48,23 @@ jobs:
       
     - name: Setup display for Chrome extensions on macOS
       run: |
-        # Enable GUI applications in CI
-        sudo /usr/sbin/DevToolsSecurity --enable
-        sudo dscl . -append /Groups/_developer GroupMembership $(whoami)
+        # Verify display availability for GUI applications
+        echo "Current user: $(whoami)"
+        echo "Display variable: ${DISPLAY:-'not set'}"
+        # Test if we can start a simple GUI process
+        system_profiler SPDisplaysDataType | head -10 || echo "Display info not available"
       
     - name: Run tests
       run: |
         npm run ci:test
-        npm run ci:test-local-multiplatform
+        echo "Testing Chrome extension loading..."
+        # Test just Chrome extension loading first
+        timeout 300 npm run ci:test-local-multiplatform || {
+          echo "Multiplatform tests failed or timed out"
+          echo "Checking test artifacts..."
+          ls -la test-results/ || echo "No test results directory"
+          exit 1
+        }
       
     - name: Build iOS app
       continue-on-error: true
