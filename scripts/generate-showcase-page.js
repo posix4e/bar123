@@ -32,11 +32,21 @@ class ShowcasePageGenerator {
         
     // Load BrowserStack results if available
     this.browserstackResults = null;
-    if (fs.existsSync('test-results/browserstack/multiplatform-test-results.json')) {
+    if (fs.existsSync('test-results/browserstack/real-multiplatform-test-results.json')) {
       try {
-        this.browserstackResults = JSON.parse(fs.readFileSync('test-results/browserstack/multiplatform-test-results.json', 'utf8'));
+        this.browserstackResults = JSON.parse(fs.readFileSync('test-results/browserstack/real-multiplatform-test-results.json', 'utf8'));
       } catch (error) {
         console.warn('Could not load BrowserStack results:', error.message);
+      }
+    }
+
+    // Load local test results if available
+    this.localTestResults = null;
+    if (fs.existsSync('test-results/local-multiplatform/local-test-results.json')) {
+      try {
+        this.localTestResults = JSON.parse(fs.readFileSync('test-results/local-multiplatform/local-test-results.json', 'utf8'));
+      } catch (error) {
+        console.warn('Could not load local test results:', error.message);
       }
     }
   }
@@ -280,20 +290,6 @@ class ShowcasePageGenerator {
             border: 1px solid #dee2e6;
         }
 
-        .screenshot-placeholder {
-            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
-                        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
-                        linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
-                        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-            height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #6c757d;
-            font-style: italic;
-        }
 
         .screenshot-info {
             padding: 15px;
@@ -982,9 +978,6 @@ class ShowcasePageGenerator {
             <div class="card">
                 <h2>🌐 BrowserStack Multiplatform Testing</h2>
                 <p>BrowserStack test results not available</p>
-                <div class="screenshot-gallery">
-                    ${this.generateFallbackScreenshots()}
-                </div>
             </div>`;
     }
 
@@ -1049,56 +1042,62 @@ class ShowcasePageGenerator {
                  lowerFile.includes('ios') && lowerPlatform.includes('ios');
         });
         if (matchingFile) {return matchingFile;}
-        
-        // If no specific match, return the first screenshot found
-        if (files.length > 0) {return files[0];}
       }
     }
     return null;
   }
 
-  generateFallbackScreenshots() {
-    // When no BrowserStack results are available, show only placeholders
-    const fallbackPlatforms = [
-      { name: 'Chrome on Desktop', type: 'chrome_desktop', description: 'Desktop extension functionality testing' },
-      { name: 'Safari on iOS', type: 'safari_ios', description: 'iOS Safari Web Extension testing' },
-      { name: 'Cross-platform sync demo', type: 'sync_demo', description: 'Real-time history synchronization between devices' }
-    ];
-    
-    return fallbackPlatforms.map(platform => `
-            <div class="screenshot-card">
-                <div class="screenshot-placeholder">Screenshot: ${platform.name}</div>
-                <div class="screenshot-info">
-                    <h4>${platform.name}</h4>
-                    <p>${platform.description}</p>
-                </div>
-            </div>
-        `).join('');
-  }
 
 
   generatePlatformScreenshots(platforms) {
-    return platforms.map(platform => {
-      // Look for actual screenshots for this platform
-      const screenshotFile = this.findScreenshotForPlatform(platform);
-      
-      return `
-            <div class="screenshot-card">
-                ${screenshotFile ? 
-    `<img src="./screenshots/${screenshotFile}" alt="Screenshot: ${platform.platform}" style="width: 100%; height: 200px; object-fit: cover;" onerror="this.parentElement.innerHTML='<div class=\\"screenshot-placeholder\\">Screenshot: ${platform.platform}</div>'" />` :
-    `<div class="screenshot-placeholder">Screenshot: ${platform.platform}</div>`
-}
-                <div class="screenshot-info">
-                    <h4>${platform.platform}</h4>
-                    <p>${platform.platform_type === 'chrome_desktop' ? 'Desktop browser extension' : 'iOS Safari Web Extension'}</p>
-                    <div style="margin-top: 10px; font-size: 0.9rem; color: #6c757d;">
-                        Tests: ${Object.keys(platform.tests || {}).length} | 
-                        Status: ${platform.passed ? 'Passed' : 'Failed'}
-                    </div>
+    const screenshots = [];
+    
+    // Add BrowserStack screenshots
+    if (platforms && platforms.length > 0) {
+      platforms.forEach(platform => {
+        const screenshotFile = this.findScreenshotForPlatform(platform);
+        if (screenshotFile) {
+          screenshots.push({
+            file: screenshotFile,
+            platform: platform.platform,
+            type: platform.platform_type === 'chrome_desktop' ? 'Desktop browser extension' : 'iOS Safari Web Extension',
+            tests: Object.keys(platform.tests || {}).length,
+            status: platform.passed ? 'Passed' : 'Failed',
+            source: 'BrowserStack'
+          });
+        }
+      });
+    }
+    
+    // Add local test screenshots
+    if (this.localTestResults && this.localTestResults.sessions) {
+      this.localTestResults.sessions.forEach(session => {
+        const screenshotFile = this.findScreenshotForPlatform(session);
+        if (screenshotFile) {
+          screenshots.push({
+            file: screenshotFile,
+            platform: session.platform,
+            type: session.platform_type === 'chrome_desktop' ? 'Desktop browser extension' : 'iOS Safari Web Extension',
+            tests: Object.keys(session.tests || {}).length,
+            status: session.passed ? 'Passed' : 'Failed',
+            source: 'Local Test'
+          });
+        }
+      });
+    }
+    
+    return screenshots.map(screenshot => `
+        <div class="screenshot-card">
+            <img src="./screenshots/${screenshot.file}" alt="Screenshot: ${screenshot.platform}" style="width: 100%; height: 200px; object-fit: cover;" />
+            <div class="screenshot-info">
+                <h4>${screenshot.platform}</h4>
+                <p>${screenshot.type}</p>
+                <div style="margin-top: 10px; font-size: 0.9rem; color: #6c757d;">
+                    Tests: ${screenshot.tests} | Status: ${screenshot.status} | Source: ${screenshot.source}
                 </div>
             </div>
-        `;
-    }).join('');
+        </div>
+    `).join('');
   }
 
   generateP2PDemo() {
