@@ -24,7 +24,7 @@ console.log(`Using profiles directory: ${tempDir}`);
 // Function to decode and save a base64 string to a file
 function decodeBase64ToFile(base64String, outputPath) {
   if (!base64String) {
-    throw new Error(`Base64 string is empty or undefined`);
+    throw new Error('Base64 string is empty or undefined');
   }
   
   // Remove any whitespace that might be in the base64 string

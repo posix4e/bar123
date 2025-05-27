@@ -9,40 +9,40 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+// const { execSync } = require('child_process'); // unused variable
 
 class ShowcasePageGenerator {
-    constructor() {
-        this.outputDir = 'docs';  // GitHub Pages serves from docs/ directory
-        this.packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-        this.commitSha = process.env.GITHUB_SHA || 'local';
-        this.runId = process.env.GITHUB_RUN_ID || 'local';
-        this.eventName = process.env.GITHUB_EVENT_NAME || 'manual';
-        this.ref = process.env.GITHUB_REF || 'refs/heads/local';
+  constructor() {
+    this.outputDir = 'docs';  // GitHub Pages serves from docs/ directory
+    this.packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    this.commitSha = process.env.GITHUB_SHA || 'local';
+    this.runId = process.env.GITHUB_RUN_ID || 'local';
+    this.eventName = process.env.GITHUB_EVENT_NAME || 'manual';
+    this.ref = process.env.GITHUB_REF || 'refs/heads/local';
         
-        // Load debug report if available
-        this.debugReport = null;
-        if (fs.existsSync('build-debug-report.json')) {
-            try {
-                this.debugReport = JSON.parse(fs.readFileSync('build-debug-report.json', 'utf8'));
-            } catch (error) {
-                console.warn('Could not load debug report:', error.message);
-            }
-        }
-        
-        // Load BrowserStack results if available
-        this.browserstackResults = null;
-        if (fs.existsSync('test-results/browserstack/multiplatform-test-results.json')) {
-            try {
-                this.browserstackResults = JSON.parse(fs.readFileSync('test-results/browserstack/multiplatform-test-results.json', 'utf8'));
-            } catch (error) {
-                console.warn('Could not load BrowserStack results:', error.message);
-            }
-        }
+    // Load debug report if available
+    this.debugReport = null;
+    if (fs.existsSync('build-debug-report.json')) {
+      try {
+        this.debugReport = JSON.parse(fs.readFileSync('build-debug-report.json', 'utf8'));
+      } catch (error) {
+        console.warn('Could not load debug report:', error.message);
+      }
     }
+        
+    // Load BrowserStack results if available
+    this.browserstackResults = null;
+    if (fs.existsSync('test-results/browserstack/multiplatform-test-results.json')) {
+      try {
+        this.browserstackResults = JSON.parse(fs.readFileSync('test-results/browserstack/multiplatform-test-results.json', 'utf8'));
+      } catch (error) {
+        console.warn('Could not load BrowserStack results:', error.message);
+      }
+    }
+  }
 
-    generateHTML() {
-        const html = `<!DOCTYPE html>
+  generateHTML() {
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -795,27 +795,27 @@ class ShowcasePageGenerator {
 </body>
 </html>`;
 
-        return html;
-    }
+    return html;
+  }
 
-    generateBuildInfo() {
-        if (!this.debugReport) {
-            return `
+  generateBuildInfo() {
+    if (!this.debugReport) {
+      return `
             <div class="build-info">
                 <h3>🏗️ Build Information</h3>
                 <p>Build information not available</p>
             </div>`;
-        }
+    }
 
-        const { results } = this.debugReport;
-        const testStatus = results.tests.passed ? 'passed' : 'failed';
-        const browserstackStatus = results.browserstack_tests.ran ? 
-            (results.browserstack_tests.passed ? 'passed' : 'failed') : 'skipped';
-        const iosStatus = results.ios_build.passed ? 'passed' : 'failed';
-        const testflightStatus = results.testflight_upload?.ran ? 
-            (results.testflight_upload.passed ? 'passed' : 'failed') : 'skipped';
+    const { results } = this.debugReport;
+    const testStatus = results.tests.passed ? 'passed' : 'failed';
+    const browserstackStatus = results.browserstack_tests.ran ? 
+      (results.browserstack_tests.passed ? 'passed' : 'failed') : 'skipped';
+    const iosStatus = results.ios_build.passed ? 'passed' : 'failed';
+    const testflightStatus = results.testflight_upload?.ran ? 
+      (results.testflight_upload.passed ? 'passed' : 'failed') : 'skipped';
 
-        return `
+    return `
         <div class="build-info">
             <h3>🏗️ Build Information</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
@@ -842,13 +842,13 @@ class ShowcasePageGenerator {
                 <strong>Branch:</strong> ${this.debugReport.metadata.ref}
             </div>
         </div>`;
-    }
+  }
 
-    generateDownloadSection() {
-        const chromeAvailable = this.debugReport?.artifacts?.chrome_extension || fs.existsSync(`chrome-extension-${this.commitSha}.zip`);
-        const iosAvailable = this.debugReport?.artifacts?.ios_ipa || fs.existsSync(`${process.env.RUNNER_TEMP || ''}/build/bar123-${this.commitSha}.ipa`);
+  generateDownloadSection() {
+    const chromeAvailable = this.debugReport?.artifacts?.chrome_extension || fs.existsSync(`chrome-extension-${this.commitSha}.zip`);
+    const iosAvailable = this.debugReport?.artifacts?.ios_ipa || fs.existsSync(`${process.env.RUNNER_TEMP || ''}/build/bar123-${this.commitSha}.ipa`);
 
-        return `
+    return `
         <div class="card">
             <h2>📱 Download & Install</h2>
             <div class="download-section">
@@ -857,9 +857,9 @@ class ShowcasePageGenerator {
                     <h3>Chrome Extension</h3>
                     <p>Desktop Chrome extension for Windows, macOS, and Linux</p>
                     ${chromeAvailable ? 
-                        `<a href="./chrome-extension-${this.commitSha}.zip" class="download-button">Download Extension</a>` :
-                        `<div style="opacity: 0.7; margin-top: 15px;">Extension not available</div>`
-                    }
+    `<a href="./chrome-extension-${this.commitSha}.zip" class="download-button">Download Extension</a>` :
+    '<div style="opacity: 0.7; margin-top: 15px;">Extension not available</div>'
+}
                     <div style="margin-top: 15px; font-size: 0.9rem; opacity: 0.8;">
                         Load unpacked in Chrome Developer Mode
                     </div>
@@ -870,19 +870,19 @@ class ShowcasePageGenerator {
                     <h3>iOS Safari Extension</h3>
                     <p>Native iOS app with Safari Web Extension</p>
                     ${iosAvailable ? 
-                        `<a href="./bar123-${this.commitSha}.ipa" class="download-button">Download IPA</a>` :
-                        `<div style="opacity: 0.7; margin-top: 15px;">IPA not available</div>`
-                    }
+    `<a href="./bar123-${this.commitSha}.ipa" class="download-button">Download IPA</a>` :
+    '<div style="opacity: 0.7; margin-top: 15px;">IPA not available</div>'
+}
                     <div style="margin-top: 15px; font-size: 0.9rem; opacity: 0.8;">
                         Install via TestFlight or Xcode
                     </div>
                 </div>
             </div>
         </div>`;
-    }
+  }
 
-    generateFeaturesSection() {
-        return `
+  generateFeaturesSection() {
+    return `
         <div class="card">
             <h2>✨ Features</h2>
             <div class="features-grid">
@@ -923,20 +923,20 @@ class ShowcasePageGenerator {
                 </div>
             </div>
         </div>`;
-    }
+  }
 
-    generateTestResultsSection() {
-        if (!this.debugReport?.results) {
-            return `
+  generateTestResultsSection() {
+    if (!this.debugReport?.results) {
+      return `
             <div class="card">
                 <h2>🧪 Test Results</h2>
                 <p>Test results not available</p>
             </div>`;
-        }
+    }
 
-        const { results } = this.debugReport;
+    const { results } = this.debugReport;
         
-        return `
+    return `
         <div class="card">
             <h2>🧪 Test Results</h2>
             <div class="test-grid">
@@ -969,11 +969,11 @@ class ShowcasePageGenerator {
             
             ${this.generateLogsSection()}
         </div>`;
-    }
+  }
 
-    generateBrowserStackSection() {
-        if (!this.browserstackResults) {
-            return `
+  generateBrowserStackSection() {
+    if (!this.browserstackResults) {
+      return `
             <div class="card">
                 <h2>🌐 BrowserStack Multiplatform Testing</h2>
                 <p>BrowserStack test results not available</p>
@@ -1009,11 +1009,11 @@ class ShowcasePageGenerator {
                     </div>
                 </div>
             </div>`;
-        }
+    }
 
-        const platformResults = this.browserstackResults.sessions || [];
+    const platformResults = this.browserstackResults.sessions || [];
         
-        return `
+    return `
         <div class="card">
             <h2>🌐 BrowserStack Multiplatform Testing</h2>
             <p>Tested on ${platformResults.length} real devices and browsers with ${this.browserstackResults.summary?.success_rate || 'unknown'}% success rate</p>
@@ -1050,10 +1050,10 @@ class ShowcasePageGenerator {
             </div>
             ` : ''}
         </div>`;
-    }
+  }
 
-    generatePlatformScreenshots(platforms) {
-        return platforms.map(platform => `
+  generatePlatformScreenshots(platforms) {
+    return platforms.map(platform => `
             <div class="screenshot-card">
                 <div class="screenshot-placeholder">
                     Screenshot: ${platform.platform}
@@ -1068,10 +1068,10 @@ class ShowcasePageGenerator {
                 </div>
             </div>
         `).join('');
-    }
+  }
 
-    generateP2PDemo() {
-        return `
+  generateP2PDemo() {
+    return `
         <div class="card">
             <h2>👁️ Live P2P History Viewer</h2>
             <p>Connect to a real history sync room and view shared browsing history in read-only mode</p>
@@ -1114,10 +1114,10 @@ class ShowcasePageGenerator {
                 </div>
             </div>
         </div>`;
-    }
+  }
 
-    generateInstallationGuide() {
-        return `
+  generateInstallationGuide() {
+    return `
         <div class="card">
             <h2>🔧 Installation Guide</h2>
             
@@ -1158,12 +1158,12 @@ class ShowcasePageGenerator {
                 <strong>💡 Pro Tip:</strong> Use a memorable but unique shared secret. Both devices need the exact same secret to connect and sync.
             </div>
         </div>`;
-    }
+  }
 
-    generateTechnicalDetails() {
-        const environment = this.debugReport?.environment || {};
+  generateTechnicalDetails() {
+    const environment = this.debugReport?.environment || {};
         
-        return `
+    return `
         <div class="card">
             <h2>⚙️ Technical Details</h2>
             
@@ -1202,117 +1202,117 @@ class ShowcasePageGenerator {
                 </div>
             </div>
         </div>`;
+  }
+
+  generateLogsSection() {
+    if (!this.debugReport?.logs) {
+      return '';
     }
 
-    generateLogsSection() {
-        if (!this.debugReport?.logs) {
-            return '';
-        }
+    const logs = this.debugReport.logs;
+    const logEntries = [];
 
-        const logs = this.debugReport.logs;
-        let logEntries = [];
-
-        // Collect log entries from various sources
-        if (logs.test_log?.excerpt) {
-            logEntries.push(...logs.test_log.excerpt.map(line => ({ type: 'test', content: line })));
-        }
+    // Collect log entries from various sources
+    if (logs.test_log?.excerpt) {
+      logEntries.push(...logs.test_log.excerpt.map(line => ({ type: 'test', content: line })));
+    }
         
-        if (logs.browserstack_test_log?.excerpt) {
-            logEntries.push(...logs.browserstack_test_log.excerpt.map(line => ({ type: 'browserstack', content: line })));
-        }
+    if (logs.browserstack_test_log?.excerpt) {
+      logEntries.push(...logs.browserstack_test_log.excerpt.map(line => ({ type: 'browserstack', content: line })));
+    }
         
-        if (logs.ios_build_log?.excerpt) {
-            logEntries.push(...logs.ios_build_log.excerpt.map(line => ({ type: 'ios', content: line })));
-        }
+    if (logs.ios_build_log?.excerpt) {
+      logEntries.push(...logs.ios_build_log.excerpt.map(line => ({ type: 'ios', content: line })));
+    }
 
-        if (logEntries.length === 0) {
-            return '';
-        }
+    if (logEntries.length === 0) {
+      return '';
+    }
 
-        return `
+    return `
         <div class="logs-section">
             <h4>📋 Recent Log Entries</h4>
             ${logEntries.slice(-20).map(entry => {
-                const className = entry.content.includes('error') || entry.content.includes('failed') || entry.content.includes('❌') ? 'log-error' :
-                               entry.content.includes('passed') || entry.content.includes('✅') || entry.content.includes('success') ? 'log-success' : '';
-                return `<div class="log-entry ${className}">[${entry.type}] ${entry.content}</div>`;
-            }).join('')}
+    const className = entry.content.includes('error') || entry.content.includes('failed') || entry.content.includes('❌') ? 'log-error' :
+      entry.content.includes('passed') || entry.content.includes('✅') || entry.content.includes('success') ? 'log-success' : '';
+    return `<div class="log-entry ${className}">[${entry.type}] ${entry.content}</div>`;
+  }).join('')}
         </div>`;
-    }
+  }
 
-    async generate() {
-        console.log('🎨 Generating showcase webpage...');
+  async generate() {
+    console.log('🎨 Generating showcase webpage...');
         
-        // Create output directory
-        if (!fs.existsSync(this.outputDir)) {
-            fs.mkdirSync(this.outputDir, { recursive: true });
-        }
-
-        // Generate HTML
-        const html = this.generateHTML();
-        fs.writeFileSync(path.join(this.outputDir, 'index.html'), html);
-
-        // Copy artifacts if they exist
-        this.copyArtifacts();
-
-        console.log(`✅ Showcase page generated at ${this.outputDir}/index.html`);
-        return path.join(this.outputDir, 'index.html');
+    // Create output directory
+    if (!fs.existsSync(this.outputDir)) {
+      fs.mkdirSync(this.outputDir, { recursive: true });
     }
 
-    copyArtifacts() {
-        // Copy Chrome extension if available
-        const chromeZip = `chrome-extension-${this.commitSha}.zip`;
-        if (fs.existsSync(chromeZip)) {
-            fs.copyFileSync(chromeZip, path.join(this.outputDir, chromeZip));
-            console.log(`📦 Copied Chrome extension: ${chromeZip}`);
-        }
+    // Generate HTML
+    const html = this.generateHTML();
+    fs.writeFileSync(path.join(this.outputDir, 'index.html'), html);
 
-        // Copy iOS IPA if available
-        const ipaPath = `${process.env.RUNNER_TEMP || ''}/build/bar123-${this.commitSha}.ipa`;
-        if (fs.existsSync(ipaPath)) {
-            fs.copyFileSync(ipaPath, path.join(this.outputDir, `bar123-${this.commitSha}.ipa`));
-            console.log(`📱 Copied iOS IPA: bar123-${this.commitSha}.ipa`);
-        }
+    // Copy artifacts if they exist
+    this.copyArtifacts();
 
-        // Copy Trystero bundle for P2P functionality
-        if (fs.existsSync('dist/trystero-bundle.js')) {
-            fs.copyFileSync('dist/trystero-bundle.js', path.join(this.outputDir, 'trystero-bundle.js'));
-            console.log(`🔗 Copied Trystero P2P bundle`);
-        }
+    console.log(`✅ Showcase page generated at ${this.outputDir}/index.html`);
+    return path.join(this.outputDir, 'index.html');
+  }
 
-        // Copy any additional assets
-        if (fs.existsSync('chrome-extension/images')) {
-            const imagesDir = path.join(this.outputDir, 'images');
-            if (!fs.existsSync(imagesDir)) {
-                fs.mkdirSync(imagesDir);
-            }
-            // Copy extension icons for display
-            const iconFiles = fs.readdirSync('chrome-extension/images');
-            iconFiles.forEach(file => {
-                fs.copyFileSync(
-                    path.join('chrome-extension/images', file),
-                    path.join(imagesDir, file)
-                );
-            });
-            console.log(`🖼️ Copied extension images`);
-        }
+  copyArtifacts() {
+    // Copy Chrome extension if available
+    const chromeZip = `chrome-extension-${this.commitSha}.zip`;
+    if (fs.existsSync(chromeZip)) {
+      fs.copyFileSync(chromeZip, path.join(this.outputDir, chromeZip));
+      console.log(`📦 Copied Chrome extension: ${chromeZip}`);
     }
+
+    // Copy iOS IPA if available
+    const ipaPath = `${process.env.RUNNER_TEMP || ''}/build/bar123-${this.commitSha}.ipa`;
+    if (fs.existsSync(ipaPath)) {
+      fs.copyFileSync(ipaPath, path.join(this.outputDir, `bar123-${this.commitSha}.ipa`));
+      console.log(`📱 Copied iOS IPA: bar123-${this.commitSha}.ipa`);
+    }
+
+    // Copy Trystero bundle for P2P functionality
+    if (fs.existsSync('dist/trystero-bundle.js')) {
+      fs.copyFileSync('dist/trystero-bundle.js', path.join(this.outputDir, 'trystero-bundle.js'));
+      console.log('🔗 Copied Trystero P2P bundle');
+    }
+
+    // Copy any additional assets
+    if (fs.existsSync('chrome-extension/images')) {
+      const imagesDir = path.join(this.outputDir, 'images');
+      if (!fs.existsSync(imagesDir)) {
+        fs.mkdirSync(imagesDir);
+      }
+      // Copy extension icons for display
+      const iconFiles = fs.readdirSync('chrome-extension/images');
+      iconFiles.forEach(file => {
+        fs.copyFileSync(
+          path.join('chrome-extension/images', file),
+          path.join(imagesDir, file)
+        );
+      });
+      console.log('🖼️ Copied extension images');
+    }
+  }
 }
 
 // Main execution
 async function main() {
-    try {
-        const generator = new ShowcasePageGenerator();
-        const outputPath = await generator.generate();
-        console.log(`🎉 Showcase page ready: ${outputPath}`);
-    } catch (error) {
-        console.error('❌ Failed to generate showcase page:', error.message);
-        process.exit(1);
-    }
+  try {
+    const generator = new ShowcasePageGenerator();
+    const outputPath = await generator.generate();
+    console.log(`🎉 Showcase page ready: ${outputPath}`);
+  } catch (error) {
+    console.error('❌ Failed to generate showcase page:', error.message);
+    process.exit(1);
+  }
 }
 
 if (require.main === module) {
-    main();
+  main();
 }
 
 module.exports = ShowcasePageGenerator;
