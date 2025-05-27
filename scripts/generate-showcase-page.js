@@ -1065,7 +1065,7 @@ class ShowcasePageGenerator {
     }
     
     if (screenshots.length === 0) {
-      return this.generatePlaceholderScreenshots();
+      return '';
     }
     
     return screenshots.map(screenshot => `
