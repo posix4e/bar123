@@ -32,7 +32,10 @@
     "ci:collect-debug": "node scripts/collect-debug-info.js",
     "ci:generate-showcase": "node scripts/generate-showcase-page.js",
     "ci:package-chrome": "echo 'chrome-extension-$GITHUB_SHA.zip'",
-    "ci:package-ios": "echo '$RUNNER_TEMP/build/bar123.ipa'"
+    "ci:package-ios": "echo '$RUNNER_TEMP/build/bar123.ipa'",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:check": "eslint . --max-warnings 0"
   },
   "keywords": [
     "safari",
@@ -51,6 +54,7 @@
     "@playwright/test": "^1.52.0",
     "commander": "^11.1.0",
     "esbuild": "^0.25.4",
+    "eslint": "^9.27.0",
     "playwright": "^1.52.0",
     "puppeteer": "^22.8.2",
     "selenium-webdriver": "^4.15.0"
