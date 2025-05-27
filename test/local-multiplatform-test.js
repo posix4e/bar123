@@ -230,7 +230,7 @@ class LocalMultiplatformSyncTester {
           }
           
           if (attempt < 3) {
-            console.log(`  ⏳ Extension not found, waiting before retry...`);
+            console.log('  ⏳ Extension not found, waiting before retry...');
             await page.waitForTimeout(isCI ? 15000 : 8000);
           }
           
