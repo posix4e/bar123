@@ -257,7 +257,7 @@ class HistorySyncService {
   }
     
   handleReceivedDelete(deleteData) {
-    const { url, timestamp } = deleteData;
+    const { url } = deleteData;
         
     // Remove from local history
     const initialLength = this.localHistory.length;
@@ -347,7 +347,7 @@ class HistorySyncService {
           isConnected: this.isConnected,
           deviceCount: this.peers.size
         });
-      } catch (error) {
+      } catch {
         // Popup not open, ignore
       }
     } catch (error) {
@@ -357,4 +357,4 @@ class HistorySyncService {
 }
 
 // Initialize the service
-const historySyncService = new HistorySyncService();
+new HistorySyncService();

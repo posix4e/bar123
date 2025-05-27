@@ -208,7 +208,7 @@ class HistorySyncService {
   }
     
   handleReceivedDelete(deleteData) {
-    const { url, timestamp } = deleteData;
+    const { url } = deleteData;
         
     // Remove from local history
     const index = this.localHistory.findIndex(h => h.url === url);
@@ -226,4 +226,4 @@ class HistorySyncService {
   }
 }
 
-const historySyncService = new HistorySyncService();
+new HistorySyncService();

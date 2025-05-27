@@ -109,7 +109,7 @@ export default [
     }
   },
   {
-    files: ['**/background.js', '**/content.js', '**/popup.js', '**/offscreen.js', '**/connection.js', 'debug-connection.js', 'launch-chrome-extension.js'],
+    files: ['**/background.js', '**/content.js', '**/popup.js', '**/offscreen.js', '**/connection.js', '**/signaling-adapters.js', 'debug-connection.js', 'launch-chrome-extension.js'],
     rules: {
       'no-console': 'off',
       'no-alert': 'off'

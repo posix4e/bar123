@@ -102,7 +102,7 @@ class LocalMultiplatformSyncTester {
       screenshots: []
     };
         
-    let browser, context, page;
+    let browser, page;
     let userDataDir = null;
         
     try {
@@ -433,8 +433,8 @@ class LocalMultiplatformSyncTester {
             )
           ]);
           console.log('✅ Chrome browser closed successfully');
-        } catch (error) {
-          console.warn('Warning: Browser close failed:', error.message);
+        } catch (_error) {
+          console.warn('Warning: Browser close failed:', _error.message);
                     
           // Force kill any remaining Chrome processes started by this test
           try {
@@ -914,7 +914,7 @@ class LocalMultiplatformSyncTester {
       try {
         execSync('pkill -f "chrome-profile-" || true', { stdio: 'ignore' });
         console.log('🧹 Cleaned up any lingering Chrome test processes');
-      } catch (error) {
+      } catch {
         // Expected to fail if no processes found
       }
             
