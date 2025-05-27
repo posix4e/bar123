@@ -15,19 +15,19 @@ function collectEnvironmentInfo() {
   console.log('=== Collecting environment information ===');
     
   return {
-    node_version: getCommand('node --version', 'not found'),
-    npm_version: getCommand('npm --version', 'not found'), 
-    xcode_version: getCommand('xcodebuild -version 2>/dev/null | head -1 | sed \'s/Xcode //\'', 'not found'),
-    os_version: getCommand('sw_vers -productVersion', 'unknown'),
-    available_disk_space: getCommand('df -h . | tail -1 | awk \'{print $4}\'', 'unknown')
+    node_version: getCommand('node --version', 'Node.js version'),
+    npm_version: getCommand('npm --version', 'npm version'), 
+    xcode_version: getCommand('xcodebuild -version 2>/dev/null | head -1 | sed \'s/Xcode //\'', 'Xcode version'),
+    os_version: getCommand('sw_vers -productVersion', 'macOS version'),
+    available_disk_space: getCommand('df -h . | tail -1 | awk \'{print $4}\'', 'available disk space')
   };
 }
 
-function getCommand(command, fallback) {
+function getCommand(command, description) {
   try {
     return execSync(command, { encoding: 'utf8' }).trim();
-  } catch {
-    return fallback;
+  } catch (error) {
+    throw new Error(`Failed to get ${description}: ${error.message}`);
   }
 }
 

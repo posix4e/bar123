@@ -280,20 +280,6 @@ class ShowcasePageGenerator {
             border: 1px solid #dee2e6;
         }
 
-        .screenshot-placeholder {
-            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
-                        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
-                        linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
-                        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-            height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #6c757d;
-            font-style: italic;
-        }
 
         .screenshot-info {
             padding: 15px;
@@ -776,7 +762,7 @@ class ShowcasePageGenerator {
             
             historyItem.innerHTML = \`
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    \${favicon ? \`<img src="\${favicon}" width="16" height="16" style="border-radius: 2px;" onerror="this.style.display='none'"/>\` : '<span>🌐</span>'}
+                    \${favicon ? \`<img src="\${favicon}" width="16" height="16" style="border-radius: 2px;"/>\` : '<span>🌐</span>'}
                     <div style="flex-grow: 1;">
                         <div style="font-weight: bold; font-size: 0.9rem;">\${historyData.title || 'No title'}</div>
                         <div style="font-size: 0.8rem; color: #666; word-break: break-all;">\${historyData.url || 'No URL'}</div>
@@ -805,11 +791,7 @@ class ShowcasePageGenerator {
 
   generateBuildInfo() {
     if (!this.debugReport) {
-      return `
-            <div class="build-info">
-                <h3>🏗️ Build Information</h3>
-                <p>Build information not available</p>
-            </div>`;
+      throw new Error('Debug report is required but not found. Build cannot continue without build information.');
     }
 
     const { results } = this.debugReport;
@@ -853,35 +835,43 @@ class ShowcasePageGenerator {
     const chromeAvailable = this.debugReport?.artifacts?.chrome_extension || fs.existsSync(`chrome-extension-${this.commitSha}.zip`);
     const iosAvailable = this.debugReport?.artifacts?.ios_ipa || fs.existsSync(`${process.env.RUNNER_TEMP || ''}/build/bar123-${this.commitSha}.ipa`);
 
-    return `
-        <div class="card">
-            <h2>📱 Download & Install</h2>
-            <div class="download-section">
+    if (!chromeAvailable && !iosAvailable) {
+      throw new Error('No downloadable artifacts found. Build artifacts are required for deployment.');
+    }
+
+    const downloads = [];
+    
+    if (chromeAvailable) {
+      downloads.push(`
                 <div class="download-card">
                     <div style="font-size: 3rem; margin-bottom: 15px;">🖥️</div>
                     <h3>Chrome Extension</h3>
                     <p>Desktop Chrome extension for Windows, macOS, and Linux</p>
-                    ${chromeAvailable ? 
-    `<a href="./chrome-extension-${this.commitSha}.zip" class="download-button">Download Extension</a>` :
-    '<div style="opacity: 0.7; margin-top: 15px;">Extension not available</div>'
-}
+                    <a href="./chrome-extension-${this.commitSha}.zip" class="download-button">Download Extension</a>
                     <div style="margin-top: 15px; font-size: 0.9rem; opacity: 0.8;">
                         Load unpacked in Chrome Developer Mode
                     </div>
-                </div>
+                </div>`);
+    }
 
+    if (iosAvailable) {
+      downloads.push(`
                 <div class="download-card">
                     <div style="font-size: 3rem; margin-bottom: 15px;">📱</div>
                     <h3>iOS Safari Extension</h3>
                     <p>Native iOS app with Safari Web Extension</p>
-                    ${iosAvailable ? 
-    `<a href="./bar123-${this.commitSha}.ipa" class="download-button">Download IPA</a>` :
-    '<div style="opacity: 0.7; margin-top: 15px;">IPA not available</div>'
-}
+                    <a href="./bar123-${this.commitSha}.ipa" class="download-button">Download IPA</a>
                     <div style="margin-top: 15px; font-size: 0.9rem; opacity: 0.8;">
                         Install via TestFlight or Xcode
                     </div>
-                </div>
+                </div>`);
+    }
+
+    return `
+        <div class="card">
+            <h2>📱 Download & Install</h2>
+            <div class="download-section">
+                ${downloads.join('')}
             </div>
         </div>`;
   }
@@ -932,11 +922,7 @@ class ShowcasePageGenerator {
 
   generateTestResultsSection() {
     if (!this.debugReport?.results) {
-      return `
-            <div class="card">
-                <h2>🧪 Test Results</h2>
-                <p>Test results not available</p>
-            </div>`;
+      throw new Error('Test results are required but not found. Cannot generate test results section without actual test data.');
     }
 
     const { results } = this.debugReport;
@@ -978,14 +964,8 @@ class ShowcasePageGenerator {
 
   generateBrowserStackSection() {
     if (!this.browserstackResults) {
-      return `
-            <div class="card">
-                <h2>🌐 BrowserStack Multiplatform Testing</h2>
-                <p>BrowserStack test results not available</p>
-                <div class="screenshot-gallery">
-                    ${this.generateFallbackScreenshots()}
-                </div>
-            </div>`;
+      // No BrowserStack results means no section - don't show placeholder content
+      return '';
     }
 
     const platformResults = this.browserstackResults.sessions || [];
@@ -1057,24 +1037,6 @@ class ShowcasePageGenerator {
     return null;
   }
 
-  generateFallbackScreenshots() {
-    // When no BrowserStack results are available, show only placeholders
-    const fallbackPlatforms = [
-      { name: 'Chrome on Desktop', type: 'chrome_desktop', description: 'Desktop extension functionality testing' },
-      { name: 'Safari on iOS', type: 'safari_ios', description: 'iOS Safari Web Extension testing' },
-      { name: 'Cross-platform sync demo', type: 'sync_demo', description: 'Real-time history synchronization between devices' }
-    ];
-    
-    return fallbackPlatforms.map(platform => `
-            <div class="screenshot-card">
-                <div class="screenshot-placeholder">Screenshot: ${platform.name}</div>
-                <div class="screenshot-info">
-                    <h4>${platform.name}</h4>
-                    <p>${platform.description}</p>
-                </div>
-            </div>
-        `).join('');
-  }
 
 
   generatePlatformScreenshots(platforms) {
@@ -1082,12 +1044,14 @@ class ShowcasePageGenerator {
       // Look for actual screenshots for this platform
       const screenshotFile = this.findScreenshotForPlatform(platform);
       
+      if (!screenshotFile) {
+        // No screenshot found - skip this platform entirely instead of showing placeholder
+        return '';
+      }
+      
       return `
             <div class="screenshot-card">
-                ${screenshotFile ? 
-    `<img src="./screenshots/${screenshotFile}" alt="Screenshot: ${platform.platform}" style="width: 100%; height: 200px; object-fit: cover;" onerror="this.parentElement.innerHTML='<div class=\\"screenshot-placeholder\\">Screenshot: ${platform.platform}</div>'" />` :
-    `<div class="screenshot-placeholder">Screenshot: ${platform.platform}</div>`
-}
+                <img src="./screenshots/${screenshotFile}" alt="Screenshot: ${platform.platform}" style="width: 100%; height: 200px; object-fit: cover;" />
                 <div class="screenshot-info">
                     <h4>${platform.platform}</h4>
                     <p>${platform.platform_type === 'chrome_desktop' ? 'Desktop browser extension' : 'iOS Safari Web Extension'}</p>
@@ -1098,7 +1062,7 @@ class ShowcasePageGenerator {
                 </div>
             </div>
         `;
-    }).join('');
+    }).filter(html => html !== '').join('');
   }
 
   generateP2PDemo() {
@@ -1193,6 +1157,17 @@ class ShowcasePageGenerator {
 
   generateTechnicalDetails() {
     const environment = this.debugReport?.environment || {};
+    
+    // Only show environment data that actually exists
+    const envItems = [];
+    if (environment.node_version) {envItems.push(`<div><strong>Node.js:</strong> ${environment.node_version}</div>`);}
+    if (environment.npm_version) {envItems.push(`<div><strong>npm:</strong> ${environment.npm_version}</div>`);}
+    if (environment.xcode_version) {envItems.push(`<div><strong>Xcode:</strong> ${environment.xcode_version}</div>`);}
+    if (environment.os_version) {envItems.push(`<div><strong>macOS:</strong> ${environment.os_version}</div>`);}
+    if (this.debugReport?.metadata?.runner_os) {
+      envItems.push(`<div><strong>Runner:</strong> ${this.debugReport.metadata.runner_os} ${this.debugReport.metadata.runner_arch || ''}</div>`);
+    }
+    if (environment.available_disk_space) {envItems.push(`<div><strong>Disk Space:</strong> ${environment.available_disk_space}</div>`);}
         
     return `
         <div class="card">
@@ -1202,24 +1177,21 @@ class ShowcasePageGenerator {
                 <h3>Architecture</h3>
                 <ul style="margin-left: 20px; margin-top: 10px;">
                     <li><strong>Protocol:</strong> WebRTC peer-to-peer connections</li>
-                    <li><strong>Discovery:</strong> PeerJS signaling server</li>
+                    <li><strong>Discovery:</strong> Trystero signaling</li>
                     <li><strong>Security:</strong> SHA-256 hashed shared secrets</li>
                     <li><strong>Chrome:</strong> Manifest V3 service worker extension</li>
                     <li><strong>iOS:</strong> Native app with Safari Web Extension</li>
                 </ul>
             </div>
             
+            ${envItems.length > 0 ? `
             <div class="metadata">
                 <h4>Build Environment</h4>
                 <div class="metadata-grid">
-                    <div><strong>Node.js:</strong> ${environment.node_version || 'Unknown'}</div>
-                    <div><strong>npm:</strong> ${environment.npm_version || 'Unknown'}</div>
-                    <div><strong>Xcode:</strong> ${environment.xcode_version || 'Unknown'}</div>
-                    <div><strong>macOS:</strong> ${environment.os_version || 'Unknown'}</div>
-                    <div><strong>Runner:</strong> ${this.debugReport?.metadata?.runner_os || 'Unknown'} ${this.debugReport?.metadata?.runner_arch || ''}</div>
-                    <div><strong>Disk Space:</strong> ${environment.available_disk_space || 'Unknown'}</div>
+                    ${envItems.join('')}
                 </div>
             </div>
+            ` : ''}
             
             <div class="metadata" style="margin-top: 15px;">
                 <h4>Repository Information</h4>

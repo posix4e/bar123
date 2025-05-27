@@ -70,9 +70,8 @@ class LocalMultiplatformSyncTester {
         )
       ]);
     } catch (error) {
-      console.warn(`⚠️ Screenshot failed for ${name}: ${error.message}`);
-      // Create a minimal fallback so the test can continue
-      fs.writeFileSync(filepath, 'Screenshot failed due to timeout');
+      console.error(`❌ Screenshot failed for ${name}: ${error.message}`);
+      throw new Error(`Screenshot capture failed: ${error.message}`);
     }
         
     const screenshotData = {
