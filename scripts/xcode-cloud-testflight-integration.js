@@ -247,6 +247,14 @@ class XcodeCloudTestFlightIntegration {
       const xcodeStatus = await this.checkXcodeCloudStatus();
       
       if (options.statusOnly) {
+        if (!xcodeStatus.found) {
+          console.log('❌ Status check failed: No Xcode Cloud status checks found');
+          process.exit(1);
+        }
+        if (xcodeStatus.state !== 'success') {
+          console.log(`❌ Status check failed: Xcode Cloud build ${xcodeStatus.state}`);
+          process.exit(1);
+        }
         console.log('✅ Status check complete');
         return { success: true, xcodeStatus };
       }
