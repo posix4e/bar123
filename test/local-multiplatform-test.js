@@ -116,6 +116,14 @@ class LocalMultiplatformSyncTester {
       userDataDir = path.join(process.cwd(), 'test-results/local-multiplatform/chrome-profile-' + testId);
       const debuggingPort = 9222 + Math.floor(Math.random() * 1000); // Random port to avoid conflicts
             
+      // Ensure clean profile directory
+      if (fs.existsSync(userDataDir)) {
+        this.removeDirectory(userDataDir);
+      }
+      
+      console.log(`🔧 Creating Chrome profile: ${userDataDir}`);
+      console.log(`🔌 Using debugging port: ${debuggingPort}`);
+      
       browser = await chromium.launchPersistentContext(userDataDir, {
         headless: false, // Extensions require non-headless mode
         args: [
@@ -131,6 +139,9 @@ class LocalMultiplatformSyncTester {
           '--no-default-browser-check',
           '--disable-default-apps',
           '--disable-component-extensions-with-background-pages',
+          '--disable-extensions-file-access-check',
+          '--disable-extensions-http-throttling',
+          '--enable-extension-activity-logging',
           ...(isCI ? [
             '--disable-gpu',
             '--disable-dev-shm-usage', 
@@ -143,59 +154,107 @@ class LocalMultiplatformSyncTester {
             '--disable-sync',
             '--metrics-recording-only',
             '--disable-default-apps',
-            '--no-pings'
+            '--no-pings',
+            '--force-color-profile=srgb',
+            '--disable-background-timer-throttling',
+            '--disable-ipc-flooding-protection'
           ] : [])
         ],
         viewport: { width: 1280, height: 720 },
-        timeout: isCI ? 120000 : 60000, // Longer timeout for CI
-        ignoreDefaultArgs: ['--enable-automation']
+        timeout: isCI ? 180000 : 60000, // Even longer timeout for CI
+        ignoreDefaultArgs: ['--enable-automation'],
+        slowMo: isCI ? 500 : 0 // Add delays between actions in CI
       });
             
       page = browser.pages()[0] || await browser.newPage();
-            
+      
+      // Give Chrome time to fully load the extension
+      console.log('🕒 Waiting for Chrome and extension to initialize...');
+      await page.waitForTimeout(isCI ? 10000 : 5000);
+      
       // Take initial screenshot
       const initialScreenshot = await this.takeScreenshot(page, 'chrome-initial', 'Chrome with extension loaded');
       testResult.screenshots.push(initialScreenshot);
             
-      // Test extension loading
+      // Test extension loading with retries
       console.log('  📋 Verifying extension loading...');
-            
-      await page.goto('chrome://extensions/', { 
-        waitUntil: 'networkidle', 
-        timeout: isCI ? 60000 : 30000 
-      });
-      await page.waitForTimeout(isCI ? 5000 : 3000);
-            
-      // Developer mode should already be enabled for loaded extensions
-      await page.waitForTimeout(1000);
-            
-      // Take screenshot of extensions page
-      const extPageScreenshot = await this.takeScreenshot(page, 'chrome-extensions', 'Extensions page showing loaded extension');
-      testResult.screenshots.push(extPageScreenshot);
-            
-      // Find our extension
-      const extensionCards = await page.locator('extensions-item').all();
+      
       let extensionFound = false;
       let extensionId = null;
-            
-      for (const card of extensionCards) {
-        const nameElement = await card.locator('#name').first();
-        const name = await nameElement.textContent();
-                
-        if (name && (name.includes('History Sync') || name.includes('bar123'))) {
-          extensionFound = true;
-          extensionId = await card.getAttribute('id');
-          console.log(`✅ Found extension: ${name} (ID: ${extensionId})`);
-          break;
+      let extensionName = null;
+      
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        console.log(`  🔄 Extension detection attempt ${attempt}/3...`);
+        
+        try {
+          await page.goto('chrome://extensions/', { 
+            waitUntil: 'networkidle', 
+            timeout: isCI ? 60000 : 30000 
+          });
+          
+          // Wait for page to fully load
+          await page.waitForTimeout(isCI ? 8000 : 4000);
+          
+          // Take screenshot of extensions page
+          const extPageScreenshot = await this.takeScreenshot(page, `chrome-extensions-attempt-${attempt}`, `Extensions page (attempt ${attempt})`);
+          testResult.screenshots.push(extPageScreenshot);
+          
+          // Check if extensions are loaded by waiting for the extensions-manager element
+          await page.waitForSelector('extensions-manager', { timeout: 10000 });
+          await page.waitForSelector('extensions-item', { timeout: 10000 });
+          
+          // Find our extension
+          const extensionCards = await page.locator('extensions-item').all();
+          console.log(`  📦 Found ${extensionCards.length} extension(s) on page`);
+          
+          for (const card of extensionCards) {
+            try {
+              const nameElement = await card.locator('#name').first();
+              const name = await nameElement.textContent({ timeout: 5000 });
+              console.log(`  🔍 Checking extension: "${name}"`);
+              
+              if (name && (name.includes('History Sync') || name.includes('bar123'))) {
+                extensionFound = true;
+                extensionName = name;
+                extensionId = await card.getAttribute('id');
+                console.log(`✅ Found our extension: ${name} (ID: ${extensionId})`);
+                break;
+              }
+            } catch (error) {
+              console.warn(`  ⚠️ Error reading extension card: ${error.message}`);
+            }
+          }
+          
+          if (extensionFound) {
+            break;
+          }
+          
+          if (attempt < 3) {
+            console.log(`  ⏳ Extension not found, waiting before retry...`);
+            await page.waitForTimeout(isCI ? 15000 : 8000);
+          }
+          
+        } catch (error) {
+          console.warn(`  ⚠️ Extension detection attempt ${attempt} failed: ${error.message}`);
+          if (attempt < 3) {
+            await page.waitForTimeout(isCI ? 10000 : 5000);
+          }
         }
       }
             
       testResult.tests.extension_loaded = {
         passed: extensionFound,
         message: extensionFound ? 
-          `Extension successfully loaded: ${extensionId}` :
-          'Extension not found in Chrome extensions page',
-        details: { extensionId, extensionFound }
+          `Extension successfully loaded: ${extensionName} (ID: ${extensionId})` :
+          'Extension not found in Chrome extensions page after 3 attempts',
+        details: { 
+          extensionId, 
+          extensionName,
+          extensionFound,
+          attempts: 3,
+          isCI: isCI,
+          userDataDir: userDataDir
+        }
       };
             
       if (extensionFound && extensionId) {
@@ -474,27 +533,73 @@ class LocalMultiplatformSyncTester {
     }
         
     try {
-      // Take screenshot using xcrun simctl
-      execSync(`xcrun simctl io ${simulatorUDID} screenshot "${filepath}"`, { 
-        encoding: 'utf8',
-        timeout: 15000 
-      });
-        
-      const screenshotData = {
-        name,
-        description,
-        filename,
-        filepath,
-        timestamp: new Date().toISOString(),
-        platform: 'iOS Simulator'
-      };
-        
-      this.testResults.screenshots.push(screenshotData);
-      console.log(`📸 iOS Screenshot saved: ${name} - ${description}`);
-        
-      return screenshotData;
+      // Take screenshot using xcrun simctl with longer timeout and retries
+      const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+      const maxRetries = isCI ? 3 : 1;
+      const timeout = isCI ? 30000 : 15000;
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`📸 Taking iOS screenshot (attempt ${attempt}/${maxRetries}): ${name}`);
+          
+          // Check if simulator is still responsive
+          execSync(`xcrun simctl list devices | grep -q "${simulatorUDID}.*Booted"`, { 
+            encoding: 'utf8',
+            timeout: 5000 
+          });
+          
+          execSync(`xcrun simctl io ${simulatorUDID} screenshot "${filepath}"`, { 
+            encoding: 'utf8',
+            timeout: timeout,
+            stdio: isCI ? 'pipe' : 'inherit'
+          });
+          
+          // Verify file was created
+          if (fs.existsSync(filepath)) {
+            const screenshotData = {
+              name,
+              description,
+              filename,
+              filepath,
+              timestamp: new Date().toISOString(),
+              platform: 'iOS Simulator',
+              attempt: attempt
+            };
+            
+            this.testResults.screenshots.push(screenshotData);
+            console.log(`📸 iOS Screenshot saved: ${name} - ${description} (attempt ${attempt})`);
+            return screenshotData;
+          } else {
+            throw new Error('Screenshot file not created');
+          }
+          
+        } catch (attemptError) {
+          console.warn(`⚠️ iOS screenshot attempt ${attempt} failed: ${attemptError.message}`);
+          
+          if (attempt < maxRetries) {
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, isCI ? 5000 : 2000));
+          } else {
+            throw attemptError;
+          }
+        }
+      }
+      
     } catch (error) {
-      console.warn(`⚠️ Failed to take iOS screenshot: ${error.message}`);
+      console.warn(`⚠️ Failed to take iOS screenshot after retries: ${error.message}`);
+      
+      // Create a placeholder entry to track the failure
+      const failureData = {
+        name: name + '-failed',
+        description: description + ' (screenshot failed)',
+        filename: null,
+        filepath: null,
+        timestamp: new Date().toISOString(),
+        platform: 'iOS Simulator',
+        error: error.message
+      };
+      
+      this.testResults.screenshots.push(failureData);
       return null;
     }
   }
