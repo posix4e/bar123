@@ -2,16 +2,63 @@
 let currentPassword = null;
 let isViewingHistory = false;
 let powerStatus = 'battery'; // 'battery' or 'charging'
+let p2pRoom = null;
+const connectedPeers = new Set();
+let localHistory = [];
+let deviceId = null;
 
 // Initialize app when DOM loads
 document.addEventListener('DOMContentLoaded', function() {
   console.log('iOS app initializing...');
+  generateDeviceId();
+  loadLocalHistory();
   detectPowerStatus();
   checkForPassword();
     
   // Check battery status periodically
   setInterval(detectPowerStatus, 30000); // Every 30 seconds
 });
+
+// Generate or retrieve persistent device ID
+function generateDeviceId() {
+  const stored = localStorage.getItem('bar123_deviceId');
+  if (stored) {
+    deviceId = stored;
+  } else {
+    deviceId = 'ios_app_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+    localStorage.setItem('bar123_deviceId', deviceId);
+  }
+  console.log('Device ID:', deviceId);
+}
+
+// Load locally stored history
+function loadLocalHistory() {
+  try {
+    const stored = localStorage.getItem('bar123_localHistory');
+    const lastSync = localStorage.getItem('bar123_lastSyncTime');
+    
+    localHistory = stored ? JSON.parse(stored) : [];
+    console.log(`Loaded ${localHistory.length} history items from storage`);
+    
+    if (lastSync) {
+      console.log('Last sync:', new Date(parseInt(lastSync)));
+    }
+  } catch (error) {
+    console.error('Failed to load local history:', error);
+    localHistory = [];
+  }
+}
+
+// Save history to local storage
+function saveLocalHistory() {
+  try {
+    localStorage.setItem('bar123_localHistory', JSON.stringify(localHistory));
+    localStorage.setItem('bar123_lastSyncTime', Date.now().toString());
+    console.log(`Saved ${localHistory.length} history items to storage`);
+  } catch (error) {
+    console.error('Failed to save local history:', error);
+  }
+}
 
 // Check if device is charging vs on battery
 function detectPowerStatus() {
@@ -135,11 +182,8 @@ function switchToHistoryViewer() {
   updatePowerUI();
   updateConnectionStatus('connecting');
     
-  // Simulate initial connection (since we don't have actual Trystero here)
-  setTimeout(() => {
-    updateConnectionStatus('connected');
-    loadHistoryData();
-  }, 1000);
+  // Load real history data
+  loadHistoryData();
 }
 
 // Update connection status
@@ -165,62 +209,213 @@ function updateConnectionStatus(status) {
   }
 }
 
-// Simulate loading history data
+// Load real history data from P2P network
 function loadHistoryData() {
   const historyList = document.getElementById('history-list');
-  const historyCount = document.getElementById('history-count');
-  const peerCount = document.getElementById('peer-count');
+  if (!historyList) {
+    return;
+  }
     
-  if (!historyList) {return;}
+  if (!currentPassword) {
+    historyList.innerHTML = '<div class="history-item">No room secret available</div>';
+    return;
+  }
     
-  // Simulate some history items
-  const sampleHistory = [
-    { url: 'https://example.com', title: 'Example Website', timestamp: new Date() },
-    { url: 'https://github.com', title: 'GitHub', timestamp: new Date(Date.now() - 300000) },
-    { url: 'https://stackoverflow.com', title: 'Stack Overflow', timestamp: new Date(Date.now() - 600000) }
-  ];
+  // Display existing history first, then connect for updates
+  displayHistoryItems();
+  
+  // Initialize P2P connection with room secret
+  initP2PConnection();
+}
+
+// Initialize P2P connection using Trystero (based on GitHub Pages viewer)
+async function initP2PConnection() {
+  if (!currentPassword || !window.trystero) {
+    console.error('Cannot initialize P2P: missing password or Trystero');
+    updateConnectionStatus('disconnected');
+    return;
+  }
+  
+  try {
+    console.log('Initializing P2P connection with room secret...');
+    updateConnectionStatus('connecting');
+    
+    // Hash the room secret like the GitHub Pages viewer does
+    const encoder = new TextEncoder();
+    const data = encoder.encode(currentPassword);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashedSecret = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
+    
+    // Create room using Trystero (same as GitHub Pages viewer)
+    p2pRoom = trystero.joinRoom({
+      appId: 'history-sync'
+    }, hashedSecret);
+    
+    // Set up history sync channel
+    const [, receiveHistory] = p2pRoom.makeAction('history-sync');
+    
+    // Listen for history updates from other peers
+    receiveHistory((historyData, peerId) => {
+      console.log('Received history from peer:', peerId, historyData);
+      addHistoryToLocalStorage(historyData, peerId);
+    });
+    
+    // Track peer connections
+    p2pRoom.onPeerJoin(peerId => {
+      console.log('Peer joined:', peerId);
+      connectedPeers.add(peerId);
+      updatePeerCount();
+      updateConnectionStatus('connected');
+    });
+    
+    p2pRoom.onPeerLeave(peerId => {
+      console.log('Peer left:', peerId);
+      connectedPeers.delete(peerId);
+      updatePeerCount();
+      
+      if (connectedPeers.size === 0) {
+        updateConnectionStatus('disconnected');
+      }
+    });
+    
+    console.log('P2P connection initialized successfully');
+    
+  } catch (error) {
+    console.error('Failed to initialize P2P connection:', error);
+    updateConnectionStatus('disconnected');
+  }
+}
+
+// Add history item to local storage and display (based on GitHub Pages viewer)
+function addHistoryToLocalStorage(historyData, peerId) {
+  if (!historyData.url) {
+    return;
+  }
+  
+  // Check if we already have this URL
+  const exists = localHistory.some(item => item.url === historyData.url);
+  if (exists) {
+    return;
+  }
+  
+  // Add to local storage
+  const historyItem = {
+    url: historyData.url,
+    title: historyData.title || 'No title',
+    timestamp: new Date().toISOString(),
+    peerId: peerId
+  };
+  
+  localHistory.unshift(historyItem); // Add to beginning
+  
+  // Keep only last 100 items
+  if (localHistory.length > 100) {
+    localHistory = localHistory.slice(0, 100);
+  }
+  
+  // Save to storage and update display
+  saveLocalHistory();
+  displayHistoryItems();
+  
+  console.log(`Added new history item: ${historyData.title}`);
+}
+
+// Display history items in UI (based on GitHub Pages viewer styling)
+function displayHistoryItems() {
+  const historyList = document.getElementById('history-list');
+  if (!historyList) {
+    return;
+  }
     
   historyList.innerHTML = '';
     
-  if (sampleHistory.length === 0) {
-    historyList.innerHTML = '<div class="history-item">No history items found</div>';
+  if (localHistory.length === 0) {
+    historyList.innerHTML = '<div class="history-item">Listening for history updates...</div>';
   } else {
-    sampleHistory.forEach(item => {
+    // Show most recent 50 items
+    const recentItems = localHistory.slice(0, 50);
+    
+    recentItems.forEach(item => {
       const historyItem = document.createElement('div');
       historyItem.className = 'history-item';
-            
-      const timeStr = item.timestamp.toLocaleTimeString();
+      
+      const timestamp = new Date(item.timestamp);
+      const timeStr = timestamp.toLocaleTimeString();
+      const favicon = item.url ? `https://www.google.com/s2/favicons?domain=${new URL(item.url).hostname}` : '';
+      const peerDisplay = item.peerId ? item.peerId.substring(0, 8) : 'local';
+      
       historyItem.innerHTML = `
-                <div class="history-title">${item.title}</div>
-                <div class="history-url">${item.url}</div>
-                <div class="history-time">${timeStr}</div>
-            `;
-            
+        <div style="display: flex; align-items: center; gap: 10px;">
+          ${favicon ? `<img src="${favicon}" width="16" height="16" style="border-radius: 2px;" onerror="this.style.display='none'"/>` : '<span>🌐</span>'}
+          <div style="flex-grow: 1;">
+            <div style="font-weight: bold; font-size: 0.9rem; color: #333;">${item.title || 'No title'}</div>
+            <div style="font-size: 0.8rem; color: #666; word-break: break-all; margin-top: 2px;">${item.url || 'No URL'}</div>
+            <div style="font-size: 0.7rem; color: #999; margin-top: 2px;">${timeStr} • From ${peerDisplay}</div>
+          </div>
+        </div>
+      `;
+      
+      // Add animation
+      historyItem.style.animation = 'fadeIn 0.5s ease-in';
       historyList.appendChild(historyItem);
     });
   }
     
   // Update stats
-  if (historyCount) {historyCount.textContent = sampleHistory.length;}
-  if (peerCount) {peerCount.textContent = '1';} // Simulate 1 connected peer
+  const historyCount = document.getElementById('history-count');
+  if (historyCount) {
+    historyCount.textContent = localHistory.length;
+  }
+}
+
+// Update peer count display
+function updatePeerCount() {
+  const peerCount = document.getElementById('peer-count');
+  if (peerCount) {
+    const count = p2pRoom ? p2pRoom.getPeers().length : 0;
+    peerCount.textContent = count;
+  }
 }
 
 // Refresh history manually
 function refreshHistory() {
   console.log('Manual history refresh requested');
+  
+  if (!currentPassword) {
+    console.log('No room secret available');
+    return;
+  }
+  
   updateConnectionStatus('connecting');
+  
+  // Reconnect P2P if needed
+  if (!p2pRoom) {
+    initP2PConnection();
+  } else {
+    // Update peer count and display
+    updatePeerCount();
+    displayHistoryItems();
     
-  // Simulate refresh delay
-  setTimeout(() => {
-    updateConnectionStatus('connected');
-    loadHistoryData();
-  }, 500);
+    setTimeout(() => {
+      updateConnectionStatus(connectedPeers.size > 0 ? 'connected' : 'disconnected');
+    }, 500);
+  }
 }
 
 // Clear room secret
 async function clearRoomSecret() {
   if (confirm('Are you sure you want to clear the room secret? You will need to re-enter it in Safari.')) {
     console.log('Clearing room secret...');
+    
+    // Disconnect from P2P room
+    if (p2pRoom) {
+      p2pRoom.leave();
+      p2pRoom = null;
+    }
+    
+    // Clear connected peers
+    connectedPeers.clear();
         
     // Clear via Swift bridge
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.controller) {

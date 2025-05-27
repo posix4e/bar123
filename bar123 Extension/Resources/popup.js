@@ -63,7 +63,7 @@ class HistorySyncUI {
     
     // Also save to App Group storage for iOS app access
     try {
-      const response = await browser.runtime.sendNativeMessage(null, {
+      const response = await browser.runtime.sendNativeMessage({
         type: 'saveSharedSecret',
         secret: secret
       });
@@ -71,7 +71,7 @@ class HistorySyncUI {
       if (response && response.success) {
         console.log('Successfully saved shared secret to App Group storage');
       } else {
-        console.warn('Failed to save shared secret to App Group storage');
+        console.warn('Failed to save shared secret to App Group storage:', response);
       }
     } catch (error) {
       console.warn('Native messaging not available or failed:', error);
