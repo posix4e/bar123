@@ -66,6 +66,16 @@ function collectLogInfo() {
     };
   }
     
+  // Collect local multiplatform test log info
+  if (fs.existsSync('local-multiplatform-test-output.log')) {
+    const localMultiLogSize = execSync('wc -l < local-multiplatform-test-output.log', { encoding: 'utf8' }).trim();
+    const localMultiLogExcerpt = execSync('tail -20 local-multiplatform-test-output.log | jq -R . | jq -s .', { encoding: 'utf8' });
+    logs.local_multiplatform_test_log = {
+      size_lines: parseInt(localMultiLogSize),
+      excerpt: JSON.parse(localMultiLogExcerpt)
+    };
+  }
+
   // Collect TestFlight upload log info
   if (fs.existsSync('testflight-upload.log')) {
     const testflightLogSize = execSync('wc -l < testflight-upload.log', { encoding: 'utf8' }).trim();

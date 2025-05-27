@@ -463,6 +463,42 @@ class LocalMultiplatformSyncTester {
     return testResult;
   }
 
+  async takeIOSScreenshot(simulatorUDID, name, description) {
+    const filename = `ios-screenshot-${Date.now()}-${name}.png`;
+    const filepath = path.join('test-results/local-multiplatform/screenshots', filename);
+        
+    // Ensure directory exists
+    const dir = path.dirname(filepath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+        
+    try {
+      // Take screenshot using xcrun simctl
+      execSync(`xcrun simctl io ${simulatorUDID} screenshot "${filepath}"`, { 
+        encoding: 'utf8',
+        timeout: 15000 
+      });
+        
+      const screenshotData = {
+        name,
+        description,
+        filename,
+        filepath,
+        timestamp: new Date().toISOString(),
+        platform: 'iOS Simulator'
+      };
+        
+      this.testResults.screenshots.push(screenshotData);
+      console.log(`📸 iOS Screenshot saved: ${name} - ${description}`);
+        
+      return screenshotData;
+    } catch (error) {
+      console.warn(`⚠️ Failed to take iOS screenshot: ${error.message}`);
+      return null;
+    }
+  }
+
   async testIOSSafariSimulator() {
     console.log('📱 Testing iOS Safari Simulator...');
         
@@ -524,6 +560,12 @@ class LocalMultiplatformSyncTester {
       } else {
         console.log('  📱 Simulator already booted');
         await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+
+      // Take initial screenshot of home screen
+      const homeScreenshot = await this.takeIOSScreenshot(simulatorUDID, 'ios-home', 'iOS Simulator home screen');
+      if (homeScreenshot) {
+        testResult.screenshots.push(homeScreenshot);
       }
             
       testResult.tests.simulator_boot = {
@@ -653,7 +695,22 @@ class LocalMultiplatformSyncTester {
       });
             
       // Wait for Safari to load
-      await new Promise(resolve => setTimeout(resolve, 8000));
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      // Take screenshot of Safari loading
+      const safariLoadingScreenshot = await this.takeIOSScreenshot(simulatorUDID, 'ios-safari-loading', 'Safari loading test page');
+      if (safariLoadingScreenshot) {
+        testResult.screenshots.push(safariLoadingScreenshot);
+      }
+
+      // Wait a bit more for page to fully load
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Take screenshot of loaded page
+      const safariLoadedScreenshot = await this.takeIOSScreenshot(simulatorUDID, 'ios-safari-loaded', 'Safari with P2P test page loaded');
+      if (safariLoadedScreenshot) {
+        testResult.screenshots.push(safariLoadedScreenshot);
+      }
             
       testResult.tests.safari_launch = {
         passed: true,
@@ -668,7 +725,22 @@ class LocalMultiplatformSyncTester {
       // This requires the extension to be enabled in Safari simulator
       try {
         // Give Safari some time to load the extension and connect
-        await new Promise(resolve => setTimeout(resolve, 10000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+        // Take screenshot during connection attempt
+        const connectingScreenshot = await this.takeIOSScreenshot(simulatorUDID, 'ios-safari-connecting', 'Safari during P2P connection attempt');
+        if (connectingScreenshot) {
+          testResult.screenshots.push(connectingScreenshot);
+        }
+
+        // Wait more for potential connection
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+        // Take final screenshot
+        const finalScreenshot = await this.takeIOSScreenshot(simulatorUDID, 'ios-safari-final', 'Safari final state after P2P test');
+        if (finalScreenshot) {
+          testResult.screenshots.push(finalScreenshot);
+        }
                 
         // For now, mark as passed if Safari launched successfully
         // Real P2P testing requires manual verification
@@ -678,7 +750,8 @@ class LocalMultiplatformSyncTester {
           details: {
             safari_launched: true,
             extension_activation_required: true,
-            manual_verification_needed: true
+            manual_verification_needed: true,
+            screenshots_captured: testResult.screenshots.length
           }
         };
       } catch (error) {
