@@ -18,3 +18,6 @@ testflight-upload.log
 build-debug-report.json
 chrome-extension-*.zip
 test-results/
+
+# Generated showcase screenshots
+docs/screenshots/

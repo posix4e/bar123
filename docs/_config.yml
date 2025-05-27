@@ -19,5 +19,6 @@ relative_links:
 include:
   - index.html
   - images
+  - screenshots
   - "*.zip"
   - "*.ipa"
