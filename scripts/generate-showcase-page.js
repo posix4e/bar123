@@ -1048,10 +1048,10 @@ class ShowcasePageGenerator {
                  lowerFile.includes('safari') && lowerPlatform.includes('safari') ||
                  lowerFile.includes('ios') && lowerPlatform.includes('ios');
         });
-        if (matchingFile) return matchingFile;
+        if (matchingFile) {return matchingFile;}
         
         // If no specific match, return the first screenshot found
-        if (files.length > 0) return files[0];
+        if (files.length > 0) {return files[0];}
       }
     }
     return null;
@@ -1085,9 +1085,9 @@ class ShowcasePageGenerator {
       return `
             <div class="screenshot-card">
                 ${screenshotFile ? 
-                  `<img src="./screenshots/${screenshotFile}" alt="Screenshot: ${platform.platform}" style="width: 100%; height: 200px; object-fit: cover;" onerror="this.parentElement.innerHTML='<div class=\\"screenshot-placeholder\\">Screenshot: ${platform.platform}</div>'" />` :
-                  `<div class="screenshot-placeholder">Screenshot: ${platform.platform}</div>`
-                }
+    `<img src="./screenshots/${screenshotFile}" alt="Screenshot: ${platform.platform}" style="width: 100%; height: 200px; object-fit: cover;" onerror="this.parentElement.innerHTML='<div class=\\"screenshot-placeholder\\">Screenshot: ${platform.platform}</div>'" />` :
+    `<div class="screenshot-placeholder">Screenshot: ${platform.platform}</div>`
+}
                 <div class="screenshot-info">
                     <h4>${platform.platform}</h4>
                     <p>${platform.platform_type === 'chrome_desktop' ? 'Desktop browser extension' : 'iOS Safari Web Extension'}</p>
