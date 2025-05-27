@@ -669,6 +669,11 @@ class ShowcasePageGenerator {
             }
 
             try {
+                // Check if Trystero is loaded
+                if (typeof trystero === 'undefined') {
+                    throw new Error('Trystero P2P library failed to load. Please refresh the page.');
+                }
+                
                 updateConnectionStatus('Connecting...', 'connecting');
                 
                 // Hash the room secret like the extension does
@@ -676,15 +681,15 @@ class ShowcasePageGenerator {
                 const data = encoder.encode(roomSecret);
                 const hashBuffer = await crypto.subtle.digest('SHA-256', data);
                 const hashArray = Array.from(new Uint8Array(hashBuffer));
-                const hashedSecret = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                const hashedSecret = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
                 
                 // Create room using Trystero
-                room = window.Trystero.joinRoom({
-                    appId: 'bar123-history-sync'
+                room = trystero.joinRoom({
+                    appId: 'history-sync'
                 }, hashedSecret);
                 
                 // Set up history sync channel (read-only)
-                [sendHistory, getHistory] = room.makeAction('history');
+                [sendHistory, getHistory] = room.makeAction('history-sync');
                 
                 // Listen for history updates from other peers
                 getHistory((historyData, peerId) => {
