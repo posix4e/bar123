@@ -3,13 +3,68 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
-
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-
     <link rel="stylesheet" href="../Style.css">
 </head>
 <body>
-    <img src="../Icon.png" width="128" height="128" alt="bar123 Icon">
-    <p>You can turn on bar123’s Safari extension in Settings.</p>
+    <!-- Setup View (shown when no password detected) -->
+    <div id="setup-view">
+        <img src="../Icon.png" width="128" height="128" alt="bar123 Icon">
+        <h1>bar123 Setup</h1>
+        <p>To enable history synchronization:</p>
+        <ol>
+            <li>Go to iOS <strong>Settings</strong> → <strong>Safari</strong> → <strong>Extensions</strong></li>
+            <li>Enable <strong>bar123</strong></li>
+            <li>Tap the extension icon in Safari and set a room secret</li>
+            <li>Return to this app to view synchronized history</li>
+        </ol>
+        <button id="manual-refresh" onclick="checkForPassword()">Check for Room Secret</button>
+    </div>
+
+    <!-- P2P History Viewer (shown when password detected) -->
+    <div id="history-viewer" style="display: none;">
+        <div class="header">
+            <img src="../Icon.png" width="64" height="64" alt="bar123 Icon">
+            <h1>History Sync</h1>
+            <div class="connection-status">
+                <span id="connection-indicator" class="disconnected">●</span>
+                <span id="connection-text">Connecting...</span>
+            </div>
+        </div>
+
+        <div class="power-status">
+            <span id="power-indicator" class="battery">🔋</span>
+            <span id="power-text">Battery Mode - Manual Refresh Only</span>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-label">Connected Devices:</span>
+                <span id="peer-count">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">History Items:</span>
+                <span id="history-count">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Room:</span>
+                <span id="room-name">Loading...</span>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="refresh-history" onclick="refreshHistory()">Refresh History</button>
+            <button id="clear-room" onclick="clearRoomSecret()">Clear Room Secret</button>
+        </div>
+
+        <div class="history-container">
+            <h3>Recent History</h3>
+            <div id="history-list" class="history-list">
+                <div class="history-item loading">Loading history...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../app.js"></script>
 </body>
 </html>

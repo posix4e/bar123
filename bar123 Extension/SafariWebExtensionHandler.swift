@@ -29,14 +29,64 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
         os_log(.default, "Received message from browser.runtime.sendNativeMessage: %@ (profile: %@)", String(describing: message), profile?.uuidString ?? "none")
 
+        var responseData: [String: Any] = ["echo": message]
+        
+        // Handle App Group storage messages
+        if let messageDict = message as? [String: Any],
+           let type = messageDict["type"] as? String {
+            
+            switch type {
+            case "saveSharedSecret":
+                if let secret = messageDict["secret"] as? String {
+                    let success = saveSharedSecret(secret)
+                    responseData = [
+                        "type": "saveSharedSecretResponse",
+                        "success": success
+                    ]
+                    os_log(.default, "Saved shared secret to App Group: %@", success ? "success" : "failed")
+                }
+            case "getSharedSecret":
+                let secret = getSharedSecret()
+                responseData = [
+                    "type": "getSharedSecretResponse",
+                    "secret": secret
+                ]
+                os_log(.default, "Retrieved shared secret from App Group: %@", secret.isEmpty ? "empty" : "found")
+            default:
+                responseData = ["echo": message]
+            }
+        }
+
         let response = NSExtensionItem()
         if #available(iOS 15.0, macOS 11.0, *) {
-            response.userInfo = [ SFExtensionMessageKey: [ "echo": message ] ]
+            response.userInfo = [ SFExtensionMessageKey: responseData ]
         } else {
-            response.userInfo = [ "message": [ "echo": message ] ]
+            response.userInfo = [ "message": responseData ]
         }
 
         context.completeRequest(returningItems: [ response ], completionHandler: nil)
+    }
+    
+    private func saveSharedSecret(_ secret: String) -> Bool {
+        guard let sharedDefaults = UserDefaults(suiteName: "group.xyz.foo.bar123") else {
+            return false
+        }
+        
+        if secret.isEmpty {
+            sharedDefaults.removeObject(forKey: "roomSecret")
+        } else {
+            sharedDefaults.set(secret, forKey: "roomSecret")
+        }
+        
+        return sharedDefaults.synchronize()
+    }
+    
+    private func getSharedSecret() -> String {
+        guard let sharedDefaults = UserDefaults(suiteName: "group.xyz.foo.bar123") else {
+            return ""
+        }
+        
+        return sharedDefaults.string(forKey: "roomSecret") ?? ""
     }
 
 }

@@ -28,7 +28,53 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        // Override point for customization.
+        guard let body = message.body as? [String: Any],
+              let type = body["type"] as? String else {
+            return
+        }
+        
+        switch type {
+        case "getSharedSecret":
+            handleGetSharedSecret()
+        case "setSharedSecret":
+            if let secret = body["secret"] as? String {
+                handleSetSharedSecret(secret)
+            }
+        default:
+            print("Unknown message type: \(type)")
+        }
+    }
+    
+    private func handleGetSharedSecret() {
+        let sharedDefaults = UserDefaults(suiteName: "group.xyz.foo.bar123")
+        let secret = sharedDefaults?.string(forKey: "roomSecret") ?? ""
+        
+        let response = [
+            "type": "sharedSecretResponse",
+            "secret": secret
+        ]
+        
+        let jsonData = try? JSONSerialization.data(withJSONObject: response)
+        let jsonString = jsonData.flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+        
+        self.webView.evaluateJavaScript("window.postMessage(\(jsonString), '*');") { (result, error) in
+            if let error = error {
+                print("Error sending message to WebView: \(error)")
+            }
+        }
+    }
+    
+    private func handleSetSharedSecret(_ secret: String) {
+        let sharedDefaults = UserDefaults(suiteName: "group.xyz.foo.bar123")
+        
+        if secret.isEmpty {
+            sharedDefaults?.removeObject(forKey: "roomSecret")
+        } else {
+            sharedDefaults?.set(secret, forKey: "roomSecret")
+        }
+        
+        sharedDefaults?.synchronize()
+        print("Shared secret updated: \(secret.isEmpty ? "cleared" : "set")")
     }
 
 }
