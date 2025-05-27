@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - History Sync Extension</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #007aff;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .content {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #007aff;
+            margin: 30px 0 15px 0;
+            font-size: 1.5em;
+            border-bottom: 2px solid #e3f2fd;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: #333;
+            margin: 20px 0 10px 0;
+            font-size: 1.2em;
+        }
+
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        ul {
+            margin: 15px 0 15px 30px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .highlight {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #007aff;
+            margin: 20px 0;
+        }
+
+        .highlight strong {
+            color: #007aff;
+        }
+
+        .date {
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007aff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+
+        .p2p-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .p2p-notice h3 {
+            color: #856404;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Privacy Policy</h1>
+            <p>History Sync Extension for Safari & Chrome</p>
+        </div>
+
+        <div class="content">
+            <div class="highlight">
+                <strong>Privacy-First Design:</strong> History Sync Extension operates on a peer-to-peer (P2P) architecture with zero server-side data storage. Your browsing history never leaves your devices and is never stored on our servers.
+            </div>
+
+            <h2>1. Information We Collect</h2>
+            
+            <h3>Data We DO Collect Locally:</h3>
+            <ul>
+                <li><strong>Browser History:</strong> Page titles, URLs, and visit timestamps from your local browser history</li>
+                <li><strong>Connection Preferences:</strong> Your chosen room secret and sync settings (stored locally on your device)</li>
+                <li><strong>Device Identification:</strong> A random device ID generated locally for reconnection purposes</li>
+            </ul>
+
+            <h3>Data We DO NOT Collect:</h3>
+            <ul>
+                <li>Personal information (name, email, phone, address)</li>
+                <li>Passwords or login credentials</li>
+                <li>Form data or input fields</li>
+                <li>File downloads or uploads</li>
+                <li>Analytics or tracking data</li>
+                <li>Usage statistics or behavioral data</li>
+            </ul>
+
+            <div class="p2p-notice">
+                <h3>🔒 Peer-to-Peer Architecture</h3>
+                <p>This extension uses direct peer-to-peer connections between your devices. When you sync history between devices, the data travels directly from one device to another through encrypted WebRTC connections. <strong>No central servers store or process your browsing data.</strong></p>
+            </div>
+
+            <h2>2. How We Use Your Information</h2>
+            
+            <p>The extension uses your browsing data exclusively for the following purposes:</p>
+            <ul>
+                <li><strong>History Synchronization:</strong> To sync your browsing history between your connected devices</li>
+                <li><strong>Device Coordination:</strong> To establish and maintain P2P connections between your devices</li>
+                <li><strong>Local Storage:</strong> To remember your sync preferences and connection settings</li>
+            </ul>
+
+            <h2>3. Data Sharing and Storage</h2>
+            
+            <h3>No Third-Party Sharing</h3>
+            <p>We do not share, sell, or transfer your browsing data to any third parties. Your data remains entirely within your control.</p>
+
+            <h3>No Server-Side Storage</h3>
+            <p>Your browsing history is never uploaded to or stored on any servers. All data synchronization occurs through direct peer-to-peer connections.</p>
+
+            <h3>Local Storage Only</h3>
+            <p>Connection preferences and settings are stored locally on your device using browser storage APIs. This data never leaves your device except as part of the P2P synchronization process.</p>
+
+            <h2>4. Data Security</h2>
+            
+            <ul>
+                <li><strong>End-to-End Encryption:</strong> All P2P connections use WebRTC encryption protocols</li>
+                <li><strong>Room Secret Protection:</strong> Your chosen room secret is hashed using SHA-256 before creating connection identifiers</li>
+                <li><strong>Local-Only Processing:</strong> All data processing occurs locally on your devices</li>
+                <li><strong>No Data Persistence:</strong> P2P connections are temporary and don't persist browsing data beyond active sessions</li>
+            </ul>
+
+            <h2>5. Your Privacy Rights</h2>
+            
+            <p>You have complete control over your data:</p>
+            <ul>
+                <li><strong>Access:</strong> You can view all synced data through the extension interface</li>
+                <li><strong>Deletion:</strong> You can clear local history or remote synced history at any time</li>
+                <li><strong>Control:</strong> You can disconnect from sync networks or change room secrets at any time</li>
+                <li><strong>Transparency:</strong> The extension source code is open and available for review</li>
+            </ul>
+
+            <h2>6. Data Retention</h2>
+            
+            <ul>
+                <li><strong>Browser History:</strong> Managed by your browser's built-in history settings</li>
+                <li><strong>Sync Settings:</strong> Stored locally until you clear extension data or uninstall</li>
+                <li><strong>P2P Connections:</strong> Temporary connections that don't retain data after disconnection</li>
+                <li><strong>No Server Retention:</strong> We retain no data on servers as no data is stored server-side</li>
+            </ul>
+
+            <h2>7. Third-Party Services</h2>
+            
+            <p>The extension uses the following third-party services for P2P connectivity:</p>
+            <ul>
+                <li><strong>WebRTC STUN/TURN servers:</strong> Standard internet infrastructure for establishing P2P connections (these servers don't store browsing data)</li>
+                <li><strong>Trystero Library:</strong> Open-source P2P networking library for WebRTC connections</li>
+            </ul>
+
+            <h2>8. Children's Privacy</h2>
+            
+            <p>This extension is not specifically designed for or targeted at children under 13. We do not knowingly collect personal information from children. If you are a parent or guardian and believe your child has used this extension, please contact us.</p>
+
+            <h2>9. International Users</h2>
+            
+            <p>This extension operates using P2P technology and does not transfer data to specific geographic locations. All data synchronization occurs directly between your devices regardless of their physical location.</p>
+
+            <h2>10. Changes to This Policy</h2>
+            
+            <p>We may update this privacy policy from time to time. When we do, we will:</p>
+            <ul>
+                <li>Update the "Last Updated" date below</li>
+                <li>Post the updated policy on this page</li>
+                <li>Notify users through the extension interface for significant changes</li>
+            </ul>
+
+            <h2>11. Contact Information</h2>
+            
+            <p>If you have questions about this privacy policy or the extension's privacy practices, please:</p>
+            <ul>
+                <li>Create an issue on our <a href="https://github.com/posix4e/bar123/issues" target="_blank">GitHub repository</a></li>
+                <li>Review our open-source code for transparency</li>
+            </ul>
+
+            <h2>12. Open Source Transparency</h2>
+            
+            <p>This extension is open source, meaning you can:</p>
+            <ul>
+                <li>Review the complete source code on GitHub</li>
+                <li>Verify our privacy claims through code inspection</li>
+                <li>Contribute to improvements or security enhancements</li>
+                <li>Build and run your own version if desired</li>
+            </ul>
+
+            <div class="highlight">
+                <strong>Summary:</strong> History Sync Extension is designed with privacy as the foundation. Your browsing data never leaves your control, never touches our servers, and is synchronized only between your own devices using encrypted P2P connections.
+            </div>
+
+            <div class="date">
+                <p>Last Updated: May 27, 2025</p>
+                <p>Effective Date: May 27, 2025</p>
+            </div>
+
+            <a href="index.html" class="nav-link">← Back to Home</a>
+        </div>
+    </div>
+</body>
+</html>

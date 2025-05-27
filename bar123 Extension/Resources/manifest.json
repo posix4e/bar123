@@ -32,7 +32,8 @@
         "storage",
         "tabs",
         "history",
-        "activeTab"
+        "activeTab",
+        "nativeMessaging"
     ],
 
     "host_permissions": [ "<all_urls>" ]

@@ -44,6 +44,7 @@ export default [
         atob: 'readonly',
         RTCPeerConnection: 'readonly',
         addEventListener: 'readonly',
+        navigator: 'readonly',
                 
         // Extension APIs
         chrome: 'readonly',
@@ -109,7 +110,7 @@ export default [
     }
   },
   {
-    files: ['**/background.js', '**/content.js', '**/popup.js', '**/offscreen.js', '**/connection.js', '**/signaling-adapters.js', 'debug-connection.js', 'launch-chrome-extension.js'],
+    files: ['**/background.js', '**/content.js', '**/popup.js', '**/offscreen.js', '**/connection.js', '**/signaling-adapters.js', 'debug-connection.js', 'launch-chrome-extension.js', '**/app.js'],
     rules: {
       'no-console': 'off',
       'no-alert': 'off'

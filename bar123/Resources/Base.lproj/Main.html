@@ -2,14 +2,75 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'">
 
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
     <link rel="stylesheet" href="../Style.css">
 </head>
 <body>
-    <img src="../Icon.png" width="128" height="128" alt="bar123 Icon">
-    <p>You can turn on bar123’s Safari extension in Settings.</p>
+    <!-- Setup Instructions (shown when no password is configured) -->
+    <div id="setup-view" class="view">
+        <img src="../Icon.png" width="128" height="128" alt="bar123 Icon">
+        <h2>History Sync</h2>
+        <div class="setup-steps">
+            <h3>Setup Instructions</h3>
+            <ol>
+                <li>Open <strong>Settings</strong> → <strong>Safari</strong> → <strong>Extensions</strong></li>
+                <li>Enable <strong>"History Sync Extension"</strong></li>
+                <li>Open Safari and tap the extension icon</li>
+                <li>Enter a shared secret and connect</li>
+                <li>Return to this app to view live history</li>
+            </ol>
+        </div>
+        <div class="setup-status">
+            <p>🔄 Checking for extension setup...</p>
+            <div class="setup-power-info">
+                <span id="setupPowerMode" class="power-indicator">🔋 Battery Mode - Manual refresh only</span>
+            </div>
+            <button id="retryBtn" class="retry-btn">Check Again</button>
+        </div>
+    </div>
+
+    <!-- Live P2P History Viewer (shown when password is available) -->
+    <div id="viewer-view" class="view" style="display: none;">
+        <div class="viewer-header">
+            <h2>📚 Live History Stream</h2>
+            <div class="connection-status" id="connectionStatus">Connecting...</div>
+        </div>
+        
+        <div class="viewer-stats">
+            <div class="stat">
+                <span class="label">Connected Devices:</span>
+                <span id="peerCount" class="value">0</span>
+            </div>
+            <div class="stat">
+                <span class="label">Room Secret:</span>
+                <span id="roomSecret" class="value">••••••••</span>
+            </div>
+            <div class="stat">
+                <span class="label">Power Mode:</span>
+                <span id="powerMode" class="value">🔋 Battery</span>
+            </div>
+        </div>
+
+        <div class="history-viewer">
+            <div class="viewer-controls">
+                <h3>Recent History</h3>
+                <button id="refreshViewerBtn" class="refresh-btn">↻ Refresh</button>
+            </div>
+            
+            <div id="historyFeed" class="history-feed">
+                <div class="no-history">Listening for history updates...</div>
+            </div>
+        </div>
+
+        <div class="viewer-actions">
+            <button id="disconnectViewerBtn" class="secondary-btn">Disconnect</button>
+            <button id="showSetupBtn" class="text-btn">Show Setup</button>
+        </div>
+    </div>
+
+    <script src="../app.js"></script>
 </body>
 </html>

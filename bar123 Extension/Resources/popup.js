@@ -54,9 +54,29 @@ class HistorySyncUI {
   }
 
   async saveSettings() {
+    const secret = this.sharedSecretInput.value;
+    
+    // Save to browser storage (existing behavior)
     await browser.storage.local.set({
-      sharedSecret: this.sharedSecretInput.value
+      sharedSecret: secret
     });
+    
+    // Also save to App Group storage for iOS app access
+    try {
+      const response = await browser.runtime.sendNativeMessage('xyz.foo.bar123.extension', {
+        action: 'setSharedSecret',
+        secret: secret
+      });
+      
+      if (response && response.success) {
+        console.log('Successfully saved secret to App Group storage');
+      } else {
+        console.warn('Failed to save to App Group storage:', response?.error);
+      }
+    } catch (error) {
+      console.warn('Could not access App Group storage:', error.message);
+      // Non-fatal error - extension still works without App Group access
+    }
   }
 
   async connect() {

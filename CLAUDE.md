@@ -16,6 +16,9 @@ npm run build
 # Development workflow (build + test server)
 npm run dev
 
+# IMPORTANT: Always run linting before commits
+npm run lint:check
+
 # Open Xcode with built extension for iOS development  
 npm run xcode
 
@@ -36,6 +39,47 @@ npm run ios-build-testflight   # TestFlight build with upload
 
 # Clean build artifacts
 npm run clean
+
+# Code quality checks
+npm run lint              # Run ESLint to check code quality
+npm run lint:check        # Run ESLint with zero warnings tolerance 
+npm run lint:fix          # Automatically fix ESLint issues where possible
+
+# Testing Commands
+npm run launch-chrome               # Launch Chrome with extension for manual testing
+open -a Simulator                  # Open iOS Simulator
+xcrun simctl boot "iPhone-Test-1"  # Boot iOS simulator
+xcrun simctl install "iPhone-Test-1" "/Users/posix4e/Library/Developer/Xcode/DerivedData/bar123-*/Build/Products/Debug-iphonesimulator/bar123.app"  # Install iOS app
+xcrun simctl launch "iPhone-Test-1" xyz.foo.bar123  # Launch iOS app
+```
+
+## Testing the New iOS App Features
+
+### Current Test Setup (Branch: unify-javascript-codebase)
+The iOS app now has dual-mode functionality:
+
+1. **Setup View**: Shows when no shared secret is detected
+   - Displays setup instructions for Safari extension
+   - "Check Again" button to retry password detection
+   - Polls every 5 seconds for password changes
+
+2. **Live P2P Viewer**: Auto-activates when shared secret is found
+   - Read-only history viewer (like GitHub Pages showcase)
+   - Connection status and peer count display
+   - Real-time history feed with iOS-native styling
+
+### Test Flow
+1. **Build and launch iOS app**: Shows setup instructions initially
+2. **Launch Chrome extension**: `npm run launch-chrome`
+3. **Connect Chrome extension**: Enter shared secret (e.g. "test123") and connect
+4. **Test password detection**: iOS app should detect and switch to viewer mode
+5. **Test Safari extension**: Enable in iOS Safari and connect with same secret
+6. **Test P2P sync**: Browse pages, verify history sync between devices
+
+### Current Limitations (Need Implementation)
+- Password detection only checks localStorage (needs Safari extension integration)
+- Trystero not bundled in iOS app yet (currently simulated)
+- Shared storage between Safari extension and iOS app not implemented
 ```
 
 ## Architecture Overview
