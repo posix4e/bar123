@@ -836,7 +836,6 @@ class ShowcasePageGenerator {
 
   generateDownloadSection() {
     const chromeAvailable = this.debugReport?.artifacts?.chrome_extension || fs.existsSync(`chrome-extension-${this.commitSha}.zip`);
-    const iosAvailable = this.debugReport?.artifacts?.ios_ipa || fs.existsSync(`${process.env.RUNNER_TEMP || ''}/build/bar123-${this.commitSha}.ipa`);
 
     return `
         <div class="card">
@@ -859,12 +858,9 @@ class ShowcasePageGenerator {
                     <div style="font-size: 3rem; margin-bottom: 15px;">📱</div>
                     <h3>iOS Safari Extension</h3>
                     <p>Native iOS app with Safari Web Extension</p>
-                    ${iosAvailable ? 
-    `<a href="./bar123-${this.commitSha}.ipa" class="download-button">Download IPA</a>` :
-    '<div style="opacity: 0.7; margin-top: 15px;">IPA not available</div>'
-}
+                    <a href="https://testflight.apple.com/join/c7HFs21r" class="download-button" target="_blank">Install via TestFlight</a>
                     <div style="margin-top: 15px; font-size: 0.9rem; opacity: 0.8;">
-                        Install via TestFlight or Xcode
+                        Join the TestFlight beta program
                     </div>
                 </div>
             </div>
@@ -1148,8 +1144,8 @@ class ShowcasePageGenerator {
             <div style="margin-bottom: 30px;">
                 <h3>iOS Safari Extension</h3>
                 <ol style="margin-left: 20px; margin-top: 10px;">
-                    <li>Download the iOS IPA file above</li>
-                    <li>Install via TestFlight (recommended) or Xcode</li>
+                    <li>Join the TestFlight beta program using the link above</li>
+                    <li>Install directly from TestFlight on your iOS device</li>
                     <li>Open the History Sync app on your iOS device</li>
                     <li>Go to iOS Settings → Safari → Extensions</li>
                     <li>Enable "History Sync Extension"</li>
@@ -1313,12 +1309,7 @@ class ShowcasePageGenerator {
       console.log(`📦 Copied Chrome extension: ${chromeZip}`);
     }
 
-    // Copy iOS IPA if available
-    const ipaPath = `${process.env.RUNNER_TEMP || ''}/build/bar123-${this.commitSha}.ipa`;
-    if (fs.existsSync(ipaPath)) {
-      fs.copyFileSync(ipaPath, path.join(this.outputDir, `bar123-${this.commitSha}.ipa`));
-      console.log(`📱 Copied iOS IPA: bar123-${this.commitSha}.ipa`);
-    }
+    // iOS app available via TestFlight public link
 
     // Copy Trystero bundle for P2P functionality
     if (fs.existsSync('dist/trystero-bundle.js')) {
