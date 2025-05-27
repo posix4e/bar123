@@ -86,11 +86,11 @@ class XcodeCloudTestFlightIntegration {
     
     try {
       // Use altool to list builds
-      const command = `xcrun altool --list-builds ` +
+      const command = 'xcrun altool --list-builds ' +
         `--username "${this.appleId}" ` +
         `--password "${this.appPassword}" ` +
         `--bundle-id "${this.bundleId}" ` +
-        `--output-format json`;
+        '--output-format json';
       
       const output = execSync(command, { encoding: 'utf8' });
       const result = JSON.parse(output);
@@ -162,10 +162,10 @@ class XcodeCloudTestFlightIntegration {
       // This would require the build to be in the local Xcode Organizer
       // which may not be the case in CI environment
       
-      const exportCommand = `xcodebuild -exportArchive ` +
-        `-archivePath "./build/bar123.xcarchive" ` +
+      const exportCommand = 'xcodebuild -exportArchive ' +
+        '-archivePath "./build/bar123.xcarchive" ' +
         `-exportPath "${this.outputDir}" ` +
-        `-exportOptionsPlist "./ExportOptions.plist"`;
+        '-exportOptionsPlist "./ExportOptions.plist"';
       
       // This will likely fail in CI, but we can try
       execSync(exportCommand, { encoding: 'utf8' });
