@@ -4,7 +4,7 @@
  * Showcase Page Generator
  * 
  * Creates a comprehensive webpage showcasing the multiplatform history sync extension
- * with artifacts, test results, screenshots, and installation instructions using Trystero P2P technology.
+ * with artifacts, screenshots, and installation instructions using Trystero P2P technology.
  */
 
 const fs = require('fs');
@@ -31,15 +31,6 @@ class ShowcasePageGenerator {
     }
         
 
-    // Load local test results if available
-    this.localTestResults = null;
-    if (fs.existsSync('test-results/local-multiplatform/local-test-results.json')) {
-      try {
-        this.localTestResults = JSON.parse(fs.readFileSync('test-results/local-multiplatform/local-test-results.json', 'utf8'));
-      } catch (error) {
-        console.warn('Could not load local test results:', error.message);
-      }
-    }
   }
 
   generateHTML() {
@@ -631,8 +622,6 @@ class ShowcasePageGenerator {
         ${this.generateBuildInfo()}
         ${this.generateDownloadSection()}
         ${this.generateFeaturesSection()}
-        ${this.generateTestResultsSection()}
-        ${this.generateLocalTestSection()}
         ${this.generateP2PDemo()}
         ${this.generateInstallationGuide()}
         ${this.generateTechnicalDetails()}
@@ -790,6 +779,13 @@ class ShowcasePageGenerator {
     return html;
   }
 
+  getLocalTestStatus() {
+    if (!this.debugReport?.results?.local_multiplatform_tests) {
+      return 'skipped';
+    }
+    return this.debugReport.results.local_multiplatform_tests.passed ? 'passed' : 'failed';
+  }
+
   generateBuildInfo() {
     if (!this.debugReport) {
       return `
@@ -804,6 +800,7 @@ class ShowcasePageGenerator {
     const iosStatus = results.ios_build.passed ? 'passed' : 'failed';
     const testflightStatus = results.testflight_upload?.ran ? 
       (results.testflight_upload.passed ? 'passed' : 'failed') : 'skipped';
+    const localTestStatus = this.getLocalTestStatus();
 
     return `
         <div class="build-info">
@@ -815,7 +812,7 @@ class ShowcasePageGenerator {
                 </div>
                 <div>
                     <strong>Local Tests:</strong>
-                    <span class="status-badge status-${this.getLocalTestStatus()}">${this.getLocalTestStatus()}</span>
+                    <span class="status-badge status-${localTestStatus}">${localTestStatus}</span>
                 </div>
                 <div>
                     <strong>iOS Build:</strong>
@@ -911,108 +908,8 @@ class ShowcasePageGenerator {
         </div>`;
   }
 
-  generateTestResultsSection() {
-    if (!this.debugReport?.results) {
-      return `
-            <div class="card">
-                <h2>🧪 Test Results</h2>
-                <p>Test results not available</p>
-            </div>`;
-    }
 
-    const { results } = this.debugReport;
-        
-    return `
-        <div class="card">
-            <h2>🧪 Test Results</h2>
-            <div class="test-grid">
-                <div class="test-item ${results.tests.passed ? 'passed' : 'failed'}">
-                    <h4>Unit Tests</h4>
-                    <div>Exit Code: ${results.tests.exit_code}</div>
-                    <div>${results.tests.passed ? '✅ Passed' : '❌ Failed'}</div>
-                </div>
-                
-                <div class="test-item ${this.getLocalTestStatus() === 'passed' ? 'passed' : 'failed'}">
-                    <h4>Local Multiplatform Tests</h4>
-                    <div>Status: ${this.localTestResults ? 'Available' : 'Not Available'}</div>
-                    <div>${this.getLocalTestStatus() === 'passed' ? '✅ Passed' : this.getLocalTestStatus() === 'failed' ? '❌ Failed' : '⏭️ Skipped'}</div>
-                </div>
-                
-                <div class="test-item ${results.ios_build.passed ? 'passed' : 'failed'}">
-                    <h4>iOS Build</h4>
-                    <div>Exit Code: ${results.ios_build.exit_code}</div>
-                    <div>${results.ios_build.passed ? '✅ Passed' : '❌ Failed'}</div>
-                </div>
-                
-                ${results.testflight_upload ? `
-                <div class="test-item ${results.testflight_upload.ran ? (results.testflight_upload.passed ? 'passed' : 'failed') : 'skipped'}">
-                    <h4>TestFlight Upload</h4>
-                    <div>Exit Code: ${results.testflight_upload.exit_code || 'N/A'}</div>
-                    <div>${results.testflight_upload.ran ? (results.testflight_upload.passed ? '✅ Passed' : '❌ Failed') : '⏭️ Skipped'}</div>
-                </div>
-                ` : ''}
-            </div>
-            
-            ${this.generateLogsSection()}
-        </div>`;
-  }
 
-  getLocalTestStatus() {
-    if (!this.localTestResults) {
-      return 'skipped';
-    }
-    return this.localTestResults.summary?.passed ? 'passed' : 'failed';
-  }
-
-  generateLocalTestSection() {
-    if (!this.localTestResults) {
-      return `
-            <div class="card">
-                <h2>🧪 Local Multiplatform Testing</h2>
-                <p>Local test results not available</p>
-            </div>`;
-    }
-
-    const platformResults = this.localTestResults.sessions || [];
-        
-    return `
-        <div class="card">
-            <h2>🧪 Local Multiplatform Testing</h2>
-            <p>Tested locally on ${platformResults.length} platforms using Trystero P2P connections with ${this.localTestResults.summary?.success_rate || 'unknown'}% success rate</p>
-            
-            <div class="platform-grid">
-                ${platformResults.map(session => `
-                    <div class="platform-card ${session.passed ? 'passed' : 'failed'}">
-                        <div class="platform-icon">
-                            ${session.platform_type === 'chrome_desktop' ? '🖥️' : '📱'}
-                        </div>
-                        <h4>${session.platform}</h4>
-                        <div>Session: ${session.session_id || 'Local'}</div>
-                        <div>Tests: ${Object.keys(session.tests || {}).length}</div>
-                        <div>${session.passed ? '✅ Passed' : '❌ Failed'}</div>
-                    </div>
-                `).join('')}
-            </div>
-            
-            <div class="screenshot-gallery">
-                ${this.generateLocalScreenshots()}
-            </div>
-            
-            ${this.localTestResults.sync_tests?.length > 0 ? `
-            <div style="margin-top: 30px;">
-                <h3>🔄 Cross-Platform Sync Tests</h3>
-                <div class="test-grid">
-                    ${this.localTestResults.sync_tests.map(test => `
-                        <div class="test-item ${test.passed ? 'passed' : 'failed'}">
-                            <h4>${test.name}</h4>
-                            <div>${test.passed ? '✅ Passed' : '❌ Failed'}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            ` : ''}
-        </div>`;
-  }
 
   findScreenshotForPlatform(platform) {
     // Look for screenshots in test results directories
