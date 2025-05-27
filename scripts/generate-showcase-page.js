@@ -1065,7 +1065,7 @@ class ShowcasePageGenerator {
     }
     
     if (screenshots.length === 0) {
-      return '';
+      throw new Error('No screenshots available for showcase generation');
     }
     
     return screenshots.map(screenshot => `
