@@ -62,6 +62,13 @@ class LocalMultiplatformSyncTester {
     }
         
     try {
+      console.log(`  📸 Taking screenshot: ${name} at ${filepath}`);
+      
+      // Check page state before screenshot
+      const url = page.url();
+      const title = await page.title().catch(() => 'Unable to get title');
+      console.log(`  📄 Page state - URL: ${url}, Title: "${title}"`);
+      
       // Add timeout for screenshots to prevent hanging
       await Promise.race([
         page.screenshot({ path: filepath, fullPage: true }),
@@ -69,8 +76,20 @@ class LocalMultiplatformSyncTester {
           setTimeout(() => reject(new Error('Screenshot timeout after 15s')), 15000)
         )
       ]);
+      
+      console.log(`  ✅ Screenshot saved successfully: ${name}`);
     } catch (error) {
       console.error(`❌ Screenshot failed for ${name}: ${error.message}`);
+      
+      // Try to get more info about the page state when screenshot fails
+      try {
+        const url = page.url();
+        const readyState = await page.evaluate(() => document.readyState);
+        console.error(`  🔍 Page state during failure - URL: ${url}, Ready: ${readyState}`);
+      } catch (debugError) {
+        console.error(`  🔍 Could not get page debug info: ${debugError.message}`);
+      }
+      
       throw new Error(`Screenshot capture failed: ${error.message}`);
     }
         
@@ -164,12 +183,33 @@ class LocalMultiplatformSyncTester {
             
       // Test extension loading
       console.log('  📋 Verifying extension loading...');
-            
-      await page.goto('chrome://extensions/', { 
-        waitUntil: 'networkidle', 
-        timeout: isCI ? 60000 : 30000 
-      });
-      await page.waitForTimeout(isCI ? 5000 : 3000);
+      
+      try {
+        console.log('  🔍 Navigating to chrome://extensions/...');
+        await page.goto('chrome://extensions/', { 
+          waitUntil: 'networkidle', 
+          timeout: isCI ? 60000 : 30000 
+        });
+        console.log('  ✅ Successfully navigated to chrome://extensions/');
+        
+        console.log('  ⏳ Waiting for page to settle...');
+        await page.waitForTimeout(isCI ? 5000 : 3000);
+        console.log('  ✅ Page settled');
+        
+        // Log page title and URL to verify we're on the right page
+        const title = await page.title();
+        const url = page.url();
+        console.log(`  📄 Page title: "${title}", URL: "${url}"`);
+        
+        // Check if developer mode toggle exists
+        const devModeToggle = await page.locator('#devMode').first();
+        const devModeExists = await devModeToggle.isVisible().catch(() => false);
+        console.log(`  🔧 Developer mode toggle visible: ${devModeExists}`);
+        
+      } catch (error) {
+        console.log(`  ❌ Navigation failed: ${error.message}`);
+        throw error;
+      }
             
       // Developer mode should already be enabled for loaded extensions
       await page.waitForTimeout(1000);
