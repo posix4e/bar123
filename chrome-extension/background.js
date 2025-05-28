@@ -46,25 +46,26 @@ class HistorySyncService {
 
   setupMessageHandlers() {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      switch (request.action) {
-      case 'connect':
-        this.connect(request.sharedSecret)
-          .then(() => sendResponse({ success: true }))
-          .catch(error => sendResponse({ success: false, error: error.message }));
-        return true;
+      try {
+        switch (request.action) {
+        case 'connect':
+          this.connect(request.sharedSecret)
+            .then(() => sendResponse({ success: true }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+          return true;
 
-      case 'disconnect':
-        this.disconnect();
-        sendResponse({ success: true });
-        break;
+        case 'disconnect':
+          this.disconnect();
+          sendResponse({ success: true });
+          break;
 
-      case 'getStats':
-        sendResponse({
-          isConnected: this.isConnected,
-          deviceCount: this.peers.size,
-          localHistoryCount: this.localHistory.length
-        });
-        break;
+        case 'getStats':
+          sendResponse({
+            isConnected: this.isConnected,
+            deviceCount: this.peers.size,
+            localHistoryCount: this.localHistory.length
+          });
+          break;
                     
       case 'getHistory':
         sendResponse({
@@ -81,6 +82,12 @@ class HistorySyncService {
       case 'peerLeft':
         console.log('Peer left:', request.peerId);
         this.peers.delete(request.peerId);
+        
+        // If all peers have left and we still want to be connected, attempt reconnection
+        if (this.peers.size === 0 && this.isConnected && this.sharedSecret) {
+          console.log('All peers disconnected, scheduling reconnection attempt...');
+          setTimeout(() => this.attemptReconnection(), 5000);
+        }
         break;
                     
       case 'receivedHistory':
@@ -106,6 +113,10 @@ class HistorySyncService {
         }
         break;
       }
+      } catch (error) {
+        console.error('Error handling message:', error);
+        sendResponse({ success: false, error: error.message });
+      }
     });
   }
 
@@ -126,13 +137,21 @@ class HistorySyncService {
         sharedSecret: sharedSecret
       });
             
-      if (response.success) {
+      if (response && response.success) {
         this.isConnected = true;
         console.log('✅ Connection initiated successfully');
+        
+        // Store connection details for potential reconnection
+        await chrome.storage.local.set({
+          lastSharedSecret: sharedSecret,
+          lastRoomId: this.roomId
+        });
       } else {
-        throw new Error(response.error);
+        throw new Error(response ? response.error : 'No response from offscreen document');
       }
     } catch (error) {
+      console.error('Connection failed:', error);
+      this.isConnected = false;
       throw new Error('Failed to connect: ' + error.message);
     }
   }
@@ -181,7 +200,29 @@ class HistorySyncService {
         
     this.peers.clear();
     this.isConnected = false;
+    this.sharedSecret = null;
+    this.roomId = null;
+    
+    // Clear stored connection details
+    await chrome.storage.local.remove(['lastSharedSecret', 'lastRoomId']);
+    
     console.log('Disconnected from Trystero');
+  }
+  
+  // Add reconnection attempt method
+  async attemptReconnection() {
+    if (this.isConnected || !this.sharedSecret) {
+      return;
+    }
+    
+    console.log('Attempting to reconnect...');
+    try {
+      await this.connect(this.sharedSecret);
+    } catch (error) {
+      console.error('Reconnection failed:', error);
+      // Schedule another reconnection attempt in 30 seconds
+      setTimeout(() => this.attemptReconnection(), 30000);
+    }
   }
     
   handleReceivedHistory(historyData) {
