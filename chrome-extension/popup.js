@@ -52,15 +52,19 @@ document.addEventListener('DOMContentLoaded', function() {
       const stats = await chrome.runtime.sendMessage({ action: 'getStats' });
             
       if (stats.isConnected) {
-        statusDiv.className = 'status connected';
-        statusDiv.textContent = `Connected (${stats.deviceCount} peers)`;
-        connectBtn.style.display = 'none';
-        disconnectBtn.style.display = 'inline-block';
+        if (statusDiv) {
+          statusDiv.className = 'status connected';
+          statusDiv.textContent = `Connected (${stats.deviceCount} peers)`;
+        }
+        if (connectBtn) {connectBtn.style.display = 'none';}
+        if (disconnectBtn) {disconnectBtn.style.display = 'inline-block';}
       } else {
-        statusDiv.className = 'status disconnected';
-        statusDiv.textContent = 'Disconnected';
-        connectBtn.style.display = 'inline-block';
-        disconnectBtn.style.display = 'none';
+        if (statusDiv) {
+          statusDiv.className = 'status disconnected';
+          statusDiv.textContent = 'Disconnected';
+        }
+        if (connectBtn) {connectBtn.style.display = 'inline-block';}
+        if (disconnectBtn) {disconnectBtn.style.display = 'none';}
       }
     } catch (error) {
       console.error('Failed to update UI:', error);
@@ -73,9 +77,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
       const historyList = document.getElementById('historyList');
       const noHistory = document.getElementById('noHistory');
+      
+      if (!historyList) {
+        console.error('historyList element not found');
+        return;
+      }
             
       if (response.success && response.history && response.history.length > 0) {
-        noHistory.style.display = 'none';
+        if (noHistory) {
+          noHistory.style.display = 'none';
+        }
         historyList.innerHTML = response.history.map(entry => {
           const date = new Date(entry.visitTime).toLocaleString();
           const sourceDevice = entry.sourceDevice ? ` (${entry.sourceDevice.split('_')[0]})` : '';
@@ -94,13 +105,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     `;
         }).join('');
       } else {
-        noHistory.style.display = 'block';
+        if (noHistory) {
+          noHistory.style.display = 'block';
+        }
         historyList.innerHTML = '<div id="noHistory" style="color: #666; font-style: italic;">No history entries yet</div>';
       }
     } catch (error) {
       console.error('Failed to load history:', error);
       const historyList = document.getElementById('historyList');
-      historyList.innerHTML = '<div style="color: #d00;">Error loading history</div>';
+      if (historyList) {
+        historyList.innerHTML = '<div style="color: #d00;">Error loading history</div>';
+      }
     }
   }
 });

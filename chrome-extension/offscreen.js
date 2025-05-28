@@ -8,27 +8,37 @@ let isConnected = false;
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('Offscreen received message:', request);
     
-  if (request.action === 'initConnection') {
-    initTrysteroConnection(request.roomId, request.sharedSecret)
-      .then(() => {
-        sendResponse({ success: true });
-      })
-      .catch(error => {
-        sendResponse({ success: false, error: error.message });
-      });
-    return true; // Keep message channel open for async response
-  } else if (request.action === 'disconnect') {
-    if (trysteroRoom) {
-      trysteroRoom.leave();
-      trysteroRoom = null;
-      isConnected = false;
-      console.log('Disconnected from Trystero room');
+  try {
+    if (request.action === 'initConnection') {
+      initTrysteroConnection(request.roomId)
+        .then(() => {
+          sendResponse({ success: true });
+        })
+        .catch(error => {
+          console.error('Connection error in offscreen:', error);
+          sendResponse({ success: false, error: error.message });
+        });
+      return true; // Keep message channel open for async response
+    } else if (request.action === 'disconnect') {
+      if (trysteroRoom) {
+        try {
+          trysteroRoom.leave();
+        } catch (error) {
+          console.error('Error leaving room:', error);
+        }
+        trysteroRoom = null;
+        isConnected = false;
+        console.log('Disconnected from Trystero room');
+      }
+      sendResponse({ success: true });
     }
-    sendResponse({ success: true });
+  } catch (error) {
+    console.error('Error handling offscreen message:', error);
+    sendResponse({ success: false, error: error.message });
   }
 });
 
-async function initTrysteroConnection(roomId, _sharedSecret) {
+async function initTrysteroConnection(roomId) {
   try {
     console.log('Initializing Trystero connection in offscreen document');
     console.log('Room ID:', roomId);
