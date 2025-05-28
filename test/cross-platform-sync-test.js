@@ -47,19 +47,29 @@ class CrossPlatformSyncTester {
       const manifestExists = fs.existsSync('chrome-extension/manifest.json');
       const backgroundExists = fs.existsSync('chrome-extension/background.js');
       const popupExists = fs.existsSync('chrome-extension/popup.html');
+      const offscreenExists = fs.existsSync('chrome-extension/offscreen.html');
             
       let manifestValid = false;
+      let hasRequiredPermissions = false;
       if (manifestExists) {
         const manifest = JSON.parse(fs.readFileSync('chrome-extension/manifest.json', 'utf8'));
         manifestValid = manifest.manifest_version === 3 && manifest.name === 'History Sync';
+        
+        // Check for required permissions including new notifications permission
+        const requiredPermissions = ['storage', 'tabs', 'history', 'activeTab', 'scripting', 'offscreen', 'notifications'];
+        hasRequiredPermissions = requiredPermissions.every(perm => 
+          manifest.permissions && manifest.permissions.includes(perm)
+        );
       }
             
       this.addTestResult('Chrome Extension Structure', 
-        manifestExists && backgroundExists && popupExists && manifestValid, {
+        manifestExists && backgroundExists && popupExists && offscreenExists && manifestValid && hasRequiredPermissions, {
           manifestExists,
           backgroundExists,
           popupExists,
-          manifestValid
+          offscreenExists,
+          manifestValid,
+          hasRequiredPermissions
         });
             
     } catch (error) {
@@ -75,17 +85,38 @@ class CrossPlatformSyncTester {
     try {
       const backgroundPath = 'bar123 Extension/Resources/background.js';
       const backgroundExists = fs.existsSync(backgroundPath);
+      const manifestPath = 'bar123 Extension/Resources/manifest.json';
+      const manifestExists = fs.existsSync(manifestPath);
             
       let hasIOSDeviceId = false;
+      let hasFileSharingSupport = false;
+      let hasPasswordSharingSupport = false;
+      let hasNotificationSupport = false;
+      
       if (backgroundExists) {
         const content = fs.readFileSync(backgroundPath, 'utf8');
         hasIOSDeviceId = content.includes('ios_safari_');
+        hasFileSharingSupport = content.includes('sharedFiles') && content.includes('handleShareFile');
+        hasPasswordSharingSupport = content.includes('sharedPasswords') && content.includes('handleSharePassword');
+        hasNotificationSupport = content.includes('showNotification');
+      }
+      
+      let hasRequiredManifestPermissions = false;
+      if (manifestExists) {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        hasRequiredManifestPermissions = manifest.permissions && 
+          manifest.permissions.includes('notifications') &&
+          manifest.permissions.includes('storage');
       }
             
       this.addTestResult('Safari Extension Enhancement', 
-        backgroundExists && hasIOSDeviceId, {
+        backgroundExists && hasIOSDeviceId && hasFileSharingSupport && hasPasswordSharingSupport && hasNotificationSupport && hasRequiredManifestPermissions, {
           backgroundExists,
-          hasIOSDeviceId
+          hasIOSDeviceId,
+          hasFileSharingSupport,
+          hasPasswordSharingSupport,
+          hasNotificationSupport,
+          hasRequiredManifestPermissions
         });
             
     } catch (error) {
