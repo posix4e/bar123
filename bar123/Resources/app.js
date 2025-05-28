@@ -103,6 +103,11 @@ class iOSHistorySyncService {
         roomId: this.roomId
       });
       
+      // Request history from peers after a short delay to let connections establish
+      setTimeout(() => {
+        this.requestHistoryFromPeers();
+      }, 2000);
+      
     } catch (error) {
       console.error('❌ Failed to connect to Trystero:', error);
       this.isConnected = false;
@@ -190,20 +195,35 @@ class iOSHistorySyncService {
       });
     });
     
-    // Set up data channels
-    [this.sendHistory] = this.room.makeAction('history');
-    [this.sendDelete] = this.room.makeAction('delete');
+    // Set up data channels - MUST match Safari extension channel names
+    const [sendHistory, getHistory] = this.room.makeAction('history-sync');
+    const [sendDelete, getDelete] = this.room.makeAction('delete-item');
+    
+    this.sendHistory = sendHistory;
+    this.sendDelete = sendDelete;
     
     // Listen for history data
-    this.room.onAction('history', (data, peerId) => {
-      console.log(`📥 Received ${data.entries?.length || 0} history entries from ${peerId}`);
-      if (data.entries) {
-        this.mergeHistoryEntries(data.entries, peerId);
+    getHistory((data, peerId) => {
+      console.log(`📥 Received data from ${peerId}:`, data.type || 'history');
+      
+      if (data.type === 'historyRequest') {
+        // This shouldn't happen since iOS app doesn't send history, but handle gracefully
+        console.log('📤 Received history request (iOS app has no history to share)');
+        return;
+      }
+      
+      if (data.type === 'historyResponse' || data.entries) {
+        const entries = data.entries || [];
+        console.log(`📥 Received ${entries.length} history entries from ${peerId}`);
+        if (entries.length > 0) {
+          console.log('📋 Sample entry structure:', entries[0]);
+          this.mergeHistoryEntries(entries, peerId);
+        }
       }
     });
     
     // Listen for delete commands
-    this.room.onAction('delete', (data, peerId) => {
+    getDelete((data, peerId) => {
       console.log(`🗑️ Received delete command from ${peerId}`);
       this.handleRemoteDelete(data);
     });
@@ -212,9 +232,17 @@ class iOSHistorySyncService {
   }
 
   mergeHistoryEntries(entries, sourceDeviceId) {
+    console.log(`🔀 Starting merge of ${entries.length} entries from ${sourceDeviceId}`);
+    console.log(`📊 Current local history count: ${this.localHistory.length}`);
+    
     let newEntries = 0;
     
-    entries.forEach(entry => {
+    entries.forEach((entry, index) => {
+      // Debug first few entries
+      if (index < 3) {
+        console.log(`📋 Entry ${index}:`, { url: entry.url, visitTime: entry.visitTime, title: entry.title });
+      }
+      
       // Check if we already have this entry
       const existing = this.localHistory.find(local => 
         local.url === entry.url && 
@@ -231,11 +259,15 @@ class iOSHistorySyncService {
         
         this.localHistory.push(enrichedEntry);
         newEntries++;
+      } else if (index < 3) {
+        console.log(`🔄 Entry ${index} already exists, skipping`);
       }
     });
     
+    console.log(`📝 Added ${newEntries} new history entries (${entries.length - newEntries} duplicates)`);
+    console.log(`📊 New local history count: ${this.localHistory.length}`);
+    
     if (newEntries > 0) {
-      console.log(`📝 Added ${newEntries} new history entries`);
       this.saveLocalHistory();
       this.updateUI();
       
@@ -245,6 +277,9 @@ class iOSHistorySyncService {
         newEntries: newEntries,
         totalEntries: this.localHistory.length
       });
+    } else {
+      console.log('ℹ️ No new entries to add, but updating UI anyway');
+      this.updateUI();
     }
   }
 
@@ -253,6 +288,13 @@ class iOSHistorySyncService {
       const stored = localStorage.getItem('localHistory');
       this.localHistory = stored ? JSON.parse(stored) : [];
       console.log(`📚 Loaded ${this.localHistory.length} history entries from storage`);
+      
+      // Clear any test data on first run
+      if (this.localHistory.length > 0 && this.localHistory[0].url === 'https://github.com/posix4e/bar123') {
+        console.log('🧹 Clearing test data...');
+        this.localHistory = [];
+        localStorage.removeItem('localHistory');
+      }
     } catch (error) {
       console.error('Failed to load local history:', error);
       this.localHistory = [];
@@ -370,6 +412,25 @@ class iOSHistorySyncService {
   refreshHistory() {
     console.log('🔄 Refreshing history display...');
     this.updateUI();
+    
+    // Also request fresh history from peers
+    this.requestHistoryFromPeers();
+  }
+
+  requestHistoryFromPeers() {
+    if (this.sendHistory && this.isConnected && this.peers.size > 0) {
+      console.log(`📤 Requesting history from ${this.peers.size} connected peers...`);
+      
+      // Send a history request message
+      this.sendHistory({
+        type: 'historyRequest',
+        deviceId: this.deviceId,
+        timestamp: Date.now(),
+        requestingDevice: 'ios_app'
+      });
+    } else {
+      console.log('ℹ️ No peers connected to request history from');
+    }
   }
 
   clearRoomSecret() {
