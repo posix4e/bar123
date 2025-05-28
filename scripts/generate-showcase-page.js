@@ -622,6 +622,7 @@ class ShowcasePageGenerator {
         ${this.generateBuildInfo()}
         ${this.generateDownloadSection()}
         ${this.generateFeaturesSection()}
+        ${this.generateScreenshotsSection()}
         ${this.generateP2PDemo()}
         ${this.generateInstallationGuide()}
         ${this.generateTechnicalDetails()}
@@ -906,6 +907,62 @@ class ShowcasePageGenerator {
                 </div>
             </div>
         </div>`;
+  }
+
+  generateScreenshotsSection() {
+    return `
+        <div class="card">
+            <h2>📸 Screenshots</h2>
+            <p>Screenshots from automated testing showing the extension in action across different platforms</p>
+            <div class="screenshot-gallery">
+                ${this.generateScreenshotGallery()}
+            </div>
+        </div>`;
+  }
+
+  generateScreenshotGallery() {
+    const screenshotDir = path.join(this.outputDir, 'screenshots');
+    
+    if (!fs.existsSync(screenshotDir)) {
+      return '<div style="text-align: center; padding: 40px; color: #666;">No screenshots available</div>';
+    }
+
+    const screenshots = fs.readdirSync(screenshotDir)
+      .filter(file => file.endsWith('.png'))
+      .sort()
+      .slice(-12); // Show last 12 screenshots
+
+    if (screenshots.length === 0) {
+      return '<div style="text-align: center; padding: 40px; color: #666;">No screenshots available</div>';
+    }
+
+    return screenshots.map((filename, index) => {
+      // Extract platform and description from filename
+      const platform = filename.includes('chrome') ? 'Chrome Desktop' : 
+        filename.includes('ios') ? 'iOS Safari' : 'Unknown Platform';
+      
+      const description = filename.includes('initial') ? 'Initial state' :
+        filename.includes('popup') ? 'Extension popup' :
+          filename.includes('connect') ? 'After connection' :
+            filename.includes('extensions') ? 'Extensions page' :
+              filename.includes('final') ? 'Final state' :
+                'Test screenshot';
+
+      return `
+        <div class="screenshot-card">
+          <img src="./screenshots/${filename}" alt="Screenshot: ${platform} - ${description}" 
+               style="width: 100%; height: 200px; object-fit: cover;" 
+               loading="lazy" />
+          <div class="screenshot-info">
+            <h4>${platform}</h4>
+            <p>${description}</p>
+            <div style="margin-top: 10px; font-size: 0.8rem; color: #6c757d;">
+              Test #${index + 1} | ${filename.split('-')[1] || 'Unknown time'}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
 
