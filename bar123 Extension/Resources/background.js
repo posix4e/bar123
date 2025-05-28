@@ -478,6 +478,24 @@ class HistorySyncService {
         currentRoomId: this.roomId
       });
 
+      // Update App Group so iOS app can see the real data
+      try {
+        await browser.runtime.sendNativeMessage('bar123.extension', {
+          type: 'updateAppGroupStatus',
+          isConnected: this.isConnected,
+          peerCount: this.peers.size,
+          historyCount: this.localHistory.length,
+          roomId: this.roomId
+        });
+        console.log('✅ Updated App Group with status:', { 
+          connected: this.isConnected, 
+          peers: this.peers.size, 
+          history: this.localHistory.length 
+        });
+      } catch (error) {
+        console.log('ℹ️ Could not update App Group (extension may not be available):', error);
+      }
+
       // Try to notify popup of status change (may fail if popup not open)
       try {
         await browser.runtime.sendMessage({

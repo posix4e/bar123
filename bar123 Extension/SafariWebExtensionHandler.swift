@@ -7,6 +7,7 @@
 
 import SafariServices
 import os.log
+import UIKit
 
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
@@ -58,6 +59,26 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                         "secret": secret
                     ]
                     os_log(.default, "Retrieved shared secret from App Group: %@", secret.isEmpty ? "empty" : "found")
+                case "getBatteryStatus":
+                    let batteryInfo = getBatteryStatus()
+                    responseData = [
+                        "type": "getBatteryStatusResponse",
+                        "isCharging": batteryInfo.isCharging,
+                        "batteryLevel": batteryInfo.level,
+                        "batteryState": batteryInfo.state
+                    ]
+                    os_log(.default, "Battery status: charging=%@, level=%.2f, state=%@", 
+                           batteryInfo.isCharging ? "yes" : "no", batteryInfo.level, batteryInfo.state)
+                case "updateAppGroupStatus":
+                    if let connected = messageDict["isConnected"] as? Bool,
+                       let peerCount = messageDict["peerCount"] as? Int,
+                       let historyCount = messageDict["historyCount"] as? Int {
+                        updateAppGroupStatus(connected: connected, peerCount: peerCount, historyCount: historyCount, roomId: messageDict["roomId"] as? String)
+                        responseData = [
+                            "type": "updateAppGroupStatusResponse",
+                            "success": true
+                        ]
+                    }
                 default:
                     os_log(.default, "Unknown message type: %@", type)
                     responseData = ["echo": message as Any]
@@ -119,6 +140,65 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         os_log(.default, "Retrieved secret from shared storage, length: %d", secret.count)
         
         return secret
+    }
+    
+    private func getBatteryStatus() -> (isCharging: Bool, level: Float, state: String) {
+        os_log(.default, "getBatteryStatus called")
+        
+        // Enable battery monitoring
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        
+        let device = UIDevice.current
+        let batteryLevel = device.batteryLevel
+        let batteryState = device.batteryState
+        
+        var isCharging = false
+        var stateString = "unknown"
+        
+        switch batteryState {
+        case .charging:
+            isCharging = true
+            stateString = "charging"
+        case .full:
+            isCharging = true  // Device is plugged in when full
+            stateString = "full"
+        case .unplugged:
+            isCharging = false
+            stateString = "unplugged"
+        case .unknown:
+            isCharging = false
+            stateString = "unknown"
+        @unknown default:
+            isCharging = false
+            stateString = "unknown"
+        }
+        
+        os_log(.default, "Battery details - level: %.2f, state: %@, charging: %@", 
+               batteryLevel, stateString, isCharging ? "yes" : "no")
+        
+        return (isCharging: isCharging, level: batteryLevel, state: stateString)
+    }
+    
+    private func updateAppGroupStatus(connected: Bool, peerCount: Int, historyCount: Int, roomId: String?) {
+        os_log(.default, "updateAppGroupStatus called: connected=%@, peers=%d, history=%d", connected ? "yes" : "no", peerCount, historyCount)
+        
+        guard let sharedDefaults = UserDefaults(suiteName: "group.xyz.foo.bar123") else {
+            os_log(.error, "Failed to access shared UserDefaults for App Group: group.xyz.foo.bar123")
+            return
+        }
+        
+        sharedDefaults.set(connected, forKey: "extensionConnected")
+        sharedDefaults.set(peerCount, forKey: "extensionPeerCount")
+        sharedDefaults.set(historyCount, forKey: "extensionHistoryCount")
+        
+        if let roomId = roomId {
+            sharedDefaults.set(roomId, forKey: "extensionRoomId")
+        } else {
+            sharedDefaults.removeObject(forKey: "extensionRoomId")
+        }
+        
+        let syncResult = sharedDefaults.synchronize()
+        os_log(.default, "App Group status update result: %@", syncResult ? "success" : "failed")
     }
 
 }

@@ -457,27 +457,55 @@ class iOSHistorySyncService {
 }
 
 // Battery status detection
-let powerStatus = 'battery';
+let powerStatus = 'unknown';
 
 function detectPowerStatus() {
+  // Try the Battery API (deprecated but may still work in some contexts)
   if ('getBattery' in navigator) {
     navigator.getBattery().then(function(battery) {
       const newStatus = battery.charging ? 'charging' : 'battery';
       if (newStatus !== powerStatus) {
         powerStatus = newStatus;
         updateBatteryDisplay();
+        console.log('Battery status detected:', newStatus);
       }
+    }).catch(function(error) {
+      console.log('Battery API failed:', error);
+      powerStatus = 'unknown';
+      updateBatteryDisplay();
     });
+  } else {
+    console.log('Battery API not available');
+    powerStatus = 'unknown';
+    updateBatteryDisplay();
   }
 }
+
+
+
 
 function updateBatteryDisplay() {
   const batteryIndicator = document.getElementById('power-indicator');
   const batteryText = document.getElementById('power-text');
   
   if (batteryIndicator && batteryText) {
-    const icon = powerStatus === 'charging' ? '⚡' : '🔋';
-    const text = powerStatus === 'charging' ? 'Charging - Auto Refresh' : 'Battery Mode - Manual Refresh Only';
+    let icon, text;
+    
+    switch (powerStatus) {
+    case 'charging':
+      icon = '⚡';
+      text = 'Charging - Auto Refresh';
+      break;
+    case 'battery':
+      icon = '🔋';
+      text = 'Battery Mode - Manual Refresh Only';
+      break;
+    case 'unknown':
+    default:
+      icon = '❓';
+      text = 'Battery Status Unknown - Manual Refresh Only';
+      break;
+    }
     
     batteryIndicator.textContent = icon;
     batteryText.textContent = text;
