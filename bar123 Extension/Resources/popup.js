@@ -1,250 +1,335 @@
-
-class HistorySyncUI {
-  constructor() {
-    this.initializeElements();
-    this.bindEvents();
-    this.loadSettings();
-    this.updateUI();
-  }
-
-  initializeElements() {
-    this.sharedSecretInput = document.getElementById('sharedSecret');
-    this.connectBtn = document.getElementById('connectBtn');
-    this.disconnectBtn = document.getElementById('disconnectBtn');
-    this.clearLocalBtn = document.getElementById('clearLocalBtn');
-    this.deleteRemoteBtn = document.getElementById('deleteRemoteBtn');
-    this.debugSyncBtn = document.getElementById('debugSyncBtn');
-    this.refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
-    this.syncStatus = document.getElementById('syncStatus');
-    this.deviceCount = document.getElementById('deviceCount');
-    this.localCount = document.getElementById('localCount');
-    this.lastSync = document.getElementById('lastSync');
-    this.historyList = document.getElementById('historyList');
-  }
-
-  bindEvents() {
-    this.connectBtn.addEventListener('click', () => this.connect());
-    this.disconnectBtn.addEventListener('click', () => this.disconnect());
-    this.clearLocalBtn.addEventListener('click', () => this.clearLocalHistory());
-    this.deleteRemoteBtn.addEventListener('click', () => this.deleteRemoteHistory());
-    this.debugSyncBtn.addEventListener('click', () => this.debugSync());
-    this.refreshHistoryBtn.addEventListener('click', () => this.loadHistory());
-        
-    this.sharedSecretInput.addEventListener('input', () => this.saveSettings());
-  }
-
-  async loadSettings() {
-    const settings = await browser.storage.local.get([
-      'sharedSecret',
-      'isConnected',
-      'deviceCount',
-      'localHistoryCount',
-      'lastSyncTime'
-    ]);
-
-    this.sharedSecretInput.value = settings.sharedSecret || '';
-        
-    this.updateStatus(settings.isConnected, settings.deviceCount || 0);
-    this.localCount.textContent = settings.localHistoryCount || 0;
-    this.lastSync.textContent = settings.lastSyncTime ? 
-      new Date(settings.lastSyncTime).toLocaleString() : 'Never';
-        
-    // Load history on initial load
-    this.loadHistory();
-  }
-
-  async saveSettings() {
-    const secret = this.sharedSecretInput.value;
+document.addEventListener('DOMContentLoaded', function() {
+  const statusDiv = document.getElementById('status');
+  const sharedSecretInput = document.getElementById('sharedSecret');
+  const connectBtn = document.getElementById('connectBtn');
+  const disconnectBtn = document.getElementById('disconnectBtn');
+  const refreshBtn = document.getElementById('refreshBtn');
+  
+  const fileInput = document.getElementById('fileInput');
+  const shareFileBtn = document.getElementById('shareFileBtn');
+  const sharePasswordBtn = document.getElementById('sharePasswordBtn');
+  const expirationSelect = document.getElementById('expirationSelect');
+  
+  const showFilesBtn = document.getElementById('showFilesBtn');
+  const showPasswordsBtn = document.getElementById('showPasswordsBtn');
+  const showHistoryBtn = document.getElementById('showHistoryBtn');
+  
+  let currentView = 'history';
     
-    // Save to browser storage
-    await browser.storage.local.set({
-      sharedSecret: secret
-    });
+  // Load initial state
+  updateUI();
+  loadItems();
     
-    // Also save to App Group storage for iOS app access
-    try {
-      const response = await browser.runtime.sendNativeMessage({
-        type: 'saveSharedSecret',
-        secret: secret
-      });
-      
-      if (response && response.success) {
-        console.log('Successfully saved shared secret to App Group storage');
-      } else {
-        console.warn('Failed to save shared secret to App Group storage:', response);
-      }
-    } catch (error) {
-      console.warn('Native messaging not available or failed:', error);
-    }
-  }
-
-  async connect() {
-    const secret = this.sharedSecretInput.value.trim();
-
+  connectBtn.addEventListener('click', async () => {
+    const secret = sharedSecretInput.value.trim();
     if (!secret) {
-      alert('Please enter a room secret');
+      alert('Please enter a shared secret');
       return;
     }
-
-    this.connectBtn.disabled = true;
-    this.connectBtn.textContent = 'Connecting...';
-
+        
+    connectBtn.disabled = true;
+    connectBtn.textContent = 'Connecting...';
+        
     try {
-      await browser.runtime.sendMessage({
+      const response = await browser.runtime.sendMessage({
         action: 'connect',
         sharedSecret: secret
       });
-    } catch (error) {
-      console.error('Connection failed:', error);
-      alert('Connection failed: ' + error.message);
-    } finally {
-      this.connectBtn.disabled = false;
-      this.connectBtn.textContent = 'Connect';
-    }
-  }
-
-  async disconnect() {
-    await browser.runtime.sendMessage({ action: 'disconnect' });
-  }
-
-  async clearLocalHistory() {
-    if (confirm('Are you sure you want to clear all local history? This cannot be undone.')) {
-      await browser.runtime.sendMessage({ action: 'clearLocal' });
-      this.updateUI();
-    }
-  }
-
-  async deleteRemoteHistory() {
-    if (confirm('Are you sure you want to delete all remote history for this secret? This will affect all devices using this secret.')) {
-      await browser.runtime.sendMessage({ action: 'deleteRemote' });
-    }
-  }
-
-  async debugSync() {
-    console.log('🔧 Triggering debug sync...');
-    try {
-      const response = await browser.runtime.sendMessage({ action: 'debugSync' });
-      console.log('Debug sync response:', response);
-      alert(`Force sync triggered. Found ${response.peerCount} peers. Check console for details.`);
-      this.updateUI();
-    } catch (error) {
-      console.error('Debug sync failed:', error);
-      alert('Debug sync failed: ' + error.message);
-    }
-  }
-
-  updateStatus(isConnected, deviceCount = 0) {
-    this.syncStatus.textContent = isConnected ? 'Connected' : 'Disconnected';
-    this.syncStatus.className = `sync-status ${isConnected ? 'connected' : 'disconnected'}`;
-    this.deviceCount.textContent = `${deviceCount} device${deviceCount !== 1 ? 's' : ''}`;
-        
-    this.connectBtn.style.display = isConnected ? 'none' : 'block';
-    this.disconnectBtn.style.display = isConnected ? 'block' : 'none';
-  }
-
-  // Trystero handles P2P connections via multiple strategies
-
-  async updateUI() {
-    const stats = await browser.runtime.sendMessage({ action: 'getStats' });
-    if (stats) {
-      this.updateStatus(stats.isConnected, stats.deviceCount);
-      this.localCount.textContent = stats.localHistoryCount;
-      this.lastSync.textContent = stats.lastSyncTime ? 
-        new Date(stats.lastSyncTime).toLocaleString() : 'Never';
-    }
-    // Refresh history display
-    this.loadHistory();
-  }
-
-  async loadHistory() {
-    try {
-      const response = await browser.runtime.sendMessage({ action: 'getHistory' });
-      if (response && response.success) {
-        this.displayHistory(response.history || []);
+            
+      if (response.success) {
+        updateUI();
       } else {
-        this.displayHistory([]);
+        alert('Connection failed: ' + response.error);
       }
     } catch (error) {
-      console.error('Failed to load history:', error);
-      this.displayHistory([]);
+      alert('Connection error: ' + error.message);
     }
-  }
+        
+    connectBtn.disabled = false;
+    connectBtn.textContent = 'Connect';
+  });
+    
+  disconnectBtn.addEventListener('click', async () => {
+    await browser.runtime.sendMessage({ action: 'disconnect' });
+    updateUI();
+  });
+    
+  refreshBtn.addEventListener('click', () => {
+    loadItems();
+  });
 
-  displayHistory(historyEntries) {
-    if (!historyEntries || historyEntries.length === 0) {
-      this.historyList.innerHTML = '<div class="empty-state">No history entries yet</div>';
+  shareFileBtn.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      alert('File too large. Maximum size is 10MB.');
       return;
     }
 
-    // Sort by visit time (newest first)
-    const sortedHistory = historyEntries.sort((a, b) => (b.visitTime || 0) - (a.visitTime || 0));
-
-    // Limit to last 20 entries for performance
-    const recentHistory = sortedHistory.slice(0, 20);
-
-    const historyHTML = recentHistory.map(entry => {
-      const isLocal = !entry.synced || entry.sourceDevice === entry.deviceId;
-      const entryClass = isLocal ? 'local' : 'synced';
-            
-      const visitTime = new Date(entry.visitTime || 0);
-      const timeAgo = this.getTimeAgo(visitTime);
-            
-      const duration = entry.duration ? `${Math.round(entry.duration / 1000)}s` : '';
-      const source = isLocal ? 'Local' : 'Synced';
-            
-      return `
-                <div class="history-entry ${entryClass}">
-                    <div class="history-url" title="${entry.url || ''}">${this.truncateUrl(entry.url || '')}</div>
-                    <div class="history-title" title="${entry.title || ''}">${entry.title || 'Untitled'}</div>
-                    <div class="history-meta">
-                        <span class="history-source ${entryClass}">${source}</span>
-                        <span>${timeAgo} ${duration ? `• ${duration}` : ''}</span>
-                    </div>
-                </div>
-            `;
-    }).join('');
-
-    this.historyList.innerHTML = historyHTML;
-  }
-
-  truncateUrl(url) {
     try {
-      const urlObj = new URL(url);
-      const domain = urlObj.hostname.replace('www.', '');
-      const path = urlObj.pathname;
-            
-      if (path === '/' || path === '') {
-        return domain;
+      const content = await readFileAsBase64(file);
+      const expiresAt = getExpirationTime();
+
+      const response = await browser.runtime.sendMessage({
+        action: 'shareFile',
+        fileData: {
+          name: file.name,
+          content: content,
+          type: file.type,
+          size: file.size
+        },
+        expiresAt: expiresAt
+      });
+
+      if (response.success) {
+        alert('File shared successfully!');
+        loadItems();
+      } else {
+        alert('Failed to share file: ' + response.error);
       }
+    } catch (error) {
+      alert('Error sharing file: ' + error.message);
+    }
+  });
+
+  sharePasswordBtn.addEventListener('click', async () => {
+    showPasswordForm();
+  });
+
+  showFilesBtn.addEventListener('click', () => {
+    currentView = 'files';
+    updateViewButtons();
+    loadItems();
+  });
+
+  showPasswordsBtn.addEventListener('click', () => {
+    currentView = 'passwords';
+    updateViewButtons();
+    loadItems();
+  });
+
+  showHistoryBtn.addEventListener('click', () => {
+    currentView = 'history';
+    updateViewButtons();
+    loadItems();
+  });
+
+  function updateViewButtons() {
+    showFilesBtn.className = currentView === 'files' ? 'primary' : 'secondary';
+    showPasswordsBtn.className = currentView === 'passwords' ? 'primary' : 'secondary';
+    showHistoryBtn.className = currentView === 'history' ? 'primary' : 'secondary';
+  }
+
+  function getExpirationTime() {
+    const expirationMs = parseInt(expirationSelect.value);
+    return expirationMs ? Date.now() + expirationMs : null;
+  }
+
+  async function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function showPasswordForm() {
+    const title = prompt('Password title:');
+    if (!title) return;
+
+    const username = prompt('Username (optional):') || '';
+    const password = prompt('Password:');
+    if (!password) return;
+
+    const website = prompt('Website (optional):') || '';
+    const notes = prompt('Notes (optional):') || '';
+
+    sharePassword({
+      title: title,
+      username: username,
+      password: password,
+      website: website,
+      notes: notes
+    });
+  }
+
+  async function sharePassword(passwordData) {
+    try {
+      const expiresAt = getExpirationTime();
+
+      const response = await browser.runtime.sendMessage({
+        action: 'sharePassword',
+        passwordData: passwordData,
+        expiresAt: expiresAt
+      });
+
+      if (response.success) {
+        alert('Password shared successfully!');
+        loadItems();
+      } else {
+        alert('Failed to share password: ' + response.error);
+      }
+    } catch (error) {
+      alert('Error sharing password: ' + error.message);
+    }
+  }
+    
+  async function updateUI() {
+    try {
+      const stats = await browser.runtime.sendMessage({ action: 'getStats' });
             
-      const maxLength = 35;
-      const full = domain + path;
-      return full.length > maxLength ? full.substring(0, maxLength) + '...' : full;
-    } catch {
-      return url.length > 35 ? url.substring(0, 35) + '...' : url;
+      if (stats.isConnected) {
+        statusDiv.className = 'status connected';
+        statusDiv.textContent = `Connected (${stats.deviceCount} peers)`;
+        connectBtn.style.display = 'none';
+        disconnectBtn.style.display = 'inline-block';
+      } else {
+        statusDiv.className = 'status disconnected';
+        statusDiv.textContent = 'Disconnected';
+        connectBtn.style.display = 'inline-block';
+        disconnectBtn.style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Failed to update UI:', error);
     }
   }
+    
+  async function loadItems() {
+    try {
+      const itemsList = document.getElementById('itemsList');
+      const noItems = document.getElementById('noItems');
 
-  getTimeAgo(date) {
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
+      if (currentView === 'history') {
+        const response = await browser.runtime.sendMessage({ action: 'getHistory' });
         
-    if (seconds < 60) {return `${seconds}s ago`;}
-    if (seconds < 3600) {return `${Math.floor(seconds / 60)}m ago`;}
-    if (seconds < 86400) {return `${Math.floor(seconds / 3600)}h ago`;}
-    return `${Math.floor(seconds / 86400)}d ago`;
-  }
-}
-
-browser.runtime.onMessage.addListener((message) => {
-  if (message.action === 'statusUpdate') {
-    const ui = window.historySyncUI;
-    if (ui) {
-      ui.updateStatus(message.isConnected, message.deviceCount);
+        if (response.success && response.history && response.history.length > 0) {
+          noItems.style.display = 'none';
+          itemsList.innerHTML = response.history.map(entry => {
+            const date = new Date(entry.visitTime).toLocaleString();
+            const sourceDevice = entry.sourceDevice ? ` (${entry.sourceDevice.split('_')[0]})` : '';
+            return `
+              <div style="border-bottom: 1px solid #eee; padding: 4px 0;">
+                <div style="font-weight: bold; color: #007bff;">
+                  ${entry.title || 'Untitled'}
+                </div>
+                <div style="color: #666; font-size: 10px;">
+                  ${entry.url}
+                </div>
+                <div style="color: #999; font-size: 10px;">
+                  ${date}${sourceDevice}
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          noItems.style.display = 'block';
+          itemsList.innerHTML = '<div style="color: #666; font-style: italic;">No history entries yet</div>';
+        }
+      } else {
+        const response = await browser.runtime.sendMessage({ action: 'getSharedItems' });
+        
+        if (response.success) {
+          const items = currentView === 'files' ? response.files : response.passwords;
+          
+          if (items && items.length > 0) {
+            noItems.style.display = 'none';
+            itemsList.innerHTML = items.map(item => {
+              const date = new Date(item.sharedAt).toLocaleString();
+              const sourceDevice = item.sourceDevice ? ` (${item.sourceDevice.split('_')[0]})` : '';
+              const expiresText = item.expiresAt ? 
+                ` • Expires: ${new Date(item.expiresAt).toLocaleString()}` : ' • Never expires';
+              
+              if (currentView === 'files') {
+                const sizeText = formatFileSize(item.size);
+                return `
+                  <div style="border-bottom: 1px solid #eee; padding: 4px 0;">
+                    <div style="font-weight: bold; color: #007bff; cursor: pointer;" onclick="downloadFile('${item.id}')">
+                      📁 ${item.name}
+                    </div>
+                    <div style="color: #666; font-size: 10px;">
+                      ${sizeText} • ${item.type || 'Unknown type'}
+                    </div>
+                    <div style="color: #999; font-size: 10px;">
+                      ${date}${sourceDevice}${expiresText}
+                    </div>
+                  </div>
+                `;
+              } else {
+                return `
+                  <div style="border-bottom: 1px solid #eee; padding: 4px 0;">
+                    <div style="font-weight: bold; color: #007bff; cursor: pointer;" onclick="showPassword('${item.id}')">
+                      🔒 ${item.title}
+                    </div>
+                    <div style="color: #666; font-size: 10px;">
+                      ${item.username ? `User: ${item.username}` : ''} ${item.website ? `• ${item.website}` : ''}
+                    </div>
+                    <div style="color: #999; font-size: 10px;">
+                      ${date}${sourceDevice}${expiresText}
+                    </div>
+                  </div>
+                `;
+              }
+            }).join('');
+          } else {
+            noItems.style.display = 'block';
+            itemsList.innerHTML = `<div style="color: #666; font-style: italic;">No ${currentView} shared yet</div>`;
+          }
+        } else {
+          itemsList.innerHTML = '<div style="color: #d00;">Error loading items</div>';
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load items:', error);
+      const itemsList = document.getElementById('itemsList');
+      itemsList.innerHTML = '<div style="color: #d00;">Error loading items</div>';
     }
   }
-});
 
-document.addEventListener('DOMContentLoaded', () => {
-  window.historySyncUI = new HistorySyncUI();
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  // Global functions for onclick handlers
+  window.downloadFile = async function(fileId) {
+    try {
+      const response = await browser.runtime.sendMessage({ action: 'getSharedItems' });
+      const file = response.files.find(f => f.id === fileId);
+      if (!file) return;
+
+      const link = document.createElement('a');
+      link.href = file.content;
+      link.download = file.name;
+      link.click();
+    } catch (error) {
+      alert('Error downloading file: ' + error.message);
+    }
+  };
+
+  window.showPassword = async function(passwordId) {
+    try {
+      const response = await browser.runtime.sendMessage({ action: 'getSharedItems' });
+      const password = response.passwords.find(p => p.id === passwordId);
+      if (!password) return;
+
+      let message = `Title: ${password.title}\n`;
+      if (password.username) message += `Username: ${password.username}\n`;
+      message += `Password: ${password.password}\n`;
+      if (password.website) message += `Website: ${password.website}\n`;
+      if (password.notes) message += `Notes: ${password.notes}`;
+
+      alert(message);
+    } catch (error) {
+      alert('Error showing password: ' + error.message);
+    }
+  };
 });

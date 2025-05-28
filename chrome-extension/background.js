@@ -6,6 +6,8 @@ class HistorySyncService {
     this.isConnected = false;
     this.peers = new Map();
     this.localHistory = [];
+    this.sharedFiles = [];
+    this.sharedPasswords = [];
     this.deviceId = this.generateDeviceId();
     this.roomId = null;
     this.sharedSecret = null;
@@ -39,9 +41,34 @@ class HistorySyncService {
     // Initialize deviceId first
     this.deviceId = await this.generateDeviceId();
         
-    const stored = await chrome.storage.local.get(['localHistory', 'lastSyncTime']);
+    const stored = await chrome.storage.local.get(['localHistory', 'sharedFiles', 'sharedPasswords', 'lastSyncTime']);
     this.localHistory = stored.localHistory || [];
+    this.sharedFiles = stored.sharedFiles || [];
+    this.sharedPasswords = stored.sharedPasswords || [];
     this.lastSyncTime = stored.lastSyncTime || null;
+    
+    // Clean expired items
+    this.cleanExpiredItems();
+  }
+
+  cleanExpiredItems() {
+    const now = Date.now();
+    
+    // Clean expired files
+    this.sharedFiles = this.sharedFiles.filter(file => {
+      return !file.expiresAt || file.expiresAt > now;
+    });
+    
+    // Clean expired passwords
+    this.sharedPasswords = this.sharedPasswords.filter(password => {
+      return !password.expiresAt || password.expiresAt > now;
+    });
+    
+    // Save cleaned data
+    chrome.storage.local.set({
+      sharedFiles: this.sharedFiles,
+      sharedPasswords: this.sharedPasswords
+    });
   }
 
   setupMessageHandlers() {
@@ -89,6 +116,35 @@ class HistorySyncService {
                     
       case 'receivedDelete':
         this.handleReceivedDelete(request.deleteData);
+        break;
+
+      case 'shareFile':
+        this.handleShareFile(request.fileData, request.expiresAt)
+          .then(() => sendResponse({ success: true }))
+          .catch(error => sendResponse({ success: false, error: error.message }));
+        return true;
+
+      case 'sharePassword':
+        this.handleSharePassword(request.passwordData, request.expiresAt)
+          .then(() => sendResponse({ success: true }))
+          .catch(error => sendResponse({ success: false, error: error.message }));
+        return true;
+
+      case 'getSharedItems':
+        this.cleanExpiredItems(); // Clean before returning
+        sendResponse({
+          success: true,
+          files: this.sharedFiles,
+          passwords: this.sharedPasswords
+        });
+        break;
+
+      case 'receivedFile':
+        this.handleReceivedFile(request.fileData);
+        break;
+
+      case 'receivedPassword':
+        this.handleReceivedPassword(request.passwordData);
         break;
                     
       case 'trackHistory':
@@ -223,6 +279,106 @@ class HistorySyncService {
             
       console.log('History entry deleted via sync:', url);
     }
+  }
+
+  async handleShareFile(fileData, expiresAt) {
+    if (!this.isConnected) {
+      throw new Error('Not connected to any peers');
+    }
+
+    const fileEntry = {
+      id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+      name: fileData.name,
+      content: fileData.content,
+      type: fileData.type,
+      size: fileData.size,
+      sharedAt: Date.now(),
+      expiresAt: expiresAt,
+      sourceDevice: this.deviceId
+    };
+
+    // Add to local storage
+    this.sharedFiles.push(fileEntry);
+    await chrome.storage.local.set({ sharedFiles: this.sharedFiles });
+
+    // Send to peers via offscreen document
+    await chrome.runtime.sendMessage({
+      action: 'sendFile',
+      fileData: fileEntry
+    });
+
+    console.log('File shared:', fileEntry.name);
+  }
+
+  async handleSharePassword(passwordData, expiresAt) {
+    if (!this.isConnected) {
+      throw new Error('Not connected to any peers');
+    }
+
+    const passwordEntry = {
+      id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+      title: passwordData.title,
+      username: passwordData.username,
+      password: passwordData.password,
+      website: passwordData.website,
+      notes: passwordData.notes,
+      sharedAt: Date.now(),
+      expiresAt: expiresAt,
+      sourceDevice: this.deviceId
+    };
+
+    // Add to local storage
+    this.sharedPasswords.push(passwordEntry);
+    await chrome.storage.local.set({ sharedPasswords: this.sharedPasswords });
+
+    // Send to peers via offscreen document
+    await chrome.runtime.sendMessage({
+      action: 'sendPassword',
+      passwordData: passwordEntry
+    });
+
+    console.log('Password shared:', passwordEntry.title);
+  }
+
+  handleReceivedFile(fileData) {
+    // Check if file already exists
+    const existingIndex = this.sharedFiles.findIndex(f => f.id === fileData.id);
+    if (existingIndex === -1) {
+      this.sharedFiles.push(fileData);
+      
+      // Save to storage
+      chrome.storage.local.set({ sharedFiles: this.sharedFiles });
+
+      // Show notification
+      this.showNotification('New File Shared', `${fileData.name} was shared by ${fileData.sourceDevice.split('_')[0]}`);
+
+      console.log('Received new shared file:', fileData.name);
+    }
+  }
+
+  handleReceivedPassword(passwordData) {
+    // Check if password already exists
+    const existingIndex = this.sharedPasswords.findIndex(p => p.id === passwordData.id);
+    if (existingIndex === -1) {
+      this.sharedPasswords.push(passwordData);
+      
+      // Save to storage
+      chrome.storage.local.set({ sharedPasswords: this.sharedPasswords });
+
+      // Show notification
+      this.showNotification('New Password Shared', `${passwordData.title} was shared by ${passwordData.sourceDevice.split('_')[0]}`);
+
+      console.log('Received new shared password:', passwordData.title);
+    }
+  }
+
+  showNotification(title, message) {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('images/icon-48.png'),
+      title: title,
+      message: message
+    });
   }
 }
 

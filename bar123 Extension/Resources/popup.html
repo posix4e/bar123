@@ -1,56 +1,102 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="popup.css">
-    <script type="module" src="popup.js"></script>
+    <meta charset="utf-8">
+    <style>
+        body {
+            width: 400px;
+            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .status {
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        input[type="password"], input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        
+        .primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .secondary {
+            background: #6c757d;
+            color: white;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h2>History Sync</h2>
-        
-        <div class="status">
-            <div class="sync-status" id="syncStatus">Disconnected</div>
-            <div class="device-count" id="deviceCount">0 devices</div>
+    <h3>History Sync</h3>
+    <div id="status" class="status disconnected">
+        Disconnected
+    </div>
+    
+    <label>Shared Secret:</label>
+    <input type="text" id="sharedSecret" placeholder="Enter room ID (e.g. test123)">
+    <button id="connectBtn" class="primary">Connect</button>
+    <button id="disconnectBtn" class="secondary" style="display: none;">Disconnect</button>
+    
+    <div id="shareSection" style="margin-top: 16px;">
+        <h4>Share Items</h4>
+        <div style="margin-bottom: 8px;">
+            <input type="file" id="fileInput" style="display: none;" />
+            <button id="shareFileBtn" class="primary" style="font-size: 12px; margin-right: 4px;">Share File</button>
+            <button id="sharePasswordBtn" class="primary" style="font-size: 12px;">Share Password</button>
         </div>
         
-        <div class="settings">
-            <div class="field">
-                <label for="sharedSecret">Room Secret:</label>
-                <input type="password" id="sharedSecret" placeholder="Enter shared secret for your room">
-                <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">
-                    🔗 Uses PeerJS Cloud • All devices must use the same secret to sync together
-                </div>
-            </div>
-            
-            <div class="buttons">
-                <button id="connectBtn" class="primary">Connect</button>
-                <button id="disconnectBtn" class="secondary">Disconnect</button>
-            </div>
-        </div>
-        
-        <div class="history-controls">
-            <h3>History Management</h3>
-            <button id="clearLocalBtn" class="danger">Clear Local History</button>
-            <button id="deleteRemoteBtn" class="danger">Delete Remote History</button>
-        </div>
-        
-        <div class="stats">
-            <div>Local entries: <span id="localCount">0</span></div>
-            <div>Last sync: <span id="lastSync">Never</span></div>
-        </div>
-
-        <div class="history-section">
-            <h3>History <button id="refreshHistoryBtn" class="refresh-btn">↻</button></h3>
-            <div id="historyList" class="history-list">
-                <div class="empty-state">No history entries yet</div>
-            </div>
-        </div>
-
-        <div class="history-controls">
-            <h3>Debug</h3>
-            <button id="debugSyncBtn" class="secondary">Force Sync</button>
+        <div id="expirationSection" style="margin-bottom: 8px; font-size: 12px;">
+            <label>Expires in:</label>
+            <select id="expirationSelect" style="margin-left: 4px; padding: 2px;">
+                <option value="">Never</option>
+                <option value="3600000">1 Hour</option>
+                <option value="86400000">1 Day</option>
+                <option value="604800000">1 Week</option>
+            </select>
         </div>
     </div>
+
+    <div id="sharedItemsSection" style="margin-top: 16px;">
+        <h4>Shared Items</h4>
+        <div style="margin-bottom: 8px;">
+            <button id="showFilesBtn" class="secondary" style="font-size: 12px; margin-right: 4px;">Files</button>
+            <button id="showPasswordsBtn" class="secondary" style="font-size: 12px; margin-right: 4px;">Passwords</button>
+            <button id="showHistoryBtn" class="secondary" style="font-size: 12px;">History</button>
+        </div>
+        
+        <div id="itemsList" style="max-height: 200px; overflow-y: auto; font-size: 12px;">
+            <div id="noItems" style="color: #666; font-style: italic;">No items shared yet</div>
+        </div>
+        <button id="refreshBtn" class="secondary" style="margin-top: 8px; font-size: 12px;">Refresh</button>
+    </div>
+
+    <script src="popup.js"></script>
 </body>
 </html>

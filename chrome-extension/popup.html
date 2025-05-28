@@ -64,10 +64,35 @@
     <button id="connectBtn" class="primary">Connect</button>
     <button id="disconnectBtn" class="secondary" style="display: none;">Disconnect</button>
     
-    <div id="historySection" style="margin-top: 16px;">
-        <h4>Synced History</h4>
-        <div id="historyList" style="max-height: 200px; overflow-y: auto; font-size: 12px;">
-            <div id="noHistory" style="color: #666; font-style: italic;">No history entries yet</div>
+    <div id="shareSection" style="margin-top: 16px;">
+        <h4>Share Items</h4>
+        <div style="margin-bottom: 8px;">
+            <input type="file" id="fileInput" style="display: none;" />
+            <button id="shareFileBtn" class="primary" style="font-size: 12px; margin-right: 4px;">Share File</button>
+            <button id="sharePasswordBtn" class="primary" style="font-size: 12px;">Share Password</button>
+        </div>
+        
+        <div id="expirationSection" style="margin-bottom: 8px; font-size: 12px;">
+            <label>Expires in:</label>
+            <select id="expirationSelect" style="margin-left: 4px; padding: 2px;">
+                <option value="">Never</option>
+                <option value="3600000">1 Hour</option>
+                <option value="86400000">1 Day</option>
+                <option value="604800000">1 Week</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="sharedItemsSection" style="margin-top: 16px;">
+        <h4>Shared Items</h4>
+        <div style="margin-bottom: 8px;">
+            <button id="showFilesBtn" class="secondary" style="font-size: 12px; margin-right: 4px;">Files</button>
+            <button id="showPasswordsBtn" class="secondary" style="font-size: 12px; margin-right: 4px;">Passwords</button>
+            <button id="showHistoryBtn" class="secondary" style="font-size: 12px;">History</button>
+        </div>
+        
+        <div id="itemsList" style="max-height: 200px; overflow-y: auto; font-size: 12px;">
+            <div id="noItems" style="color: #666; font-style: italic;">No items shared yet</div>
         </div>
         <button id="refreshBtn" class="secondary" style="margin-top: 8px; font-size: 12px;">Refresh</button>
     </div>

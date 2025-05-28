@@ -25,6 +25,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       console.log('Disconnected from Trystero room');
     }
     sendResponse({ success: true });
+  } else if (request.action === 'sendFile') {
+    if (window.trysteroActions && window.trysteroActions.sendFileData) {
+      window.trysteroActions.sendFileData(request.fileData);
+      console.log('Sent file to peers:', request.fileData.name);
+      sendResponse({ success: true });
+    } else {
+      sendResponse({ success: false, error: 'Trystero not connected' });
+    }
+  } else if (request.action === 'sendPassword') {
+    if (window.trysteroActions && window.trysteroActions.sendPasswordData) {
+      window.trysteroActions.sendPasswordData(request.passwordData);
+      console.log('Sent password to peers:', request.passwordData.title);
+      sendResponse({ success: true });
+    } else {
+      sendResponse({ success: false, error: 'Trystero not connected' });
+    }
   }
 });
 
@@ -68,8 +84,10 @@ async function initTrysteroConnection(roomId, _sharedSecret) {
     });
         
     // Set up data channels
-    const [, getHistory] = trysteroRoom.makeAction('history-sync');
-    const [, getDelete] = trysteroRoom.makeAction('delete-item');
+    const [sendHistoryData, getHistory] = trysteroRoom.makeAction('history-sync');
+    const [sendDeleteData, getDelete] = trysteroRoom.makeAction('delete-item');
+    const [sendFileData, getFile] = trysteroRoom.makeAction('file-share');
+    const [sendPasswordData, getPassword] = trysteroRoom.makeAction('password-share');
         
     getHistory((historyData, peerId) => {
       console.log('Received history from', peerId);
@@ -92,6 +110,36 @@ async function initTrysteroConnection(roomId, _sharedSecret) {
         peerId: peerId
       });
     });
+
+    getFile((fileData, peerId) => {
+      console.log('Received file from', peerId, ':', fileData.name);
+            
+      // Forward to background script
+      chrome.runtime.sendMessage({
+        action: 'receivedFile',
+        fileData: fileData,
+        peerId: peerId
+      });
+    });
+
+    getPassword((passwordData, peerId) => {
+      console.log('Received password from', peerId, ':', passwordData.title);
+            
+      // Forward to background script
+      chrome.runtime.sendMessage({
+        action: 'receivedPassword',
+        passwordData: passwordData,
+        peerId: peerId
+      });
+    });
+
+    // Store action senders for later use
+    window.trysteroActions = {
+      sendHistoryData,
+      sendDeleteData,
+      sendFileData,
+      sendPasswordData
+    };
         
     // Log room activity
     console.log('🔍 Room setup complete. Actively looking for peers...');
