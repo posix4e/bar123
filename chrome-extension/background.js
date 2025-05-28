@@ -67,52 +67,52 @@ class HistorySyncService {
           });
           break;
                     
-      case 'getHistory':
-        sendResponse({
-          success: true,
-          history: this.localHistory.slice(0, 50) // Return last 50 entries
-        });
-        break;
+        case 'getHistory':
+          sendResponse({
+            success: true,
+            history: this.localHistory.slice(0, 50) // Return last 50 entries
+          });
+          break;
                     
-      case 'peerJoined':
-        console.log('Peer joined:', request.peerId);
-        this.peers.set(request.peerId, { connected: true });
-        break;
+        case 'peerJoined':
+          console.log('Peer joined:', request.peerId);
+          this.peers.set(request.peerId, { connected: true });
+          break;
                     
-      case 'peerLeft':
-        console.log('Peer left:', request.peerId);
-        this.peers.delete(request.peerId);
+        case 'peerLeft':
+          console.log('Peer left:', request.peerId);
+          this.peers.delete(request.peerId);
         
-        // If all peers have left and we still want to be connected, attempt reconnection
-        if (this.peers.size === 0 && this.isConnected && this.sharedSecret) {
-          console.log('All peers disconnected, scheduling reconnection attempt...');
-          setTimeout(() => this.attemptReconnection(), 5000);
-        }
-        break;
+          // If all peers have left and we still want to be connected, attempt reconnection
+          if (this.peers.size === 0 && this.isConnected && this.sharedSecret) {
+            console.log('All peers disconnected, scheduling reconnection attempt...');
+            setTimeout(() => this.attemptReconnection(), 5000);
+          }
+          break;
                     
-      case 'receivedHistory':
-        this.handleReceivedHistory(request.historyData);
-        break;
+        case 'receivedHistory':
+          this.handleReceivedHistory(request.historyData);
+          break;
                     
-      case 'receivedDelete':
-        this.handleReceivedDelete(request.deleteData);
-        break;
+        case 'receivedDelete':
+          this.handleReceivedDelete(request.deleteData);
+          break;
                     
-      case 'trackHistory':
+        case 'trackHistory':
         // Handle history tracking from content script
-        this.localHistory.push(request.entry);
-        chrome.storage.local.set({ localHistory: this.localHistory });
-        break;
+          this.localHistory.push(request.entry);
+          chrome.storage.local.set({ localHistory: this.localHistory });
+          break;
                     
-      case 'connectionPageReady':
-        console.log('Connection page is ready');
-        if (this.pendingConnection) {
-          console.log('Sending pending connection request');
-          chrome.tabs.sendMessage(sender.tab.id, this.pendingConnection);
-          this.pendingConnection = null;
+        case 'connectionPageReady':
+          console.log('Connection page is ready');
+          if (this.pendingConnection) {
+            console.log('Sending pending connection request');
+            chrome.tabs.sendMessage(sender.tab.id, this.pendingConnection);
+            this.pendingConnection = null;
+          }
+          break;
         }
-        break;
-      }
       } catch (error) {
         console.error('Error handling message:', error);
         sendResponse({ success: false, error: error.message });

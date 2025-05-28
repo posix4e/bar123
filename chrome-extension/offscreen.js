@@ -10,7 +10,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     
   try {
     if (request.action === 'initConnection') {
-      initTrysteroConnection(request.roomId, request.sharedSecret)
+      initTrysteroConnection(request.roomId)
         .then(() => {
           sendResponse({ success: true });
         })
@@ -38,7 +38,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-async function initTrysteroConnection(roomId, _sharedSecret) {
+async function initTrysteroConnection(roomId) {
   try {
     console.log('Initializing Trystero connection in offscreen document');
     console.log('Room ID:', roomId);

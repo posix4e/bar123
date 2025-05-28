@@ -56,15 +56,15 @@ document.addEventListener('DOMContentLoaded', function() {
           statusDiv.className = 'status connected';
           statusDiv.textContent = `Connected (${stats.deviceCount} peers)`;
         }
-        if (connectBtn) connectBtn.style.display = 'none';
-        if (disconnectBtn) disconnectBtn.style.display = 'inline-block';
+        if (connectBtn) {connectBtn.style.display = 'none';}
+        if (disconnectBtn) {disconnectBtn.style.display = 'inline-block';}
       } else {
         if (statusDiv) {
           statusDiv.className = 'status disconnected';
           statusDiv.textContent = 'Disconnected';
         }
-        if (connectBtn) connectBtn.style.display = 'inline-block';
-        if (disconnectBtn) disconnectBtn.style.display = 'none';
+        if (connectBtn) {connectBtn.style.display = 'inline-block';}
+        if (disconnectBtn) {disconnectBtn.style.display = 'none';}
       }
     } catch (error) {
       console.error('Failed to update UI:', error);
