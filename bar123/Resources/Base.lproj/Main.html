@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <link rel="stylesheet" href="../Style.css">
     <style>
@@ -18,6 +18,68 @@
             border-radius: 6px;
             border-left: 3px solid #007aff;
         }
+        
+        .secret-input-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .secret-input-container label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        #room-secret-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+        
+        #room-secret-input:focus {
+            outline: none;
+            border-color: #007aff;
+        }
+        
+        #set-secret {
+            width: 100%;
+            padding: 14px 24px;
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .alternative-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+            flex-direction: column;
+        }
+        
+        .alternative-actions button {
+            padding: 10px 20px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        #open-safari {
+            background-color: #34c759;
+        }
     </style>
 </head>
 <body>
@@ -25,14 +87,23 @@
     <div id="setup-view">
         <img src="../Icon.png" width="128" height="128" alt="bar123 Icon">
         <h1>bar123 Setup</h1>
-        <p>To enable history synchronization:</p>
+        <p>Set up history synchronization:</p>
         <ol>
             <li>Go to iOS <strong>Settings</strong> → <strong>Safari</strong> → <strong>Extensions</strong></li>
             <li>Enable <strong>bar123</strong></li>
-            <li>Tap the extension icon in Safari and set a room secret</li>
-            <li>Return to this app to view synchronized history</li>
+            <li>Set your room secret below to start syncing</li>
         </ol>
-        <button id="manual-refresh" onclick="checkForPassword()">Check for Room Secret</button>
+        
+        <div class="secret-input-container">
+            <label for="room-secret-input">Room Secret:</label>
+            <input type="text" id="room-secret-input" placeholder="Enter a secret phrase..." maxlength="50">
+            <button id="set-secret" onclick="setRoomSecret()">Start Sync</button>
+        </div>
+        
+        <div class="alternative-actions">
+            <button id="manual-refresh" onclick="checkForPassword()">Check for Existing Secret</button>
+            <button id="open-safari" onclick="openSafariExtension()">Open Safari Extension</button>
+        </div>
     </div>
 
     <!-- P2P History Viewer (shown when password detected) -->
@@ -79,6 +150,21 @@
         </div>
     </div>
 
+    <script>
+        console.log("🌟 HTML loaded, checking for scripts...");
+        
+        // Test basic JavaScript functionality
+        window.addEventListener('load', function() {
+            console.log("🎯 Window loaded event fired");
+        });
+        
+        // Test if global functions exist after scripts load
+        setTimeout(function() {
+            console.log("🔍 Checking global functions...");
+            console.log("setRoomSecret exists:", typeof window.setRoomSecret);
+            console.log("checkForPassword exists:", typeof window.checkForPassword);
+        }, 100);
+    </script>
     <script src="../trystero-bundle.js"></script>
     <script src="../app.js"></script>
 </body>
