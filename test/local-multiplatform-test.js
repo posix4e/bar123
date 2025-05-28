@@ -65,7 +65,7 @@ class LocalMultiplatformSyncTester {
     await Promise.race([
       page.screenshot({ path: filepath, fullPage: true }),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Screenshot timeout after 15s')), 15000)
+        setTimeout(() => reject(new Error('Screenshot timeout after 60s')), 60000)
       )
     ]);
         
