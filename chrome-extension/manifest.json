@@ -15,7 +15,7 @@
   },
   
   "content_scripts": [{
-    "js": ["content.js"],
+    "js": ["readability-bundle.js", "content.js"],
     "matches": ["<all_urls>"],
     "run_at": "document_start"
   }],

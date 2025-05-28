@@ -20,14 +20,53 @@ class HistoryTracker {
     });
   }
 
+  extractArticleContent() {
+    try {
+      // Clone the document for Readability
+      const documentClone = document.cloneNode(true);
+      const reader = new Readability(documentClone);
+      const article = reader.parse();
+      
+      if (article) {
+        console.log('📖 Extracted article content:', {
+          title: article.title,
+          contentLength: article.textContent?.length || 0,
+          excerpt: article.excerpt
+        });
+        
+        return {
+          title: article.title,
+          content: article.textContent,
+          excerpt: article.excerpt,
+          length: article.length,
+          readingTime: Math.ceil((article.textContent?.split(' ').length || 0) / 200), // ~200 WPM
+          isArticle: article.length > 500
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.warn('Failed to extract article content:', error);
+      return null;
+    }
+  }
+
   trackPageVisit() {
-    const historyEntry = {
+    const basicEntry = {
       url: window.location.href,
       title: document.title,
       visitTime: Date.now(),
       duration: 0,
       hostname: window.location.hostname,
       pathname: window.location.pathname
+    };
+
+    // Extract article content if possible
+    const articleContent = this.extractArticleContent();
+    
+    const historyEntry = {
+      ...basicEntry,
+      articleContent: articleContent
     };
 
     console.log('🌐 Content script tracking page visit:', historyEntry);

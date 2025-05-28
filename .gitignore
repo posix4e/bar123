@@ -22,3 +22,7 @@ test-results/
 # Generated showcase screenshots
 docs/screenshots/
 temp-chrome-profile-*
+# Ignore built bundle files
+dist/
+**/trystero-bundle.js
+**/readability-bundle.js
