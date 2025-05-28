@@ -15,7 +15,7 @@
     },
 
     "background": {
-        "scripts": [ "trystero-bundle.js", "background.js" ],
+        "scripts": [ "background.js" ],
         "persistent": false
     },
 

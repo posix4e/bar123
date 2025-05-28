@@ -1,15 +1,13 @@
 {
   "name": "bar123-history-sync-extension",
   "version": "1.0.0",
-  "description": "Safari extension for P2P history synchronization",
+  "description": "Safari extension for local history management with native iOS IPFS sync",
   "main": "index.js",
   "scripts": {
     "install-deps": "npm install",
-    "build": "npm run bundle-trystero && npm run bundle-readability && npm run copy-assets",
-    "bundle-trystero": "npm run build-trystero-bundle && cp dist/trystero-bundle.js 'bar123 Extension/Resources/' && cp dist/trystero-bundle.js chrome-extension/",
+    "build": "npm run bundle-readability && npm run copy-assets",
     "bundle-readability": "npm run build-readability-bundle && cp dist/readability-bundle.js 'bar123 Extension/Resources/' && cp dist/readability-bundle.js chrome-extension/",
-    "build-chrome": "npm run bundle-trystero && npm run bundle-readability && npm run copy-chrome-assets",
-    "build-trystero-bundle": "mkdir -p dist && npx esbuild node_modules/trystero/src/index.js --bundle --format=iife --global-name=trystero --outfile=dist/trystero-bundle.js",
+    "build-chrome": "npm run bundle-readability && npm run copy-chrome-assets",
     "build-readability-bundle": "mkdir -p dist && npx esbuild node_modules/@mozilla/readability/Readability.js --bundle --format=iife --global-name=Readability --outfile=dist/readability-bundle.js",
     "copy-chrome-assets": "mkdir -p chrome-extension/images && cp 'bar123 Extension/Resources/images/'* chrome-extension/images/ 2>/dev/null || echo 'Images copied or not found'",
     "copy-assets": "echo 'Assets ready'",
@@ -40,15 +38,14 @@
   "keywords": [
     "safari",
     "extension",
-    "p2p",
     "history",
     "sync",
-    "trystero",
-    "webrtc"
+    "ipfs",
+    "helia",
+    "native"
   ],
   "dependencies": {
-    "@mozilla/readability": "^0.6.0",
-    "trystero": "^0.21.4"
+    "@mozilla/readability": "^0.6.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",

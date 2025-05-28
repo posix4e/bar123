@@ -69,16 +69,30 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                     ]
                     os_log(.default, "Battery status: charging=%@, level=%.2f, state=%@", 
                            batteryInfo.isCharging ? "yes" : "no", batteryInfo.level, batteryInfo.state)
-                case "updateAppGroupStatus":
-                    if let connected = messageDict["isConnected"] as? Bool,
-                       let peerCount = messageDict["peerCount"] as? Int,
-                       let historyCount = messageDict["historyCount"] as? Int {
-                        updateAppGroupStatus(connected: connected, peerCount: peerCount, historyCount: historyCount, roomId: messageDict["roomId"] as? String)
+                case "updateLocalHistoryData":
+                    if let historyCount = messageDict["historyCount"] as? Int,
+                       let deviceId = messageDict["deviceId"] as? String {
+                        updateLocalHistoryData(historyCount: historyCount, deviceId: deviceId, lastSyncTime: messageDict["lastSyncTime"] as? TimeInterval)
                         responseData = [
-                            "type": "updateAppGroupStatusResponse",
+                            "type": "updateLocalHistoryDataResponse",
                             "success": true
                         ]
                     }
+                case "updateHistory":
+                    if let historyData = messageDict["history"] as? [[String: Any]],
+                       let deviceId = messageDict["deviceId"] as? String {
+                        let success = updateHistoryFromExtension(historyData: historyData, deviceId: deviceId)
+                        responseData = [
+                            "type": "updateHistoryResponse",
+                            "success": success
+                        ]
+                    }
+                case "getHistory":
+                    let history = getStoredHistory()
+                    responseData = [
+                        "type": "getHistoryResponse",
+                        "history": history
+                    ]
                 default:
                     os_log(.default, "Unknown message type: %@", type)
                     responseData = ["echo": message as Any]
@@ -179,26 +193,77 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         return (isCharging: isCharging, level: batteryLevel, state: stateString)
     }
     
-    private func updateAppGroupStatus(connected: Bool, peerCount: Int, historyCount: Int, roomId: String?) {
-        os_log(.default, "updateAppGroupStatus called: connected=%@, peers=%d, history=%d", connected ? "yes" : "no", peerCount, historyCount)
+    private func updateLocalHistoryData(historyCount: Int, deviceId: String, lastSyncTime: TimeInterval?) {
+        os_log(.default, "updateLocalHistoryData called: count=%d, device=%@", historyCount, deviceId)
         
         guard let sharedDefaults = UserDefaults(suiteName: "group.xyz.foo.bar123") else {
             os_log(.error, "Failed to access shared UserDefaults for App Group: group.xyz.foo.bar123")
             return
         }
         
-        sharedDefaults.set(connected, forKey: "extensionConnected")
-        sharedDefaults.set(peerCount, forKey: "extensionPeerCount")
         sharedDefaults.set(historyCount, forKey: "extensionHistoryCount")
+        sharedDefaults.set(deviceId, forKey: "extensionDeviceId")
         
-        if let roomId = roomId {
-            sharedDefaults.set(roomId, forKey: "extensionRoomId")
-        } else {
-            sharedDefaults.removeObject(forKey: "extensionRoomId")
+        if let lastSyncTime = lastSyncTime {
+            sharedDefaults.set(lastSyncTime, forKey: "extensionLastSyncTime")
         }
         
         let syncResult = sharedDefaults.synchronize()
-        os_log(.default, "App Group status update result: %@", syncResult ? "success" : "failed")
+        os_log(.default, "Local history data update result: %@", syncResult ? "success" : "failed")
+    }
+    
+    private func updateHistoryFromExtension(historyData: [[String: Any]], deviceId: String) -> Bool {
+        os_log(.default, "updateHistoryFromExtension called with %d items from device %@", historyData.count, deviceId)
+        
+        guard let sharedDefaults = UserDefaults(suiteName: "group.xyz.foo.bar123") else {
+            os_log(.error, "Failed to access shared UserDefaults for App Group: group.xyz.foo.bar123")
+            return false
+        }
+        
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: historyData)
+            sharedDefaults.set(jsonData, forKey: "extensionHistoryData")
+            sharedDefaults.set(historyData.count, forKey: "extensionHistoryCount")
+            sharedDefaults.set(Date().timeIntervalSince1970, forKey: "extensionLastUpdate")
+            
+            let syncResult = sharedDefaults.synchronize()
+            os_log(.default, "History update result: %@", syncResult ? "success" : "failed")
+            
+            // Notify iOS app of new history via notification
+            NotificationCenter.default.post(name: Notification.Name("HistoryUpdatedFromExtension"), object: nil)
+            
+            return syncResult
+        } catch {
+            os_log(.error, "Failed to serialize history data: %@", error.localizedDescription)
+            return false
+        }
+    }
+    
+    private func getStoredHistory() -> [[String: Any]] {
+        os_log(.default, "getStoredHistory called")
+        
+        guard let sharedDefaults = UserDefaults(suiteName: "group.xyz.foo.bar123") else {
+            os_log(.error, "Failed to access shared UserDefaults for App Group: group.xyz.foo.bar123")
+            return []
+        }
+        
+        guard let historyData = sharedDefaults.data(forKey: "extensionHistoryData") else {
+            os_log(.default, "No stored history data found")
+            return []
+        }
+        
+        do {
+            if let history = try JSONSerialization.jsonObject(with: historyData) as? [[String: Any]] {
+                os_log(.default, "Retrieved %d history items from storage", history.count)
+                return history
+            } else {
+                os_log(.error, "History data is not in expected format")
+                return []
+            }
+        } catch {
+            os_log(.error, "Failed to deserialize history data: %@", error.localizedDescription)
+            return []
+        }
     }
 
 }

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "History Sync",
-  "description": "P2P history synchronization across devices using Trystero",
+  "description": "Local history management with content extraction",
   "version": "1.0.0",
   
   "icons": {
@@ -44,7 +44,7 @@
   ],
   
   "web_accessible_resources": [{
-    "resources": ["trystero-bundle.js", "connection.html", "connection.js"],
+    "resources": ["connection.html", "connection.js"],
     "matches": ["<all_urls>"]
   }]
 }

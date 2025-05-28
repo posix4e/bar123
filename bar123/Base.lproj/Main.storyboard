@@ -203,13 +203,55 @@
                                                 </constraints>
                                             </stackView>
                                             
-                                            <!-- History List Placeholder -->
+                                            <!-- Search Bar -->
+                                            <searchBar contentMode="redraw" placeholder="Search history..." translatesAutoresizingMaskIntoConstraints="NO" id="mN8-7Q-fUz">
+                                                <rect key="frame" x="20" y="393" width="374" height="44"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="height" constant="44" id="nw2-8D-9pU"/>
+                                                </constraints>
+                                                <textInputTraits key="textInputTraits" returnKeyType="search"/>
+                                            </searchBar>
+                                            
+                                            <!-- History List -->
                                             <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="-1" estimatedSectionHeaderHeight="-1" sectionFooterHeight="-1" estimatedSectionFooterHeight="-1" translatesAutoresizingMaskIntoConstraints="NO" id="5vV-aS-N39">
-                                                <rect key="frame" x="20" y="393" width="374" height="287"/>
+                                                <rect key="frame" x="20" y="457" width="374" height="223"/>
                                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                                 <constraints>
-                                                    <constraint firstAttribute="height" constant="287" id="2oE-b5-eS4"/>
+                                                    <constraint firstAttribute="height" constant="223" id="2oE-b5-eS4"/>
                                                 </constraints>
+                                                <prototypes>
+                                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="HistoryCell" id="T7g-Gd-UDv">
+                                                        <rect key="frame" x="0.0" y="28" width="374" height="43.5"/>
+                                                        <autoresizingMask key="autoresizingMask"/>
+                                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="T7g-Gd-UDv" id="dBr-f7-7zG">
+                                                            <rect key="frame" x="0.0" y="0.0" width="374" height="43.5"/>
+                                                            <autoresizingMask key="autoresizingMask"/>
+                                                            <subviews>
+                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Title" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="9UQ-qh-7Lv">
+                                                                    <rect key="frame" x="20" y="6" width="334" height="16"/>
+                                                                    <fontDescription key="fontDescription" type="boldSystem" pointSize="13"/>
+                                                                    <nil key="textColor"/>
+                                                                    <nil key="highlightedColor"/>
+                                                                </label>
+                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="URL" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="qJG-dV-ZfD">
+                                                                    <rect key="frame" x="20" y="25" width="334" height="12.5"/>
+                                                                    <fontDescription key="fontDescription" type="system" pointSize="10"/>
+                                                                    <color key="textColor" systemColor="secondaryLabelColor"/>
+                                                                    <nil key="highlightedColor"/>
+                                                                </label>
+                                                            </subviews>
+                                                            <constraints>
+                                                                <constraint firstAttribute="trailing" secondItem="9UQ-qh-7Lv" secondAttribute="trailing" constant="20" id="5hR-Eo-QAM"/>
+                                                                <constraint firstItem="qJG-dV-ZfD" firstAttribute="leading" secondItem="dBr-f7-7zG" secondAttribute="leading" constant="20" id="6KG-cX-qUE"/>
+                                                                <constraint firstItem="9UQ-qh-7Lv" firstAttribute="top" secondItem="dBr-f7-7zG" secondAttribute="top" constant="6" id="9Iq-AE-VvO"/>
+                                                                <constraint firstAttribute="bottom" secondItem="qJG-dV-ZfD" secondAttribute="bottom" constant="6" id="DKH-yz-w6h"/>
+                                                                <constraint firstItem="qJG-dV-ZfD" firstAttribute="top" secondItem="9UQ-qh-7Lv" secondAttribute="bottom" constant="3" id="E7M-2X-E7T"/>
+                                                                <constraint firstAttribute="trailing" secondItem="qJG-dV-ZfD" secondAttribute="trailing" constant="20" id="mDL-wT-pxe"/>
+                                                                <constraint firstItem="9UQ-qh-7Lv" firstAttribute="leading" secondItem="dBr-f7-7zG" secondAttribute="leading" constant="20" id="tGD-Bd-Fms"/>
+                                                            </constraints>
+                                                        </tableViewCellContentView>
+                                                    </tableViewCell>
+                                                </prototypes>
                                             </tableView>
                                             
                                         </subviews>
@@ -240,8 +282,13 @@
                                             <constraint firstItem="8oN-0y-VQj" firstAttribute="leading" secondItem="jyV-Pf-zRF" secondAttribute="leading" constant="20" id="E1Z-tM-yfb"/>
                                             <constraint firstAttribute="trailing" secondItem="8oN-0y-VQj" secondAttribute="trailing" constant="20" id="mfh-UZ-uAd"/>
                                             
+                                            <!-- Search Bar -->
+                                            <constraint firstItem="mN8-7Q-fUz" firstAttribute="top" secondItem="8oN-0y-VQj" secondAttribute="bottom" constant="20" id="k9E-rY-8J9"/>
+                                            <constraint firstItem="mN8-7Q-fUz" firstAttribute="leading" secondItem="jyV-Pf-zRF" secondAttribute="leading" constant="20" id="uPZ-E8-7mN"/>
+                                            <constraint firstAttribute="trailing" secondItem="mN8-7Q-fUz" secondAttribute="trailing" constant="20" id="x7N-Yf-2wW"/>
+                                            
                                             <!-- History Table -->
-                                            <constraint firstItem="5vV-aS-N39" firstAttribute="top" secondItem="8oN-0y-VQj" secondAttribute="bottom" constant="20" id="GqM-j6-hfb"/>
+                                            <constraint firstItem="5vV-aS-N39" firstAttribute="top" secondItem="mN8-7Q-fUz" secondAttribute="bottom" constant="20" id="GqM-j6-hfb"/>
                                             <constraint firstItem="5vV-aS-N39" firstAttribute="leading" secondItem="jyV-Pf-zRF" secondAttribute="leading" constant="20" id="NjR-R1-cKE"/>
                                             <constraint firstAttribute="trailing" secondItem="5vV-aS-N39" secondAttribute="trailing" constant="20" id="Vsz-k5-ELD"/>
                                             <constraint firstAttribute="bottom" secondItem="5vV-aS-N39" secondAttribute="bottom" constant="20" id="eyP-pD-l9g"/>
@@ -282,6 +329,7 @@
                         <outlet property="peerCountLabel" destination="3kK-qj-ZZo" id="lBl-h3-Rbk"/>
                         <outlet property="refreshButton" destination="0xU-zH-khf" id="uPK-AZ-qKo"/>
                         <outlet property="roomIdLabel" destination="hGK-7H-n7Q" id="EWe-UJ-uEe"/>
+                        <outlet property="searchBar" destination="mN8-7Q-fUz" id="7rE-4l-8zD"/>
                         <outlet property="titleLabel" destination="z2t-3f-fRd" id="7jL-0x-T1R"/>
                     </connections>
                 </viewController>
