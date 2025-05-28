@@ -60,7 +60,6 @@ npm run lint:check             # Check with zero warnings tolerance
 1. **Background Service** (`background.js`): Manages P2P connections, history synchronization, and device coordination
 2. **Content Script** (`content.js`): Tracks page visits, navigation timing, and sends events to background
 3. **Popup Interface** (`popup.html/js/css`): Room configuration, connection status, and history management
-4. **Signaling Adapters** (`signaling-adapters.js`): Platform-specific WebRTC signaling implementations
 
 ### Build System
 - **Trystero Bundling**: `npm run build-trystero-bundle` creates IIFE bundle for both platforms

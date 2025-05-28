@@ -93,7 +93,6 @@ npm run clean
 1. **Background Service** (`background.js`): Manages P2P connections, history synchronization, and device coordination
 2. **Content Script** (`content.js`): Tracks page visits, navigation timing, and sends events to background
 3. **Popup Interface** (`popup.html/js/css`): Room configuration, connection status, and history management
-4. **Signaling Adapters** (`signaling-adapters.js`): Platform-specific WebRTC signaling implementations
 
 ### Build System
 - **Trystero Bundling**: `npm run build-trystero-bundle` creates IIFE bundle for both platforms
@@ -184,7 +183,7 @@ bar123 Extension/Resources/     # Safari extension
 ├── background.js              # P2P service and history management
 ├── content.js                 # Page tracking and navigation timing
 ├── popup.html/css/js          # Settings UI and connection management
-├── signaling-adapters.js      # Trystero bundle (IIFE)
+├── trystero-bundle.js         # Trystero bundle (IIFE)
 
 chrome-extension/              # Chrome extension
 ├── manifest.json              # Chrome manifest v3 (service worker)
