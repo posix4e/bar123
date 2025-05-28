@@ -36,6 +36,11 @@ npm run ios-build-testflight   # TestFlight build with upload
 
 # Clean build artifacts
 npm run clean
+
+# Code quality and linting
+npm run lint                   # Check code style and quality
+npm run lint:fix               # Auto-fix linting issues
+npm run lint:check             # Check with zero warnings tolerance
 ```
 
 ## Architecture Overview
