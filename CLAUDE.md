@@ -58,11 +58,18 @@ npm run lint:check             # Check with zero warnings tolerance
 
 ### Core Components
 1. **Background Service** (`background.js`): Manages P2P connections, history synchronization, and device coordination
-2. **Content Script** (`content.js`): Tracks page visits, navigation timing, and sends events to background
-3. **Popup Interface** (`popup.html/js/css`): Room configuration, connection status, and history management
+2. **Content Script** (`content.js`): Tracks page visits, extracts article content using Readability.js, and sends events to background
+3. **Popup Interface** (`popup.html/js/css`): Room configuration, connection status, and article search functionality
+
+### Article Content Extraction
+- **Readability.js Integration**: Mozilla Readability.js extracts clean article content from web pages
+- **Content Analysis**: Identifies articles vs. regular pages based on content length and structure
+- **Reading Time Calculation**: Estimates reading time at ~200 words per minute
+- **Search Interface**: Search through article titles, content, and excerpts via popup interface
 
 ### Build System
 - **Trystero Bundling**: `npm run build-trystero-bundle` creates IIFE bundle for both platforms
+- **Readability Bundling**: `npm run build-readability-bundle` creates IIFE bundle for article extraction
 - **Asset Copying**: Shared images and resources copied between platform directories
 - **Cross-Platform**: Single build command supports both Safari and Chrome outputs
 
@@ -115,10 +122,39 @@ npm run ci:collect-debug      # Collect debugging information
 npm run ci:generate-showcase  # Generate showcase documentation
 ```
 
+## Article Search Functionality
+
+### Using the Search Interface
+The extension provides a search-focused interface for finding articles by content:
+
+1. **Search Entry**: Type keywords in the search box to find relevant articles
+2. **Content Matching**: Search looks through article titles, content, URLs, and excerpts
+3. **Article Display**: Results show reading time, excerpts, and article badges
+4. **Clean Interface**: No history dump by default - only shows search results
+
+### Search Features
+- **Real-time Search**: Type keywords to find articles containing those terms
+- **Article Detection**: Only content identified as articles (>500 chars) gets special treatment
+- **Reading Time**: Shows estimated reading time based on word count (~200 WPM)
+- **Content Excerpts**: Preview first few sentences of extracted article content
+- **Cross-Platform**: Same search interface works on both Safari iOS and Chrome extensions
+
+### Testing Article Extraction
+```bash
+# Build extension with article extraction
+npm run build
+
+# Test on various content types
+# - News articles (should show article badge + reading time)
+# - Blog posts (should extract clean content)
+# - Social media (may not trigger article detection)
+# - Documentation pages (depends on structure)
+```
+
 ## Current Branch Context
 
-The current branch `replace-peerjs-with-trystero` represents the migration from PeerJS to Trystero for improved reliability and performance. Key changes include:
-- Trystero bundle integration replacing PeerJS
-- Updated build process for cross-platform support
-- Enhanced Chrome MV3 compatibility with offscreen documents
-- Improved connection reliability and debugging capabilities
+The current branch focuses on smart history search with article content extraction:
+- Readability.js integration for clean article content extraction
+- Search-focused popup interface for both Safari and Chrome extensions  
+- Enhanced history entries with reading time and content excerpts
+- Cross-platform article search functionality
