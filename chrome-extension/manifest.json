@@ -17,7 +17,7 @@
   "content_scripts": [{
     "js": ["readability-bundle.js", "content.js"],
     "matches": ["<all_urls>"],
-    "run_at": "document_start"
+    "run_at": "document_idle"
   }],
   
   "action": {

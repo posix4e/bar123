@@ -40,10 +40,15 @@
             <div>Last sync: <span id="lastSync">Never</span></div>
         </div>
 
-        <div class="history-section">
-            <h3>History <button id="refreshHistoryBtn" class="refresh-btn">↻</button></h3>
+        <div class="search-section">
+            <h3>Search History</h3>
+            <div class="search-controls">
+                <input type="text" id="searchInput" placeholder="Search articles by title or content...">
+                <button id="searchBtn" class="secondary">Search</button>
+                <button id="clearSearchBtn" class="secondary">Clear</button>
+            </div>
             <div id="historyList" class="history-list">
-                <div class="empty-state">No history entries yet</div>
+                <div class="search-prompt">Enter search terms to find articles</div>
             </div>
         </div>
 

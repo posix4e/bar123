@@ -14,7 +14,9 @@ class HistorySyncUI {
     this.clearLocalBtn = document.getElementById('clearLocalBtn');
     this.deleteRemoteBtn = document.getElementById('deleteRemoteBtn');
     this.debugSyncBtn = document.getElementById('debugSyncBtn');
-    this.refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
+    this.searchInput = document.getElementById('searchInput');
+    this.searchBtn = document.getElementById('searchBtn');
+    this.clearSearchBtn = document.getElementById('clearSearchBtn');
     this.syncStatus = document.getElementById('syncStatus');
     this.deviceCount = document.getElementById('deviceCount');
     this.localCount = document.getElementById('localCount');
@@ -28,9 +30,15 @@ class HistorySyncUI {
     this.clearLocalBtn.addEventListener('click', () => this.clearLocalHistory());
     this.deleteRemoteBtn.addEventListener('click', () => this.deleteRemoteHistory());
     this.debugSyncBtn.addEventListener('click', () => this.debugSync());
-    this.refreshHistoryBtn.addEventListener('click', () => this.loadHistory());
+    this.searchBtn.addEventListener('click', () => this.searchHistory());
+    this.clearSearchBtn.addEventListener('click', () => this.clearSearch());
         
     this.sharedSecretInput.addEventListener('input', () => this.saveSettings());
+    this.searchInput.addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') {
+        this.searchHistory();
+      }
+    });
   }
 
   async loadSettings() {
@@ -49,8 +57,8 @@ class HistorySyncUI {
     this.lastSync.textContent = settings.lastSyncTime ? 
       new Date(settings.lastSyncTime).toLocaleString() : 'Never';
         
-    // Load history on initial load
-    this.loadHistory();
+    // Start with search prompt instead of loading all history
+    this.showSearchPrompt();
   }
 
   async saveSettings() {
@@ -111,12 +119,14 @@ class HistorySyncUI {
     if (confirm('Are you sure you want to clear all local history? This cannot be undone.')) {
       await browser.runtime.sendMessage({ action: 'clearLocal' });
       this.updateUI();
+      this.showSearchPrompt();
     }
   }
 
   async deleteRemoteHistory() {
     if (confirm('Are you sure you want to delete all remote history for this secret? This will affect all devices using this secret.')) {
       await browser.runtime.sendMessage({ action: 'deleteRemote' });
+      this.showSearchPrompt();
     }
   }
 
@@ -126,7 +136,6 @@ class HistorySyncUI {
       const response = await browser.runtime.sendMessage({ action: 'debugSync' });
       console.log('Debug sync response:', response);
       alert(`Force sync triggered. Found ${response.peerCount} peers. Check console for details.`);
-      this.updateUI();
     } catch (error) {
       console.error('Debug sync failed:', error);
       alert('Debug sync failed: ' + error.message);
@@ -191,11 +200,26 @@ class HistorySyncUI {
             
       const duration = entry.duration ? `${Math.round(entry.duration / 1000)}s` : '';
       const source = isLocal ? 'Local' : 'Synced';
+
+      // Article content display
+      const articleContent = entry.articleContent;
+      let articleInfo = '';
+      if (articleContent && articleContent.isArticle) {
+        const readingTime = articleContent.readingTime;
+        const excerpt = articleContent.excerpt ? this.truncateText(articleContent.excerpt, 100) : '';
+        articleInfo = `
+          <div class="article-info">
+            <span class="article-badge">📖 Article • ${readingTime} min read</span>
+            ${excerpt ? `<div class="article-excerpt">${excerpt}</div>` : ''}
+          </div>
+        `;
+      }
             
       return `
-                <div class="history-entry ${entryClass}">
+                <div class="history-entry ${entryClass}" data-search-content="${this.getSearchableText(entry)}">
                     <div class="history-url" title="${entry.url || ''}">${this.truncateUrl(entry.url || '')}</div>
                     <div class="history-title" title="${entry.title || ''}">${entry.title || 'Untitled'}</div>
+                    ${articleInfo}
                     <div class="history-meta">
                         <span class="history-source ${entryClass}">${source}</span>
                         <span>${timeAgo} ${duration ? `• ${duration}` : ''}</span>
@@ -233,6 +257,67 @@ class HistorySyncUI {
     if (seconds < 3600) {return `${Math.floor(seconds / 60)}m ago`;}
     if (seconds < 86400) {return `${Math.floor(seconds / 3600)}h ago`;}
     return `${Math.floor(seconds / 86400)}d ago`;
+  }
+
+  truncateText(text, maxLength) {
+    if (!text || text.length <= maxLength) {
+      return text;
+    }
+    return text.substring(0, maxLength) + '...';
+  }
+
+  getSearchableText(entry) {
+    const parts = [
+      entry.title || '',
+      entry.url || '',
+      entry.articleContent?.title || '',
+      entry.articleContent?.content || '',
+      entry.articleContent?.excerpt || ''
+    ];
+    return parts.join(' ').toLowerCase();
+  }
+
+  async searchHistory() {
+    const query = this.searchInput.value.trim().toLowerCase();
+    
+    if (!query) {
+      this.showSearchPrompt();
+      return;
+    }
+
+    try {
+      const response = await browser.runtime.sendMessage({ 
+        action: 'getHistory' 
+      });
+      
+      if (response && response.history) {
+        // Filter history based on search query
+        const filteredHistory = response.history.filter(entry => {
+          const searchText = this.getSearchableText(entry);
+          return searchText.includes(query);
+        });
+        
+        this.displayHistory(filteredHistory);
+        
+        // Update UI to show search results
+        const resultCount = filteredHistory.length;
+        if (resultCount === 0) {
+          this.historyList.innerHTML = `<div class="empty-state">No results found for "${query}"</div>`;
+        }
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+      this.historyList.innerHTML = '<div class="empty-state">Search failed</div>';
+    }
+  }
+
+  clearSearch() {
+    this.searchInput.value = '';
+    this.showSearchPrompt();
+  }
+
+  showSearchPrompt() {
+    this.historyList.innerHTML = '<div class="search-prompt">Enter search terms to find articles</div>';
   }
 }
 

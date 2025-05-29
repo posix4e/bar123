@@ -106,9 +106,12 @@ npm run clean
 - **Zero Server Setup**: Uses Trystero for serverless P2P connections
 - **Real-Time Sync**: Instant history sharing as you browse
 - **Privacy-First**: Direct P2P connections, no data stored on servers
+- **Article Extraction**: Automatic content extraction from articles using Readability.js
+- **Smart Search**: Search through article content, titles, and excerpts
+- **Reading Time**: Calculates estimated reading time for articles (~200 WPM)
 - **Duration Tracking**: Tracks time spent on each page
 - **Device Management**: Persistent device IDs for reconnection
-- **History Viewing**: Browse synced history from all connected devices
+- **Search-Focused Interface**: Clean popup focused on finding specific articles
 - **Easy Setup**: Just enter a shared room secret
 - **Live Demo**: Real P2P viewer embedded in showcase page
 
@@ -160,10 +163,17 @@ npm run test-local-multiplatform  # Chrome + Safari simulator testing
 2. **Configure**: Click extension icon → Enter room secret
 3. **Connect**: Click "Connect" to join the P2P network
 
-### Usage
-4. **Browse**: Visit any websites - history syncs automatically
-5. **View History**: Use "View History" to see synced data from all devices
-6. **Manage**: Use "Clear Local" or "Delete Remote" as needed
+### Using Article Search
+4. **Browse**: Visit articles and blog posts - content extracts automatically
+5. **Search**: Open extension → Type keywords to find articles by content
+6. **Results**: See articles with reading time estimates and content excerpts
+7. **Manage**: Use "Clear Local" or "Delete Remote" as needed
+
+### What Gets Extracted
+- **Article Content**: Clean text from news articles, blog posts, documentation
+- **Reading Time**: Estimated at ~200 words per minute
+- **Excerpts**: First few sentences for quick preview
+- **Article Detection**: Only content >500 characters gets article treatment
 
 ## 🔒 Security
 

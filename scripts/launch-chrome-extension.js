@@ -17,7 +17,7 @@ async function launchChromeWithExtension() {
     process.exit(1);
   }
     
-  const extensionPath = path.resolve(__dirname, 'chrome-extension');
+  const extensionPath = path.resolve(__dirname, '../chrome-extension');
   const userDataDir = path.join(__dirname, 'temp-chrome-profile-' + Date.now());
     
   console.log(`📂 Extension path: ${extensionPath}`);
