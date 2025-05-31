@@ -7,54 +7,15 @@
 </head>
 <body>
     <div class="container">
-        <h2>History Sync</h2>
+        <h2>Recent History</h2>
         
         <div class="status">
-            <div class="sync-status" id="syncStatus">Disconnected</div>
-            <div class="device-count" id="deviceCount">0 devices</div>
+            <div class="sync-status" id="syncStatus">Tracking</div>
+            <div class="page-count" id="pageCount">0 pages tracked</div>
         </div>
         
-        <div class="settings">
-            <div class="field">
-                <label for="sharedSecret">Room Secret:</label>
-                <input type="password" id="sharedSecret" placeholder="Enter shared secret for your room">
-                <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">
-                    🔗 Uses PeerJS Cloud • All devices must use the same secret to sync together
-                </div>
-            </div>
-            
-            <div class="buttons">
-                <button id="connectBtn" class="primary">Connect</button>
-                <button id="disconnectBtn" class="secondary">Disconnect</button>
-            </div>
-        </div>
-        
-        <div class="history-controls">
-            <h3>History Management</h3>
-            <button id="clearLocalBtn" class="danger">Clear Local History</button>
-            <button id="deleteRemoteBtn" class="danger">Delete Remote History</button>
-        </div>
-        
-        <div class="stats">
-            <div>Local entries: <span id="localCount">0</span></div>
-            <div>Last sync: <span id="lastSync">Never</span></div>
-        </div>
-
-        <div class="search-section">
-            <h3>Search History</h3>
-            <div class="search-controls">
-                <input type="text" id="searchInput" placeholder="Search articles by title or content...">
-                <button id="searchBtn" class="secondary">Search</button>
-                <button id="clearSearchBtn" class="secondary">Clear</button>
-            </div>
-            <div id="historyList" class="history-list">
-                <div class="search-prompt">Enter search terms to find articles</div>
-            </div>
-        </div>
-
-        <div class="history-controls">
-            <h3>Debug</h3>
-            <button id="debugSyncBtn" class="secondary">Force Sync</button>
+        <div id="historyList" class="history-list">
+            <div class="loading-state">Loading recent pages...</div>
         </div>
     </div>
 </body>

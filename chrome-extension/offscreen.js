@@ -31,6 +31,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.log('Disconnected from Trystero room');
       }
       sendResponse({ success: true });
+    } else if (request.action === 'sendHistory') {
+      // Send history data to peers
+      if (window.sendHistory && request.historyData) {
+        try {
+          // iOS expects direct array, Chrome sends wrapper object
+          const historyEntries = request.historyData.entries || request.historyData;
+          window.sendHistory(historyEntries);
+          console.log('Sent history entries to peers:', historyEntries);
+          sendResponse({ success: true });
+        } catch (error) {
+          console.error('Failed to send history:', error);
+          sendResponse({ success: false, error: error.message });
+        }
+      } else {
+        sendResponse({ success: false, error: 'Send function not available or no data' });
+      }
     }
   } catch (error) {
     console.error('Error handling offscreen message:', error);
@@ -48,11 +64,15 @@ async function initTrysteroConnection(roomId) {
       throw new Error('Trystero not loaded');
     }
         
-    // Join room with explicit config
-    console.log('Joining Trystero room with config:', { appId: 'history-sync' });
+    // Join room with explicit config - avoid rate-limited relays
+    const roomConfig = { 
+      appId: 'history-sync',
+      relayUrls: ['wss://relay.snort.social', 'wss://nos.lol']
+    };
+    console.log('Joining Trystero room with config:', roomConfig);
     console.log('Trystero version:', trystero.version || 'unknown');
         
-    trysteroRoom = trystero.joinRoom({ appId: 'history-sync' }, roomId);
+    trysteroRoom = trystero.joinRoom(roomConfig, roomId);
     console.log('Joined Trystero room, waiting for peers...');
         
     // Set up peer handlers
@@ -78,8 +98,12 @@ async function initTrysteroConnection(roomId) {
     });
         
     // Set up data channels
-    const [, getHistory] = trysteroRoom.makeAction('history-sync');
-    const [, getDelete] = trysteroRoom.makeAction('delete-item');
+    const [sendHistory, getHistory] = trysteroRoom.makeAction('history-sync');
+    const [sendDelete, getDelete] = trysteroRoom.makeAction('delete-item');
+    
+    // Store send functions globally for background script access
+    window.sendHistory = sendHistory;
+    window.sendDelete = sendDelete;
         
     getHistory((historyData, peerId) => {
       console.log('Received history from', peerId);
