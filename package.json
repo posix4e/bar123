@@ -17,6 +17,7 @@
     "serve": "python3 -m http.server 8081 --directory test-pages",
     "xcode": "npm run build && open bar123.xcodeproj",
     "test": "node test/cross-platform-sync-test.js",
+    "test-chrome-ios-sync": "node test/chrome-ios-sync-test.js",
     "test-local-multiplatform": "node test/local-multiplatform-test.js",
     "test-all": "npm run test-local-multiplatform",
     "launch-chrome": "node scripts/launch-chrome-extension.js",

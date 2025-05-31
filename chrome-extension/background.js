@@ -77,6 +77,12 @@ class HistorySyncService {
         case 'peerJoined':
           console.log('Peer joined:', request.peerId);
           this.peers.set(request.peerId, { connected: true });
+          
+          // Send current history to new peer
+          if (this.localHistory.length > 0) {
+            console.log(`Sending ${this.localHistory.length} history entries to new peer`);
+            this.sendHistoryToPeers();
+          }
           break;
                     
         case 'peerLeft':
@@ -264,6 +270,48 @@ class HistorySyncService {
             
       console.log('History entry deleted via sync:', url);
     }
+  }
+
+  async sendHistoryToPeers() {
+    if (!this.isConnected || this.localHistory.length === 0) {
+      return;
+    }
+
+    try {
+      // Prepare history data in compatible format
+      const historyData = {
+        entries: this.localHistory.map(entry => ({
+          id: entry.id || this.generateEntryId(),
+          url: entry.url,
+          title: entry.title || 'Untitled',
+          visitTime: entry.visitTime || Date.now(),
+          duration: entry.duration || null,
+          deviceId: this.deviceId,
+          articleContent: entry.articleContent || null,
+          synced: false
+        })),
+        deviceId: this.deviceId,
+        timestamp: Date.now()
+      };
+
+      // Send to offscreen document which handles Trystero communication
+      const response = await chrome.runtime.sendMessage({
+        action: 'sendHistory',
+        historyData: historyData
+      });
+
+      if (response && response.success) {
+        console.log(`Successfully sent ${historyData.entries.length} history entries to peers`);
+      } else {
+        console.error('Failed to send history to peers:', response ? response.error : 'No response');
+      }
+    } catch (error) {
+      console.error('Error sending history to peers:', error);
+    }
+  }
+
+  generateEntryId() {
+    return Date.now() + '_' + Math.random().toString(36).substr(2, 9);
   }
 }
 

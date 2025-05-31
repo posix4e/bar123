@@ -31,6 +31,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.log('Disconnected from Trystero room');
       }
       sendResponse({ success: true });
+    } else if (request.action === 'sendHistory') {
+      // Send history data to peers
+      if (window.sendHistory && request.historyData) {
+        try {
+          window.sendHistory(request.historyData);
+          console.log('Sent history data to peers:', request.historyData);
+          sendResponse({ success: true });
+        } catch (error) {
+          console.error('Failed to send history:', error);
+          sendResponse({ success: false, error: error.message });
+        }
+      } else {
+        sendResponse({ success: false, error: 'Send function not available or no data' });
+      }
     }
   } catch (error) {
     console.error('Error handling offscreen message:', error);
@@ -78,8 +92,12 @@ async function initTrysteroConnection(roomId) {
     });
         
     // Set up data channels
-    const [, getHistory] = trysteroRoom.makeAction('history-sync');
-    const [, getDelete] = trysteroRoom.makeAction('delete-item');
+    const [sendHistory, getHistory] = trysteroRoom.makeAction('history-sync');
+    const [sendDelete, getDelete] = trysteroRoom.makeAction('delete-item');
+    
+    // Store send functions globally for background script access
+    window.sendHistory = sendHistory;
+    window.sendDelete = sendDelete;
         
     getHistory((historyData, peerId) => {
       console.log('Received history from', peerId);
