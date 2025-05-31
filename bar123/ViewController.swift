@@ -51,6 +51,22 @@ struct ExtensionMessage: Codable {
     }
 }
 
+struct PeerInfo {
+    let peerId: String
+    let connectedAt: Date
+    var lastSeen: Date
+    var messageCount: Int
+    var dataReceived: Int
+    
+    init(peerId: String) {
+        self.peerId = peerId
+        self.connectedAt = Date()
+        self.lastSeen = Date()
+        self.messageCount = 0
+        self.dataReceived = 0
+    }
+}
+
 class ViewController: UIViewController {
     
     @IBOutlet var tableView: UITableView!
@@ -60,6 +76,8 @@ class ViewController: UIViewController {
     private var peerCount = 0
     private var currentRoomId: String?
     private var refreshTimer: Timer?
+    private var connectedPeers: [String: PeerInfo] = [:]
+    private var ownPeerId: String?
     
     // TrysteroSwift integration
     private var trysteroRoom: TrysteroRoom?
@@ -215,9 +233,19 @@ class ViewController: UIViewController {
     private func connectToRoom(secret: String) {
         Task {
             do {
-                // Initialize TrysteroSwift room
-                let config = RoomConfig(relays: ["wss://relay.damus.io", "wss://relay.nostr.band"])
+                // Reset peer count for new room
+                DispatchQueue.main.async {
+                    self.peerCount = 0
+                    self.isConnected = false
+                    self.connectedPeers.removeAll()
+                    self.currentRoomId = nil
+                    self.updateConnectionStatus()
+                }
+                
+                // Initialize TrysteroSwift room - avoid rate-limited relays
+                let config = RoomConfig(relays: ["wss://relay.snort.social", "wss://nos.lol"], appId: "history-sync")
                 let roomId = await hashSecret(secret)
+                self.currentRoomId = roomId
                 self.trysteroRoom = try Trystero.joinRoom(config: config, roomId: roomId)
                 try await self.trysteroRoom?.join()
                 self.setupRoomHandlers()
@@ -240,8 +268,12 @@ class ViewController: UIViewController {
         // Set up TrysteroSwift event handlers
         trysteroRoom?.onPeerJoin { [weak self] peerId in
             self?.logger.info("Peer joined: \(peerId)")
+            
+            // Track peer info
+            self?.connectedPeers[peerId] = PeerInfo(peerId: peerId)
+            
             DispatchQueue.main.async {
-                self?.peerCount += 1
+                self?.peerCount = self?.connectedPeers.count ?? 0
                 self?.updateConnectionStatus()
             }
             // Send current history to new peer
@@ -250,8 +282,12 @@ class ViewController: UIViewController {
         
         trysteroRoom?.onPeerLeave { [weak self] peerId in
             self?.logger.info("Peer left: \(peerId)")
+            
+            // Remove peer info
+            self?.connectedPeers.removeValue(forKey: peerId)
+            
             DispatchQueue.main.async {
-                self?.peerCount = max(0, (self?.peerCount ?? 1) - 1)
+                self?.peerCount = self?.connectedPeers.count ?? 0
                 self?.updateConnectionStatus()
             }
         }
@@ -265,17 +301,66 @@ class ViewController: UIViewController {
     
     private func updateConnectionStatus() {
         DispatchQueue.main.async {
-            // Update UI to show connection status
+            // Update UI to show connection status with tap action
             self.navigationItem.rightBarButtonItem = UIBarButtonItem(
                 title: self.isConnected ? "Connected (\(self.peerCount))" : "Disconnected",
                 style: .plain,
-                target: nil,
-                action: nil
+                target: self,
+                action: #selector(self.showPeerDebugInfo)
             )
         }
     }
     
+    @objc private func showPeerDebugInfo() {
+        let alert = UIAlertController(
+            title: "Peer Debug Info",
+            message: nil,
+            preferredStyle: .alert
+        )
+        
+        var message = ""
+        
+        // Show our own peer ID
+        if let ownId = ownPeerId {
+            message += "Own Peer ID:\n\(ownId)\n\n"
+        } else {
+            message += "Own Peer ID: Unknown\n\n"
+        }
+        
+        // Show current room
+        if let roomId = currentRoomId {
+            message += "Room ID:\n\(roomId)\n\n"
+        }
+        
+        // Show connected peers
+        if connectedPeers.isEmpty {
+            message += "Connected Peers: None"
+        } else {
+            message += "Connected Peers (\(connectedPeers.count)):\n"
+            for (peerId, info) in connectedPeers {
+                let connectedDuration = Int(Date().timeIntervalSince(info.connectedAt))
+                message += "\n• \(peerId)\n"
+                message += "  Connected: \(connectedDuration)s ago\n"
+                message += "  Messages: \(info.messageCount)\n"
+                message += "  Data: \(info.dataReceived) bytes\n"
+            }
+        }
+        
+        alert.message = message
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        
+        present(alert, animated: true)
+    }
+    
     private func handleReceivedData(_ data: Data, from peerId: String) {
+        // Update peer stats
+        if var peerInfo = connectedPeers[peerId] {
+            peerInfo.lastSeen = Date()
+            peerInfo.messageCount += 1
+            peerInfo.dataReceived += data.count
+            connectedPeers[peerId] = peerInfo
+        }
+        
         do {
             let receivedEntries = try JSONDecoder().decode([HistoryEntry].self, from: data)
             logger.info("Received \(receivedEntries.count) history entries from peer: \(peerId)")

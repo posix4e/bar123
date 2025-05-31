@@ -127,6 +127,10 @@ class HistorySyncService {
   }
 
   async connect(sharedSecret) {
+    // Reset peer tracking for new room
+    this.peers.clear();
+    this.isConnected = false;
+    
     this.sharedSecret = sharedSecret;
     this.roomId = await this.hashSecret(sharedSecret);
         
@@ -232,8 +236,11 @@ class HistorySyncService {
   }
     
   handleReceivedHistory(historyData) {
+    // Handle both array format (from iOS) and wrapper format (from Chrome)
+    const entries = Array.isArray(historyData) ? historyData : (historyData.entries || []);
+    
     // Merge received history with local history
-    for (const entry of historyData.entries || []) {
+    for (const entry of entries) {
       const existingIndex = this.localHistory.findIndex(h => h.url === entry.url);
       if (existingIndex === -1) {
         this.localHistory.push(entry);
