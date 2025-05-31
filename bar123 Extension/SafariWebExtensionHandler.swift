@@ -58,6 +58,13 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                         "secret": secret
                     ]
                     os_log(.default, "Retrieved shared secret from App Group: %@", secret.isEmpty ? "empty" : "found")
+                case "historyEntry":
+                    os_log(.default, "Received history entry from extension")
+                    forwardHistoryToiOSApp(messageDict)
+                    responseData = ["success": true]
+                case "extensionReady":
+                    os_log(.default, "Extension ready notification received")
+                    responseData = ["success": true]
                 default:
                     os_log(.default, "Unknown message type: %@", type)
                     responseData = ["echo": message as Any]
@@ -119,6 +126,27 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         os_log(.default, "Retrieved secret from shared storage, length: %d", secret.count)
         
         return secret
+    }
+    
+    private func forwardHistoryToiOSApp(_ messageDict: [String: Any]) {
+        os_log(.default, "Forwarding history entry to iOS app")
+        
+        // Get the main iOS app and send the history entry
+        if let entry = messageDict["entry"] as? [String: Any] {
+            // Send via App Group notification
+            NotificationCenter.default.post(
+                name: NSNotification.Name("HistoryEntryReceived"),
+                object: nil,
+                userInfo: entry
+            )
+            
+            // Also store in shared UserDefaults as a backup
+            if let sharedDefaults = UserDefaults(suiteName: "group.xyz.foo.bar123") {
+                sharedDefaults.set(entry, forKey: "latestHistoryEntry")
+                sharedDefaults.synchronize()
+                os_log(.default, "Stored history entry in shared defaults")
+            }
+        }
     }
 
 }

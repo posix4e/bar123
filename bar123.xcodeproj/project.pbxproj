@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		CE03C42D2DDF94E1008CC9F2 /* bar123 Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CE03C42C2DDF94E1008CC9F2 /* bar123 Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CE8AE9A52DEB14CD00BB9AA6 /* TrysteroSwift in Frameworks */ = {isa = PBXBuildFile; productRef = CE8AE9A42DEB14CD00BB9AA6 /* TrysteroSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,6 +111,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CE8AE9A52DEB14CD00BB9AA6 /* TrysteroSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -181,6 +183,7 @@
 			);
 			name = bar123;
 			packageProductDependencies = (
+				CE8AE9A42DEB14CD00BB9AA6 /* TrysteroSwift */,
 			);
 			productName = bar123;
 			productReference = CE03C3F92DDF94E0008CC9F2 /* bar123.app */;
@@ -289,6 +292,9 @@
 			);
 			mainGroup = CE03C3F02DDF94E0008CC9F2;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CE8AE9A32DEB14CD00BB9AA6 /* XCRemoteSwiftPackageReference "TrysteroSwift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CE03C3FA2DDF94E0008CC9F2 /* Products */;
 			projectDirPath = "";
@@ -395,7 +401,7 @@
 				INFOPLIST_FILE = "bar123 Extension/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "bar123 Extension";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -428,7 +434,7 @@
 				INFOPLIST_FILE = "bar123 Extension/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "bar123 Extension";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -467,7 +473,7 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -506,7 +512,7 @@
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -656,7 +662,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2858MX5336;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.foo.bar123Tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -675,7 +681,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2858MX5336;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = xyz.foo.bar123Tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -769,6 +775,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CE8AE9A32DEB14CD00BB9AA6 /* XCRemoteSwiftPackageReference "TrysteroSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/posix4e/TrysteroSwift";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CE8AE9A42DEB14CD00BB9AA6 /* TrysteroSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CE8AE9A32DEB14CD00BB9AA6 /* XCRemoteSwiftPackageReference "TrysteroSwift" */;
+			productName = TrysteroSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CE03C3F12DDF94E0008CC9F2 /* Project object */;
 }
