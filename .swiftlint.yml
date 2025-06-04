@@ -1,0 +1,42 @@
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+  - file_length
+  - type_body_length
+  - function_body_length
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - contains_over_first_not_nil
+  - discouraged_object_literal
+  - empty_string
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - last_where
+  - legacy_multiple
+  - multiline_parameters
+  - prohibited_super_call
+  - sorted_imports
+  - vertical_parameter_alignment_on_call
+  - vertical_whitespace_closing_braces
+  - vertical_whitespace_opening_braces
+
+excluded:
+  - .build
+  - build
+  - node_modules
+  - DerivedData
+  - scripts/temp-chrome-profile-*
+
+identifier_name:
+  min_length: 2
+  max_length: 40
+  
+type_name:
+  min_length: 3
+  max_length: 40
+  
+nesting:
+  type_level: 2

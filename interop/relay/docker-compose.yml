@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  nostr-relay:
+    image: scsibug/nostr-rs-relay:latest
+    ports:
+      - "7777:8080"
+    environment:
+      - RUST_LOG=info
+    volumes:
+      - ./config.toml:/usr/src/app/config.toml:ro
+    command: ["--config", "/usr/src/app/config.toml"]

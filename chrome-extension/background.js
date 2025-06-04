@@ -1,5 +1,10 @@
 // Chrome extension background service worker
-// WebRTC operations are delegated to content scripts/popup
+// P2P operations using js-libp2p
+
+/* global importScripts, LibP2PBundle */
+
+// Import bundled libp2p
+importScripts('libp2p-bundle.js');
 
 class HistorySyncService {
   constructor() {
@@ -10,7 +15,7 @@ class HistorySyncService {
     this.roomId = null;
     this.sharedSecret = null;
     this.lastSyncTime = null;
-    this.connectionTab = null;
+    this.p2pClient = null;
         
     this.init();
   }
@@ -125,57 +130,68 @@ class HistorySyncService {
     this.roomId = await this.hashSecret(sharedSecret);
         
     try {
-      // Create offscreen document for WebRTC (Chrome MV3 compatible)
-      await this.createOffscreenDocument();
-            
-      console.log('Connecting to Trystero room:', this.roomId);
-            
-      // Send connection request to offscreen document
-      const response = await chrome.runtime.sendMessage({
-        action: 'initConnection',
-        roomId: this.roomId,
-        sharedSecret: sharedSecret
-      });
-            
-      if (response && response.success) {
-        this.isConnected = true;
-        console.log('✅ Connection initiated successfully');
+      console.log('Chrome extension connecting to room:', this.roomId);
+      
+      // Initialize libp2p client
+      this.p2pClient = new LibP2PBundle.LibP2PClient();
+      
+      // Set up event handlers
+      this.p2pClient.onPeerJoin((peerId) => {
+        console.log('Peer joined:', peerId);
+        this.peers.set(peerId, { connected: true });
+        this.updateStorageAndUI();
         
-        // Store connection details for potential reconnection
-        await chrome.storage.local.set({
-          lastSharedSecret: sharedSecret,
-          lastRoomId: this.roomId
-        });
-      } else {
-        throw new Error(response ? response.error : 'No response from offscreen document');
-      }
+        // Send current history to new peer
+        if (this.localHistory.length > 0) {
+          this.sendHistoryToPeers();
+        }
+      });
+      
+      this.p2pClient.onPeerLeave((peerId) => {
+        console.log('Peer left:', peerId);
+        this.peers.delete(peerId);
+        this.updateStorageAndUI();
+      });
+      
+      this.p2pClient.onData((data, peerId) => {
+        console.log('Received data from', peerId, ':', data);
+        if (data.type === 'history_sync') {
+          this.handleReceivedHistory(data);
+        } else if (data.type === 'history_delete') {
+          this.handleReceivedDelete(data);
+        }
+      });
+      
+      this.p2pClient.onDisconnected(() => {
+        console.log('Disconnected from relay');
+        this.isConnected = false;
+        this.updateStorageAndUI();
+        
+        // Attempt reconnection
+        if (this.sharedSecret) {
+          setTimeout(() => this.attemptReconnection(), 5000);
+        }
+      });
+      
+      // Connect to P2P network (no relay needed)
+      await this.p2pClient.connect(null, this.roomId);
+      
+      this.isConnected = true;
+      console.log('✅ Chrome extension connected via libp2p');
+      
+      // Store connection details
+      await chrome.storage.local.set({
+        lastSharedSecret: sharedSecret,
+        lastRoomId: this.roomId
+      });
+      
+      this.updateStorageAndUI();
+      
     } catch (error) {
       console.error('Connection failed:', error);
       this.isConnected = false;
       throw new Error('Failed to connect: ' + error.message);
     }
-  }
-    
-  async createOffscreenDocument() {
-    // Check if offscreen document already exists
-    const existingContexts = await chrome.runtime.getContexts({
-      contextTypes: ['OFFSCREEN_DOCUMENT'],
-      documentUrls: [chrome.runtime.getURL('offscreen.html')]
-    });
-        
-    if (existingContexts.length > 0) {
-      console.log('Offscreen document already exists');
-      return;
-    }
-        
-    // Create offscreen document
-    await chrome.offscreen.createDocument({
-      url: 'offscreen.html',
-      reasons: ['BLOBS', 'DOM_SCRAPING'], // Required reasons for offscreen document
-      justification: 'Required for WebRTC P2P connections using Trystero'
-    });
-        
-    console.log('Offscreen document created');
   }
 
   async hashSecret(secret) {
@@ -186,16 +202,13 @@ class HistorySyncService {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
   }
 
-  // Trystero initialization moved to content script due to WebRTC restrictions in service workers
-
   async disconnect() {
-    console.log('Disconnecting from Trystero...');
-        
-    try {
-      // Send disconnect message to offscreen document
-      await chrome.runtime.sendMessage({ action: 'disconnect' });
-    } catch (error) {
-      console.log('Failed to send disconnect to offscreen:', error.message);
+    console.log('Chrome extension disconnecting...');
+    
+    // Disconnect libp2p client
+    if (this.p2pClient) {
+      this.p2pClient.disconnect();
+      this.p2pClient = null;
     }
         
     this.peers.clear();
@@ -206,7 +219,8 @@ class HistorySyncService {
     // Clear stored connection details
     await chrome.storage.local.remove(['lastSharedSecret', 'lastRoomId']);
     
-    console.log('Disconnected from Trystero');
+    this.updateStorageAndUI();
+    console.log('Chrome extension disconnected');
   }
   
   // Add reconnection attempt method
@@ -264,6 +278,41 @@ class HistorySyncService {
             
       console.log('History entry deleted via sync:', url);
     }
+  }
+  
+  // Send history to all connected peers
+  sendHistoryToPeers() {
+    if (!this.p2pClient || !this.isConnected) {
+      return;
+    }
+    
+    const message = {
+      type: 'history_sync',
+      entries: this.localHistory,
+      deviceId: this.deviceId,
+      timestamp: Date.now()
+    };
+    
+    console.log(`📤 Sending ${this.localHistory.length} history entries to peers`);
+    this.p2pClient.publish(message);
+  }
+  
+  // Update storage and UI state
+  async updateStorageAndUI() {
+    await chrome.storage.local.set({
+      isConnected: this.isConnected,
+      peerCount: this.peers.size,
+      lastUpdate: Date.now()
+    });
+    
+    // Notify popup if it's open
+    chrome.runtime.sendMessage({
+      type: 'connectionStateChanged',
+      isConnected: this.isConnected,
+      peerCount: this.peers.size
+    }).catch(() => {
+      // Popup might not be open
+    });
   }
 }
 

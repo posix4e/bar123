@@ -6,10 +6,15 @@ export default [
       'node_modules/**',
       '**/*.min.js',
       '**/*-bundle.js',
-      'chrome-extension/peerjs.min.js',
-      'bar123 Extension/Resources/peerjs.min.js',
+      'chrome-extension/libp2p-bundle.js',
+      'chrome-extension/readability-bundle.js',
+      'bar123 Extension/Resources/readability-bundle.js',
       'test-results/**',
-      'build/**'
+      'build/**',
+      'target/**',
+      'libp2p-ffi/target/**',
+      'coverage/**',
+      'docs/**'
     ]
   },
   {

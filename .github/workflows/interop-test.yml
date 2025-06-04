@@ -1,0 +1,122 @@
+name: Interop Test
+
+on:
+  push:
+    branches: [ main, 'feature/**' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  swift-js-interop:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v2
+      with:
+        swift-version: '6.0'
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Setup Docker
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Install dependencies
+      run: |
+        cd interop/chat-js
+        npm install
+        cd ../..
+        
+    - name: Build Swift chat client
+      run: |
+        cd interop/chat-swift
+        swift build --configuration release
+        cd ../..
+        
+    - name: Start Nostr relay
+      run: |
+        cd interop/relay
+        docker-compose up -d
+        # Wait for relay to be ready
+        sleep 10
+        # Check if relay is running
+        docker-compose ps
+        cd ../..
+        
+    - name: Run interop test
+      run: |
+        cd interop
+        export RELAY_URL="ws://localhost:7777"
+        export ROOM_ID="github-action-test-$(date +%s)"
+        export AUTOMATED_TEST="true"
+        
+        # Start Swift client in background
+        export PEER_NAME="swift-peer"
+        cd chat-swift
+        .build/release/trystero-chat > ../swift-output.log 2>&1 &
+        SWIFT_PID=$!
+        cd ..
+        
+        # Give Swift client time to connect
+        sleep 3
+        
+        # Start JS client in background
+        export PEER_NAME="js-peer"
+        cd chat-js
+        node chat.js > ../js-output.log 2>&1 &
+        JS_PID=$!
+        cd ..
+        
+        # Wait for test to complete
+        echo "Running test for 20 seconds..."
+        sleep 20
+        
+        # Kill processes
+        kill $SWIFT_PID 2>/dev/null || true
+        kill $JS_PID 2>/dev/null || true
+        
+        # Check results
+        echo "=== Swift Output ==="
+        cat swift-output.log
+        echo -e "\n=== JavaScript Output ==="
+        cat js-output.log
+        
+        # Verify test passed
+        if grep -q "Peer joined" swift-output.log && grep -q "Peer joined" js-output.log; then
+          echo -e "\n✅ Peers connected successfully"
+        else
+          echo -e "\n❌ Peers failed to connect"
+          exit 1
+        fi
+        
+        if grep -q "Message from" swift-output.log && grep -q "Message from" js-output.log; then
+          echo "✅ Messages exchanged successfully"
+        else
+          echo "❌ Message exchange failed"
+          exit 1
+        fi
+        
+        echo -e "\n🎉 Interop test passed!"
+        
+    - name: Stop relay
+      if: always()
+      run: |
+        cd interop/relay
+        docker-compose down
+        
+    - name: Upload test logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: interop-test-logs-${{ github.sha }}
+        path: |
+          interop/swift-output.log
+          interop/js-output.log
+        retention-days: 7

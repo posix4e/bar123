@@ -1,0 +1,27 @@
+# Nostr relay configuration for interop testing
+
+[info]
+relay_url = "ws://localhost:7777"
+name = "Trystero Interop Test Relay"
+description = "Test relay for Trystero Swift/JS interoperability"
+
+[network]
+address = "0.0.0.0"
+port = 8080
+
+[database]
+engine = "sqlite"
+
+[authorization]
+pubkey_whitelist = []
+
+[verified_users]
+verify_expiration = "1 week"
+
+[limitations]
+messages_per_sec = 100
+max_event_bytes = 131072
+max_ws_message_bytes = 131072
+max_ws_frame_bytes = 131072
+subscription_id_max_length = 256
+max_subscriptions = 100

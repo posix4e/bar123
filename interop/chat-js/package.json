@@ -1,0 +1,13 @@
+{
+  "name": "trystero-chat-js",
+  "version": "1.0.0",
+  "description": "JavaScript chat client for Trystero interop testing",
+  "type": "module",
+  "main": "chat.js",
+  "scripts": {
+    "start": "node chat.js"
+  },
+  "dependencies": {
+    "trystero": "^0.18.0"
+  }
+}

@@ -44,7 +44,11 @@
   ],
   
   "web_accessible_resources": [{
-    "resources": ["trystero-bundle.js", "connection.html", "connection.js"],
+    "resources": ["connection.html", "connection.js", "libp2p-browser-client.js"],
     "matches": ["<all_urls>"]
-  }]
+  }],
+  
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  }
 }

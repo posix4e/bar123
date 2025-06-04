@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Bar123 is a Safari iOS extension that enables real-time history synchronization across devices using P2P technology. The project has migrated from PeerJS to Trystero and supports both Safari iOS extensions and Chrome extensions through a shared codebase.
+Bar123 is a Safari iOS extension that enables real-time history synchronization across devices using P2P technology. The project has migrated from PeerJS → Trystero → Rust libp2p and supports both Safari iOS extensions and Chrome extensions. The new architecture uses Rust libp2p via FFI for P2P networking, with the sync logic handled natively in Swift for iOS.
 
 ## Essential Development Commands
 
 ```bash
-# Install dependencies and build the extension
+# Install dependencies and build the extension (now builds Rust libp2p FFI)
 npm install
 npm run build
 
@@ -21,6 +21,9 @@ npm run xcode
 
 # Build Chrome extension specifically
 npm run build-chrome
+
+# Build just the Rust libp2p FFI library
+npm run build-libp2p
 
 # Run comprehensive tests
 npm run test                    # Cross-platform sync tests
@@ -46,20 +49,26 @@ npm run lint:check             # Check with zero warnings tolerance
 ## Architecture Overview
 
 ### Multi-Platform Extension Architecture
-- **Safari Extension**: Uses `bar123 Extension/Resources/` with manifest v3 background scripts
-- **Chrome Extension**: Uses `chrome-extension/` with service worker architecture
-- **Shared Core**: Both platforms use the same Trystero-based P2P connection logic
+- **Safari Extension**: Uses `bar123 Extension/Resources/` with Swift native P2P networking
+- **Chrome Extension**: Uses `chrome-extension/` with service worker architecture and native messaging
+- **Rust libp2p Core**: Both platforms now use Rust libp2p via FFI for P2P networking
+- **Native Swift Logic**: History sync logic moved to Swift SafariWebExtensionHandler for iOS
 
 ### P2P Connection System
-- **Trystero Integration**: Bundled locally via esbuild to avoid CSP issues
+- **Rust libp2p FFI**: Native Rust libp2p implementation with C FFI bindings for Swift
+- **Swift Wrapper**: LibP2PWrapper.swift provides Swift interface to Rust library
 - **Room-Based Connections**: Devices join rooms using shared secrets (hashed for security)
-- **WebRTC Direct P2P**: No server-side data storage, encrypted peer connections
+- **Gossipsub Protocol**: Uses libp2p gossipsub for efficient message broadcasting
+- **mDNS Discovery**: Local peer discovery via multicast DNS
 - **Device Identification**: Persistent device IDs for reconnection handling
 
 ### Core Components
-1. **Background Service** (`background.js`): Manages P2P connections, history synchronization, and device coordination
-2. **Content Script** (`content.js`): Tracks page visits, extracts article content using Readability.js, and sends events to background
-3. **Popup Interface** (`popup.html/js/css`): Room configuration, connection status, and article search functionality
+1. **SafariWebExtensionHandler** (`SafariWebExtensionHandler.swift`): Native Swift P2P networking and history sync logic
+2. **LibP2PWrapper** (`LibP2PWrapper.swift`): Swift wrapper for Rust libp2p FFI library
+3. **Rust libp2p FFI** (`libp2p-ffi/`): Core P2P networking library with C bindings
+4. **Background Service** (`background.js`): JavaScript interface that delegates to native Swift layer
+5. **Content Script** (`content.js`): Tracks page visits, extracts article content using Readability.js
+6. **Popup Interface** (`popup.html/js/css`): Room configuration, connection status, and article search
 
 ### Article Content Extraction
 - **Readability.js Integration**: Mozilla Readability.js extracts clean article content from web pages
@@ -68,18 +77,20 @@ npm run lint:check             # Check with zero warnings tolerance
 - **Search Interface**: Search through article titles, content, and excerpts via popup interface
 
 ### Build System
-- **Trystero Bundling**: `npm run build-trystero-bundle` creates IIFE bundle for both platforms
+- **Rust libp2p Compilation**: `npm run build-libp2p` compiles Rust FFI library and copies to dist/
 - **Readability Bundling**: `npm run build-readability-bundle` creates IIFE bundle for article extraction
 - **Asset Copying**: Shared images and resources copied between platform directories
 - **Cross-Platform**: Single build command supports both Safari and Chrome outputs
+- **FFI Integration**: Build process generates C headers and dynamic library for Swift integration
 
 ## Platform Differences
 
 ### Safari Extension (iOS)
-- Uses `manifest.json` with background scripts array
+- Uses `manifest.json` with background scripts that delegate to native Swift
+- Native P2P networking via Rust libp2p FFI in Swift
 - Requires Xcode build process and iOS code signing
 - Extension resources in `bar123 Extension/Resources/`
-- Swift wrapper in `SafariWebExtensionHandler.swift`
+- Swift P2P logic in `SafariWebExtensionHandler.swift` and `LibP2PWrapper.swift`
 
 ### Chrome Extension
 - Uses `manifest.json` with service worker

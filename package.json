@@ -5,11 +5,11 @@
   "main": "index.js",
   "scripts": {
     "install-deps": "npm install",
-    "build": "npm run bundle-trystero && npm run bundle-readability && npm run copy-assets",
-    "bundle-trystero": "npm run build-trystero-bundle && cp dist/trystero-bundle.js 'bar123 Extension/Resources/' && cp dist/trystero-bundle.js chrome-extension/",
+    "build": "npm run build-libp2p && npm run build-libp2p-js && npm run bundle-readability && npm run copy-assets",
+    "build-libp2p": "cd libp2p-ffi && cargo build --release && cd .. && mkdir -p dist && cp libp2p-ffi/target/release/liblibp2p_ffi.dylib dist/ && cp libp2p-ffi/libp2p_ffi.h dist/",
+    "build-libp2p-js": "node scripts/build-libp2p-bundle.js",
     "bundle-readability": "npm run build-readability-bundle && cp dist/readability-bundle.js 'bar123 Extension/Resources/' && cp dist/readability-bundle.js chrome-extension/",
-    "build-chrome": "npm run bundle-trystero && npm run bundle-readability && npm run copy-chrome-assets",
-    "build-trystero-bundle": "mkdir -p dist && npx esbuild node_modules/trystero/src/index.js --bundle --format=iife --global-name=trystero --outfile=dist/trystero-bundle.js",
+    "build-chrome": "npm run build-libp2p-js && npm run bundle-readability && npm run copy-chrome-assets",
     "build-readability-bundle": "mkdir -p dist && npx esbuild node_modules/@mozilla/readability/Readability.js --bundle --format=iife --global-name=Readability --outfile=dist/readability-bundle.js",
     "copy-chrome-assets": "mkdir -p chrome-extension/images && cp 'bar123 Extension/Resources/images/'* chrome-extension/images/ 2>/dev/null || echo 'Images copied or not found'",
     "copy-assets": "echo 'Assets ready'",
@@ -43,12 +43,22 @@
     "p2p",
     "history",
     "sync",
-    "trystero",
+    "libp2p",
     "webrtc"
   ],
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
-    "trystero": "^0.21.4"
+    "@chainsafe/libp2p-gossipsub": "^14.0.0",
+    "@chainsafe/libp2p-noise": "^16.0.0",
+    "@chainsafe/libp2p-yamux": "^7.0.0",
+    "@libp2p/bootstrap": "^11.0.0",
+    "@libp2p/identify": "^3.0.0",
+    "@libp2p/kad-dht": "^13.0.0",
+    "@libp2p/webrtc": "^5.0.0",
+    "@libp2p/websockets": "^9.0.0",
+    "libp2p": "^2.0.0",
+    "buffer": "^6.0.3",
+    "stream-browserify": "^3.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
