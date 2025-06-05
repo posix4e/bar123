@@ -29,11 +29,14 @@ dist/
 
 # Rust build artifacts
 libp2p-ffi/target/
+libp2p-ffi/Cargo.lock
+libp2p-ffi/libp2p_ffi.h
 target/
 
 # iOS framework binaries
 bar123 Extension/Frameworks/*.a
 bar123 Extension/Frameworks/liblibp2p_ffi_universal.a
+bar123 Extension/libp2p_ffi.h
 *.a
 *.dylib
 
