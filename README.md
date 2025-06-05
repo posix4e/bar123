@@ -136,17 +136,33 @@ npm run dev
 ```
 
 ### Automated Testing
+
+**End-to-End UI Tests:**
 ```bash
-npm run test                    # Cross-platform sync validation
-npm run test-local-multiplatform  # Chrome + Safari simulator testing
+npm run test:interop            # Run all E2E tests
+npm run test:js-js             # Chrome to Chrome sync tests
+npm run test:swift-swift       # Safari to Safari sync tests (macOS)
+npm run test:swift-js          # Chrome to Safari cross-platform tests (macOS)
+```
+
+**Local Test Runner (Interactive):**
+```bash
+./test/e2e-interop/run-local-test.js --headed --slow
+# Options:
+#   --test <type>    Run specific test: js-js, swift-swift, swift-js
+#   --headed         Show browsers (not headless)
+#   --debug          Enable debug mode
+#   --slow           Slow down for debugging
+#   --screenshots    Take screenshots at each step
 ```
 
 **Test Coverage:**
-- ✅ Chrome extension loading and functionality
-- ✅ Safari Web Extension validation
-- ✅ iOS Simulator integration testing
-- ✅ Cross-platform P2P connectivity
-- ✅ History synchronization accuracy
+- ✅ Real browser extension UI testing with Playwright
+- ✅ iOS Safari extension UI testing with XCTest
+- ✅ Cross-platform peer discovery and sync
+- ✅ Connection resilience and reconnection
+- ✅ Article content extraction and search
+- ✅ Multi-peer room management
 - ✅ WebRTC connection establishment
 - ✅ Trystero room joining and peer discovery
 

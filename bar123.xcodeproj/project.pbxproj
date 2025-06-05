@@ -408,6 +408,8 @@
 					"$(PROJECT_DIR)/bar123\\ Extension/Frameworks",
 					"$(PROJECT_DIR)/bar123\\ Extension/Frameworks",
 					"$(PROJECT_DIR)/bar123\\ Extension/Frameworks",
+					"$(PROJECT_DIR)/bar123\\ Extension/Frameworks",
+					"$(PROJECT_DIR)/bar123\\ Extension/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
@@ -449,6 +451,8 @@
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
+					"$(PROJECT_DIR)/bar123\\ Extension/Frameworks",
+					"$(PROJECT_DIR)/bar123\\ Extension/Frameworks",
 					"$(PROJECT_DIR)/bar123\\ Extension/Frameworks",
 					"$(PROJECT_DIR)/bar123\\ Extension/Frameworks",
 					"$(PROJECT_DIR)/bar123\\ Extension/Frameworks",

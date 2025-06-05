@@ -26,3 +26,24 @@ temp-chrome-profile-*
 dist/
 **/trystero-bundle.js
 **/readability-bundle.js
+
+# Rust build artifacts
+libp2p-ffi/target/
+target/
+
+# iOS framework binaries
+bar123 Extension/Frameworks/*.a
+bar123 Extension/Frameworks/liblibp2p_ffi_universal.a
+*.a
+*.dylib
+
+# Build artifacts
+chrome-extension/libp2p-bundle.js
+
+# Test artifacts
+playwright-report/
+*.xcresult
+
+# IDE
+*.xcuserstate
+xcuserdata/
