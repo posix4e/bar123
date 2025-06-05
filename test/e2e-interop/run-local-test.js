@@ -93,7 +93,7 @@ async function runSwiftSwiftTests() {
     '-project', 'bar123.xcodeproj',
     '-scheme', 'bar123UITests',
     '-destination', 'platform=iOS Simulator,name=iPhone 15',
-    '-only-testing:bar123UITests/SafariToSafariUITests'
+    '-only-testing:bar123UITests/HistorySyncUITests'
   ];
   
   if (options.debug) {

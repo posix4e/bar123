@@ -6,7 +6,8 @@
   "scripts": {
     "install-deps": "npm install",
     "build": "npm run build-libp2p && npm run build-libp2p-js && npm run bundle-readability && npm run copy-assets",
-    "build-libp2p": "cd libp2p-ffi && cargo build --release && cd .. && mkdir -p dist && cp libp2p-ffi/target/release/liblibp2p_ffi.dylib dist/ && cp libp2p-ffi/libp2p_ffi.h dist/",
+    "build-libp2p": "cd libp2p-ffi && cargo build --release && cd .. && bash scripts/copy-rust-lib.sh",
+    "build-libp2p-ci": "cd libp2p-ffi && cargo build --release && cd .. && node scripts/copy-rust-lib-ci.js",
     "build-libp2p-js": "node scripts/build-libp2p-bundle.js",
     "bundle-readability": "npm run build-readability-bundle && cp dist/readability-bundle.js 'bar123 Extension/Resources/' && cp dist/readability-bundle.js chrome-extension/",
     "build-chrome": "npm run build-libp2p-js && npm run bundle-readability && npm run copy-chrome-assets",
@@ -21,7 +22,7 @@
     "test-all": "npm run test-local-multiplatform",
     "test:e2e": "./test/run-interop-tests.sh",
     "test:js-js": "npx playwright test --project=chrome-to-chrome",
-    "test:swift-swift": "xcodebuild test -project bar123.xcodeproj -scheme bar123UITests -destination 'platform=iOS Simulator,name=iPhone 15' -only-testing:bar123UITests/SafariToSafariUITests",
+    "test:swift-swift": "xcodebuild test -project bar123.xcodeproj -scheme bar123UITests -destination 'generic/platform=iOS Simulator' -only-testing:bar123UITests/HistorySyncUITests",
     "test:swift-js": "npx playwright test --project=cross-platform",
     "test:interop": "npm run test:e2e",
     "launch-chrome": "node scripts/launch-chrome-extension.js",

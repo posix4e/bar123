@@ -30,6 +30,11 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: aarch64-apple-ios,x86_64-apple-ios
+      
     - name: Lint code
       run: npm run lint:check
       
@@ -43,11 +48,24 @@ jobs:
       with:
         xcode-version: '16.2'
         
-    - name: Run tests
+    - name: Install Playwright
+      run: |
+        npx playwright install --with-deps chromium
+        npx playwright install-deps
+        
+    - name: Run existing tests
       run: |
         npm run ci:test
-        npx playwright install --with-deps chromium
         npm run ci:test-local-multiplatform
+        
+    - name: Run E2E tests
+      run: |
+        echo "=== Running E2E Interop Tests ==="
+        npm run test:js-js || echo "JS-JS tests failed"
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+          npm run test:swift-swift || echo "Swift-Swift tests failed"
+          npm run test:swift-js || echo "Swift-JS tests failed"
+        fi
         
     - name: Collect artifacts and generate showcase
       if: always()
@@ -68,6 +86,7 @@ jobs:
           test-output.log
           local-multiplatform-test-output.log
           test-results/
+          playwright-report/
         retention-days: 30
         if-no-files-found: ignore
         
