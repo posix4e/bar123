@@ -62,10 +62,8 @@ jobs:
       run: |
         echo "=== Running E2E Interop Tests ==="
         npm run test:js-js || echo "JS-JS tests failed"
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-          npm run test:swift-swift || echo "Swift-Swift tests failed"
-          npm run test:swift-js || echo "Swift-JS tests failed"
-        fi
+        npm run test:swift-swift || echo "Swift-Swift tests failed"
+        npm run test:swift-js || echo "Swift-JS tests failed"
         
     - name: Collect artifacts and generate showcase
       if: always()
