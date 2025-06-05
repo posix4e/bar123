@@ -14,17 +14,14 @@ if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir, { recursive: true });
 }
 
-// Determine library extension based on platform
-let libName, libExt;
+// Determine library name based on platform
+let libName;
 if (platform === 'darwin') {
   libName = 'liblibp2p_ffi.dylib';
-  libExt = '.dylib';
 } else if (platform === 'win32') {
   libName = 'libp2p_ffi.dll';
-  libExt = '.dll';
 } else {
   libName = 'liblibp2p_ffi.so';
-  libExt = '.so';
 }
 
 // Copy library file
