@@ -16,6 +16,14 @@ jobs:
       id-token: write
     
     steps:
+    # Caching strategy:
+    # - npm dependencies (node_modules and ~/.npm)
+    # - Rust/Cargo dependencies and build artifacts
+    # - Homebrew packages (SwiftLint)
+    # - Swift Package Manager dependencies
+    # - Chrome binary for testing
+    # - Playwright browsers
+    
     - name: Checkout code
       uses: actions/checkout@v4
       with:
@@ -25,8 +33,8 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
-        
+        cache: 'npm'  # This already caches node_modules
+          
     - name: Install dependencies
       run: npm ci
       
@@ -35,13 +43,51 @@ jobs:
       with:
         targets: aarch64-apple-ios,x86_64-apple-ios
         components: rustfmt, clippy
+        
+    - name: Cache Rust dependencies
+      uses: actions/cache@v4
+      id: rust-cache
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          libp2p-ffi/target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
       
+    - name: Cache Homebrew
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Caches/Homebrew/downloads
+          ~/Library/Caches/Homebrew/
+          /usr/local/Homebrew
+        key: ${{ runner.os }}-brew-${{ hashFiles('.github/workflows/ci-cd.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-brew-
+          
     - name: Install SwiftLint
-      run: brew install swiftlint
+      run: |
+        if ! command -v swiftlint &> /dev/null; then
+          brew install swiftlint
+        fi
       
     - name: Lint code
       run: npm run lint:check
       
+    - name: Cache Chrome binary
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/chrome-bin
+          ~/.cache/puppeteer
+        key: ${{ runner.os }}-chrome-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-chrome-
+          
     - name: Build Chrome extension
       run: |
         npm run build
@@ -52,9 +98,33 @@ jobs:
       with:
         xcode-version: '16.2'
         
+    - name: Cache Swift Package Manager
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Developer/Xcode/DerivedData
+          .build
+          ~/Library/Caches/org.swift.swiftpm
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', '**/project.pbxproj') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+        
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Caches/ms-playwright
+          ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-playwright-
+          
     - name: Install Playwright
       run: |
-        npx playwright install --with-deps chromium
+        # Only install if not cached
+        if [ ! -d "$HOME/Library/Caches/ms-playwright" ] && [ ! -d "$HOME/.cache/ms-playwright" ]; then
+          npx playwright install --with-deps chromium
+        fi
         npx playwright install-deps
         
     - name: Run existing tests
@@ -68,6 +138,16 @@ jobs:
         npm run test:js-js
         npm run test:swift-swift
         npm run test:swift-js
+        
+    - name: Display cache statistics
+      if: always()
+      run: |
+        echo "=== Cache Hit Statistics ==="
+        echo "Rust cache hit: ${{ steps.rust-cache.outputs.cache-hit == 'true' && 'Yes' || 'No' }}"
+        echo "Cache sizes:"
+        du -sh ~/.cargo 2>/dev/null || echo "Cargo cache not found"
+        du -sh ~/Library/Caches/ms-playwright 2>/dev/null || echo "Playwright cache not found"
+        du -sh ~/Library/Developer/Xcode/DerivedData 2>/dev/null || echo "Xcode cache not found"
         
     - name: Collect artifacts and generate showcase
       if: always()
