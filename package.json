@@ -39,9 +39,15 @@
     "ci:generate-showcase": "node scripts/generate-showcase-page.js",
     "ci:package-chrome": "echo 'chrome-extension-$GITHUB_SHA.zip'",
     "ci:package-ios": "echo '$RUNNER_TEMP/build/bar123.ipa'",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "lint:check": "eslint . --max-warnings 0"
+    "lint": "npm run lint:js && npm run lint:rust && npm run lint:swift",
+    "lint:js": "eslint .",
+    "lint:rust": "cd libp2p-ffi && cargo clippy -- -D warnings && cargo fmt --check",
+    "lint:swift": "if command -v swiftlint >/dev/null 2>&1; then swiftlint --strict; else echo 'SwiftLint not installed, skipping Swift linting'; fi",
+    "lint:fix": "npm run lint:fix:js && npm run lint:fix:rust && npm run lint:fix:swift",
+    "lint:fix:js": "eslint . --fix",
+    "lint:fix:rust": "cd libp2p-ffi && cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
+    "lint:fix:swift": "if command -v swiftlint >/dev/null 2>&1; then swiftlint --fix && swiftlint --format; else echo 'SwiftLint not installed, skipping Swift formatting'; fi",
+    "lint:check": "npm run lint:js -- --max-warnings 0 && npm run lint:rust && npm run lint:swift"
   },
   "keywords": [
     "safari",

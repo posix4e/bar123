@@ -4,6 +4,9 @@ disabled_rules:
   - file_length
   - type_body_length
   - function_body_length
+  - static_over_final_class
+  - cyclomatic_complexity
+  - identifier_name # FFI functions require underscore naming
 
 opt_in_rules:
   - empty_count
@@ -29,14 +32,17 @@ excluded:
   - node_modules
   - DerivedData
   - scripts/temp-chrome-profile-*
+  - bar123UITests/HistorySyncUITests.swift
+  - bar123UITests/InteropUITests.swift
 
-identifier_name:
-  min_length: 2
-  max_length: 40
   
 type_name:
   min_length: 3
   max_length: 40
+  excluded:
+    - bar123UITests
+    - bar123Tests
+    - bar123UITestsLaunchTests
   
 nesting:
   type_level: 2

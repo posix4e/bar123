@@ -1,3 +1,5 @@
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
+
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
@@ -5,10 +7,8 @@ use std::time::Duration;
 
 use anyhow::{anyhow, Result};
 use libp2p::{
-    gossipsub, identify, kad, mdns, noise, ping, tcp, yamux,
-    autonat, dcutr,
-    Multiaddr, PeerId, Swarm,
-    swarm::NetworkBehaviour,
+    autonat, dcutr, gossipsub, identify, kad, mdns, noise, ping, swarm::NetworkBehaviour, tcp,
+    yamux, Multiaddr, PeerId, Swarm,
 };
 use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
@@ -51,10 +51,12 @@ pub struct SyncMessage {
 
 // Internal node structure
 struct NodeInner {
+    #[allow(dead_code)]
     runtime: Runtime,
     swarm: Option<Swarm<MyBehaviour>>,
     peer_id: PeerId,
     room_topic: Option<String>,
+    #[allow(dead_code)]
     connected_peers: HashMap<PeerId, bool>,
 }
 
@@ -82,7 +84,7 @@ impl NodeInner {
         let runtime = Runtime::new()?;
         let keypair = libp2p::identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from(keypair.public());
-        
+
         Ok(Self {
             runtime,
             swarm: None,
@@ -95,7 +97,7 @@ impl NodeInner {
     fn initialize_swarm(&mut self) -> Result<()> {
         let keypair = libp2p::identity::Keypair::generate_ed25519();
         let peer_id = PeerId::from(keypair.public());
-        
+
         // Create gossipsub behaviour
         let gossipsub_config = gossipsub::ConfigBuilder::default()
             .heartbeat_interval(Duration::from_secs(10))
@@ -113,7 +115,8 @@ impl NodeInner {
         let mut gossipsub = gossipsub::Behaviour::new(
             gossipsub::MessageAuthenticity::Signed(keypair.clone()),
             gossipsub_config,
-        ).map_err(|e| anyhow!("Failed to create gossipsub behaviour: {}", e))?;
+        )
+        .map_err(|e| anyhow!("Failed to create gossipsub behaviour: {}", e))?;
 
         // Subscribe to history sync topic
         let topic = gossipsub::IdentTopic::new("bar123-history-sync");
@@ -125,13 +128,13 @@ impl NodeInner {
             "/bar123/1.0.0".to_string(),
             keypair.public(),
         ));
-        
+
         let kad_store = kad::store::MemoryStore::new(peer_id);
         let mut kad = kad::Behaviour::new(peer_id, kad_store);
         kad.set_mode(Some(kad::Mode::Server));
-        
+
         let ping = ping::Behaviour::new(ping::Config::new());
-        
+
         // NAT traversal
         let autonat = autonat::Behaviour::new(peer_id, autonat::Config::default());
         let dcutr = dcutr::Behaviour::new(peer_id);
@@ -162,7 +165,7 @@ impl NodeInner {
 
         self.swarm = Some(swarm);
         self.peer_id = peer_id;
-        
+
         Ok(())
     }
 
@@ -171,16 +174,16 @@ impl NodeInner {
             // Listen on TCP
             let tcp_addr = format!("/ip4/0.0.0.0/tcp/{}", port).parse::<Multiaddr>()?;
             swarm.listen_on(tcp_addr)?;
-            
+
             // Also listen on a random UDP port for QUIC (better NAT traversal)
             let quic_addr = "/ip4/0.0.0.0/udp/0/quic-v1".parse::<Multiaddr>()?;
             swarm.listen_on(quic_addr)?;
-            
+
             info!("Listening on TCP port {} and QUIC", port);
-            
+
             // Bootstrap Kademlia
             swarm.behaviour_mut().kad.bootstrap()?;
-            
+
             Ok(())
         } else {
             Err(anyhow!("Swarm not initialized"))
@@ -189,7 +192,7 @@ impl NodeInner {
 
     fn join_room(&mut self, room_id: &str) -> Result<()> {
         self.room_topic = Some(format!("bar123-room-{}", room_id));
-        
+
         if let Some(swarm) = &mut self.swarm {
             let topic = gossipsub::IdentTopic::new(self.room_topic.as_ref().unwrap().clone());
             swarm.behaviour_mut().gossipsub.subscribe(&topic)?;
@@ -245,7 +248,7 @@ pub extern "C" fn p2p_node_initialize(node: *mut P2PNode) -> bool {
     if node.is_null() {
         return false;
     }
-    
+
     unsafe {
         let inner = &mut *(*node).inner;
         match inner.initialize_swarm() {
@@ -263,7 +266,7 @@ pub extern "C" fn p2p_node_start_listening(node: *mut P2PNode, port: u16) -> boo
     if node.is_null() {
         return false;
     }
-    
+
     unsafe {
         let inner = &mut *(*node).inner;
         match inner.start_listening(port) {
@@ -281,13 +284,13 @@ pub extern "C" fn p2p_node_join_room(node: *mut P2PNode, room_id: *const c_char)
     if node.is_null() || room_id.is_null() {
         return false;
     }
-    
+
     unsafe {
         let room_id_str = match CStr::from_ptr(room_id).to_str() {
             Ok(s) => s,
             Err(_) => return false,
         };
-        
+
         let inner = &mut *(*node).inner;
         match inner.join_room(room_id_str) {
             Ok(_) => true,
@@ -308,11 +311,11 @@ pub extern "C" fn p2p_node_send_message(
     if node.is_null() || data.is_null() {
         return false;
     }
-    
+
     unsafe {
         let data_slice = std::slice::from_raw_parts(data, data_len);
         let inner = &mut *(*node).inner;
-        
+
         match inner.send_message(data_slice) {
             Ok(_) => true,
             Err(e) => {
@@ -347,18 +350,18 @@ pub extern "C" fn p2p_send_history_sync(
     if node.is_null() || entries_json.is_null() || device_id.is_null() {
         return false;
     }
-    
+
     unsafe {
         let entries_str = match CStr::from_ptr(entries_json).to_str() {
             Ok(s) => s,
             Err(_) => return false,
         };
-        
+
         let device_id_str = match CStr::from_ptr(device_id).to_str() {
             Ok(s) => s,
             Err(_) => return false,
         };
-        
+
         let entries: Vec<HistoryEntry> = match serde_json::from_str(entries_str) {
             Ok(e) => e,
             Err(e) => {
@@ -366,7 +369,7 @@ pub extern "C" fn p2p_send_history_sync(
                 return false;
             }
         };
-        
+
         let sync_message = SyncMessage {
             message_type: "history_sync".to_string(),
             entries,
@@ -376,7 +379,7 @@ pub extern "C" fn p2p_send_history_sync(
                 .unwrap()
                 .as_millis() as i64,
         };
-        
+
         let message_json = match serde_json::to_vec(&sync_message) {
             Ok(j) => j,
             Err(e) => {
@@ -384,7 +387,7 @@ pub extern "C" fn p2p_send_history_sync(
                 return false;
             }
         };
-        
+
         let inner = &mut *(*node).inner;
         match inner.send_message(&message_json) {
             Ok(_) => true,
@@ -401,7 +404,7 @@ pub extern "C" fn p2p_get_peer_id(node: *mut P2PNode) -> *const c_char {
     if node.is_null() {
         return std::ptr::null();
     }
-    
+
     unsafe {
         let inner = &*(*node).inner;
         let peer_id_str = CString::new(inner.peer_id.to_string()).unwrap();

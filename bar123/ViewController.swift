@@ -5,13 +5,12 @@
 //  Created by Alex Newman on 5/22/25.
 //
 
+import CryptoKit
+import os.log
 import UIKit
 import WebKit
-import os.log
-import CryptoKit
 
 class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHandler {
-
     @IBOutlet var webView: WKWebView!
     
     // Simplified components - JavaScript handles P2P connections
@@ -47,13 +46,14 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
         
         // Load the HTML file with proper access to resources
         if let htmlURL = Bundle.main.url(forResource: "Main", withExtension: "html", subdirectory: "Base.lproj") {
-            self.webView.loadFileURL(htmlURL, allowingReadAccessTo: Bundle.main.resourceURL!)
+            if let resourceURL = Bundle.main.resourceURL {
+                self.webView.loadFileURL(htmlURL, allowingReadAccessTo: resourceURL)
+            }
             logger.info("Loading HTML from: \(htmlURL.path)")
         } else {
             logger.error("Failed to find Main.html in bundle")
         }
     }
-    
     
     private func checkForExistingRoomSecret() {
         let secret = getSharedSecret()
@@ -68,7 +68,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
         }
     }
 
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation?) {
         // WebView has loaded, wait a moment for JavaScript to initialize
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.checkForExistingRoomSecret()
@@ -246,10 +246,9 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
         executeJavaScript("window.postMessage(\(jsonString), '*');")
     }
     
-    
     private func executeJavaScript(_ script: String) {
         DispatchQueue.main.async {
-            self.webView.evaluateJavaScript(script) { (result, error) in
+            self.webView.evaluateJavaScript(script) { (_, error) in
                 if let error = error {
                     self.logger.error("JavaScript execution error: \(error.localizedDescription)")
                 }

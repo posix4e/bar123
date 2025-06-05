@@ -8,7 +8,6 @@
 import XCTest
 
 final class InteropUITests: XCTestCase {
-    
     var app: XCUIApplication!
     let testRoomSecret = "interop-test-\(Int(Date().timeIntervalSince1970))"
     
@@ -211,7 +210,6 @@ final class InteropUITests: XCTestCase {
 
 // MARK: - Helper Methods
 extension InteropUITests {
-    
     func connectToRoom(secret: String) {
         let roomField = app.textFields["roomSecretField"]
         if roomField.exists {

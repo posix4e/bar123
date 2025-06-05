@@ -5,13 +5,12 @@
 //  Created by Alex Newman on 5/22/25.
 //
 
-import SafariServices
-import os.log
-import Foundation
 import CryptoKit
+import Foundation
+import os.log
+import SafariServices
 
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
-    
     // P2P networking using libp2p
     private var p2pNode: LibP2PNode?
     private var isConnected = false
@@ -298,12 +297,9 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         os_log(.default, "Received %d history entries from %@", syncMessage.entries.count, syncMessage.device_id)
         
         var newEntries = 0
-        for entry in syncMessage.entries {
-            // Check if entry already exists
-            if !localHistory.contains(where: { $0.url == entry.url && $0.visit_time == entry.visit_time }) {
-                localHistory.append(entry)
-                newEntries += 1
-            }
+        for entry in syncMessage.entries where !localHistory.contains(where: { $0.url == entry.url && $0.visit_time == entry.visit_time }) {
+            localHistory.append(entry)
+            newEntries += 1
         }
         
         if newEntries > 0 {
@@ -352,5 +348,4 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             os_log(.debug, "Saved %d history entries to storage", localHistory.count)
         }
     }
-
 }

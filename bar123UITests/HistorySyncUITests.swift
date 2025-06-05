@@ -8,7 +8,6 @@
 import XCTest
 
 final class HistorySyncUITests: XCTestCase {
-    
     var app: XCUIApplication!
     var safari: XCUIApplication!
     
@@ -187,7 +186,6 @@ final class HistorySyncUITests: XCTestCase {
 
 // MARK: - Helper Methods
 extension HistorySyncUITests {
-    
     /// Wait for an element to appear
     func waitForElement(_ element: XCUIElement, timeout: TimeInterval = 10) -> Bool {
         let predicate = NSPredicate(format: "exists == true")
