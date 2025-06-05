@@ -4,11 +4,8 @@
  */
 
 import { spawn } from 'child_process';
-import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
-
-const exec = promisify(spawn);
 
 async function globalSetup() {
   console.log('🔧 Setting up test environment...\n');

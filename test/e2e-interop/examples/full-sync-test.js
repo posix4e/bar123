@@ -168,9 +168,9 @@ test.describe('Full Sync Test Example', () => {
     await chromeHelper.takeDebugScreenshot(chromePopup, 'chrome-final');
     await iosHelper.takeScreenshot('ios-final');
     
-    // Get logs for debugging
-    const chromeLogs = await chromeHelper.getExtensionLogs();
-    const iosLogs = await iosHelper.getAppLogs();
+    // Get logs for debugging (kept for potential debugging use)
+    await chromeHelper.getExtensionLogs();
+    await iosHelper.getAppLogs();
     const coordinatorLog = coordinator.getMessageLog();
     
     console.log('\n📊 Test Summary:');

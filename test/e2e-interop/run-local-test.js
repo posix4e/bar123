@@ -159,29 +159,29 @@ async function main() {
   // Run tests based on selection
   try {
     switch (options.test) {
-      case 'js-js':
-        await runJsJsTests();
-        break;
+    case 'js-js':
+      await runJsJsTests();
+      break;
         
-      case 'swift-swift':
+    case 'swift-swift':
+      await runSwiftSwiftTests();
+      break;
+        
+    case 'swift-js':
+      await runSwiftJsTests();
+      break;
+        
+    case 'all':
+      await runJsJsTests();
+      if (process.platform === 'darwin') {
         await runSwiftSwiftTests();
-        break;
-        
-      case 'swift-js':
         await runSwiftJsTests();
-        break;
+      }
+      break;
         
-      case 'all':
-        await runJsJsTests();
-        if (process.platform === 'darwin') {
-          await runSwiftSwiftTests();
-          await runSwiftJsTests();
-        }
-        break;
-        
-      default:
-        console.error(chalk.red(`Unknown test type: ${options.test}`));
-        process.exit(1);
+    default:
+      console.error(chalk.red(`Unknown test type: ${options.test}`));
+      process.exit(1);
     }
     
     console.log(chalk.bold.green('\n✅ Tests completed successfully!\n'));

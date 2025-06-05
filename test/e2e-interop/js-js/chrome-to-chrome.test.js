@@ -13,7 +13,6 @@ const extensionPath = path.join(__dirname, '..', '..', '..', 'chrome-extension')
 
 test.describe('Chrome to Chrome Extension Sync', () => {
   let browser1, browser2;
-  let context1, context2;
   let extensionId1, extensionId2;
   
   const testRoomSecret = `js-js-test-${Date.now()}`;
@@ -152,7 +151,7 @@ test.describe('Chrome to Chrome Extension Sync', () => {
   test('should handle peer disconnection and reconnection', async () => {
     // Get popups
     const popup1 = browser1.pages().find(p => p.url().includes('popup.html'));
-    const popup2 = browser2.pages().find(p => p.url().includes('popup.html'));
+    browser2.pages().find(p => p.url().includes('popup.html')); // Verify popup exists before close
 
     // Close browser 2 to simulate disconnection
     await browser2.close();

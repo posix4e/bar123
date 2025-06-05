@@ -81,7 +81,7 @@ test.describe('Safari iOS to Chrome Extension Sync', () => {
       headless: false,
       args: [
         `--disable-extensions-except=${extensionPath}`,
-        `--load-extension=${extensionPath}`,
+        `--load-extension=${extensionPath}`
       ]
     });
 
@@ -247,7 +247,7 @@ async function stopIOSSimulator(simulator) {
   }
 }
 
-async function simulateIOSBrowsing(simulator, urls) {
+async function simulateIOSBrowsing(_simulator, urls) {
   // Send command to iOS app to simulate browsing
   // This would use the test coordinator or XCTest
   for (const url of urls) {
@@ -257,13 +257,13 @@ async function simulateIOSBrowsing(simulator, urls) {
   }
 }
 
-async function getIOSHistory(simulator) {
+async function getIOSHistory(_simulator) {
   // Get history from iOS app via test coordinator
   // In real implementation, this would query the iOS app
   return ['google.com', 'github.com', 'stackoverflow.com'];
 }
 
-async function getIOSHistoryWithMetadata(simulator) {
+async function getIOSHistoryWithMetadata(_simulator) {
   // Get detailed history with article metadata
   return [
     {
@@ -276,12 +276,12 @@ async function getIOSHistoryWithMetadata(simulator) {
   ];
 }
 
-async function simulateIOSDisconnect(simulator) {
+async function simulateIOSDisconnect(_simulator) {
   console.log('Simulating iOS disconnect...');
   // Send disconnect command to iOS app
 }
 
-async function simulateIOSReconnect(simulator, roomSecret) {
+async function simulateIOSReconnect(_simulator, _roomSecret) {
   console.log('Simulating iOS reconnect...');
   // Send reconnect command to iOS app
 }

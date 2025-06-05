@@ -15,7 +15,7 @@ export default defineConfig({
   use: {
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: 'retain-on-failure'
   },
 
   projects: [
@@ -24,20 +24,20 @@ export default defineConfig({
       testDir: './test/e2e-interop/js-js',
       use: { 
         ...devices['Desktop Chrome'],
-        channel: 'chrome',
-      },
+        channel: 'chrome'
+      }
     },
     {
       name: 'cross-platform',
       testDir: './test/e2e-interop/swift-js',
       use: { 
         ...devices['Desktop Chrome'],
-        channel: 'chrome',
+        channel: 'chrome'
       },
-      timeout: 120000, // 2 minutes for cross-platform tests
-    },
+      timeout: 120000 // 2 minutes for cross-platform tests
+    }
   ],
 
   // Global setup for building extensions
-  globalSetup: './test/e2e-interop/global-setup.js',
+  globalSetup: './test/e2e-interop/global-setup.js'
 });

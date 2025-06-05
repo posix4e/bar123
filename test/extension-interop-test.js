@@ -16,7 +16,6 @@ const extensionPath = path.join(__dirname, '..', 'chrome-extension');
 
 // Test configuration
 const ROOM_SECRET = 'test-room-' + Date.now();
-const TEST_TIMEOUT = 60000; // 60 seconds
 
 async function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -182,8 +181,8 @@ async function runTest() {
     console.error('\n❌ Test failed with error:', error);
     process.exit(1);
   } finally {
-    if (browser1) await browser1.close();
-    if (browser2) await browser2.close();
+    if (browser1) {await browser1.close();}
+    if (browser2) {await browser2.close();}
   }
 }
 

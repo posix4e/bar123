@@ -88,7 +88,7 @@ export default [
       'no-console': 'warn',
       'no-debugger': 'error',
       'no-alert': 'error',
-      'no-unused-vars': ['error', { 'argsIgnorePattern': '^_' }],
+      'no-unused-vars': ['error', { 'argsIgnorePattern': '^_', 'caughtErrorsIgnorePattern': '^_' }],
       'no-undef': 'error',
       'no-redeclare': 'error',
       'no-duplicate-imports': 'error',
@@ -107,7 +107,7 @@ export default [
     }
   },
   {
-    files: ['scripts/**/*.js', 'test/**/*.js'],
+    files: ['scripts/**/*.js'],
     languageOptions: {
       sourceType: 'script'
     },
@@ -116,7 +116,16 @@ export default [
     }
   },
   {
-    files: ['**/background.js', '**/content.js', '**/popup.js', '**/offscreen.js', '**/connection.js', '**/signaling-adapters.js', '**/app.js', 'debug-connection.js', 'launch-chrome-extension.js'],
+    files: ['test/**/*.js', 'playwright.config.js'],
+    languageOptions: {
+      sourceType: 'module'
+    },
+    rules: {
+      'no-console': 'off'
+    }
+  },
+  {
+    files: ['**/background.js', '**/content.js', '**/popup.js', '**/offscreen.js', '**/connection.js', '**/signaling-adapters.js', '**/app.js', 'debug-connection.js', 'launch-chrome-extension.js', 'chrome-extension/libp2p-client.js', 'chrome-extension/offscreen-configurable.js'],
     rules: {
       'no-console': 'off',
       'no-alert': 'off'

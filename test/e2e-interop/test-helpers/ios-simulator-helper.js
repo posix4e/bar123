@@ -65,7 +65,7 @@ export class IOSSimulatorHelper {
       }
       
       console.log('Simulator booted');
-    } catch (error) {
+    } catch (_error) {
       console.log('Simulator may already be booted');
     }
   }
@@ -128,7 +128,7 @@ export class IOSSimulatorHelper {
     console.log('App installed');
   }
 
-  async launchApp(arguments = []) {
+  async launchApp(launchArguments = []) {
     console.log('Launching app...');
     
     const args = [
@@ -136,7 +136,7 @@ export class IOSSimulatorHelper {
       '--console',
       this.deviceId,
       this.appBundleId,
-      ...arguments
+      ...launchArguments
     ];
 
     const launch = spawn('xcrun', args);
@@ -199,7 +199,7 @@ export class IOSSimulatorHelper {
       ).toString();
       
       return logs.split('\n').filter(line => line.trim());
-    } catch (error) {
+    } catch (_error) {
       return [];
     }
   }
@@ -208,7 +208,7 @@ export class IOSSimulatorHelper {
     // Terminate app
     try {
       execSync(`xcrun simctl terminate ${this.deviceId} ${this.appBundleId}`);
-    } catch (error) {
+    } catch (_error) {
       // App may not be running
     }
 
@@ -216,7 +216,7 @@ export class IOSSimulatorHelper {
     if (this.deviceId) {
       try {
         execSync(`xcrun simctl shutdown ${this.deviceId}`);
-      } catch (error) {
+      } catch (_error) {
         // May already be shutdown
       }
     }

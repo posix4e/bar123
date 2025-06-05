@@ -85,30 +85,30 @@ export class TestCoordinator extends EventEmitter {
     this.emit('message', logEntry);
     
     switch (message.type) {
-      case 'test-state':
-        this.testState.set(clientId, message.data);
-        this.broadcastTestState();
-        break;
+    case 'test-state':
+      this.testState.set(clientId, message.data);
+      this.broadcastTestState();
+      break;
         
-      case 'sync-request':
-        this.handleSyncRequest(clientId, message);
-        break;
+    case 'sync-request':
+      this.handleSyncRequest(clientId, message);
+      break;
         
-      case 'history-update':
-        this.broadcastToOthers(clientId, message);
-        break;
+    case 'history-update':
+      this.broadcastToOthers(clientId, message);
+      break;
         
-      case 'peer-connected':
-      case 'peer-disconnected':
-        this.broadcastToOthers(clientId, message);
-        break;
+    case 'peer-connected':
+    case 'peer-disconnected':
+      this.broadcastToOthers(clientId, message);
+      break;
         
-      case 'test-event':
-        this.emit('test-event', { clientId, event: message.event, data: message.data });
-        break;
+    case 'test-event':
+      this.emit('test-event', { clientId, event: message.event, data: message.data });
+      break;
         
-      default:
-        console.log(`Unknown message type from ${clientId}:`, message.type);
+    default:
+      console.log(`Unknown message type from ${clientId}:`, message.type);
     }
   }
 
@@ -200,24 +200,24 @@ export class TestCoordinator extends EventEmitter {
       
       try {
         switch (step.action) {
-          case 'send-to-client':
-            this.sendToClient(step.clientId, step.message);
-            break;
+        case 'send-to-client':
+          this.sendToClient(step.clientId, step.message);
+          break;
             
-          case 'broadcast':
-            this.broadcast(step.message);
-            break;
+        case 'broadcast':
+          this.broadcast(step.message);
+          break;
             
-          case 'wait':
-            await new Promise(resolve => setTimeout(resolve, step.duration));
-            break;
+        case 'wait':
+          await new Promise(resolve => setTimeout(resolve, step.duration));
+          break;
             
-          case 'wait-for-event':
-            await this.waitForEvent(step.event, step.timeout);
-            break;
+        case 'wait-for-event':
+          await this.waitForEvent(step.event, step.timeout);
+          break;
             
-          default:
-            throw new Error(`Unknown action: ${step.action}`);
+        default:
+          throw new Error(`Unknown action: ${step.action}`);
         }
         
         results.push({ step: step.name, success: true });
