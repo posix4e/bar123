@@ -61,9 +61,9 @@ jobs:
     - name: Run E2E tests
       run: |
         echo "=== Running E2E Interop Tests ==="
-        npm run test:js-js || echo "JS-JS tests failed"
-        npm run test:swift-swift || echo "Swift-Swift tests failed"
-        npm run test:swift-js || echo "Swift-JS tests failed"
+        npm run test:js-js
+        npm run test:swift-swift
+        npm run test:swift-js
         
     - name: Collect artifacts and generate showcase
       if: always()
