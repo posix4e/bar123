@@ -1,16 +1,18 @@
-import { defineConfig, devices } from '@playwright/test';
+const { defineConfig, devices } = require('@playwright/test');
 
-export default defineConfig({
+module.exports = defineConfig({
   testDir: './test/e2e-interop',
   fullyParallel: false, // Run tests sequentially for extension testing
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // Single worker for extension tests
   reporter: [
-    ['html', { outputFolder: 'test-results/playwright-report' }],
-    ['json', { outputFile: 'test-results/test-results.json' }],
+    ['html', { outputFolder: 'playwright-report' }],
+    ['json', { outputFile: 'test-results/playwright-test-results.json' }],
     ['list']
   ],
+  
+  outputDir: 'test-results/playwright-traces',
   
   use: {
     trace: 'on-first-retry',

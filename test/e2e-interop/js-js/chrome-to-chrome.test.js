@@ -3,12 +3,8 @@
  * Uses Playwright to test real browser instances with the extension
  */
 
-import { test, expect, chromium } from '@playwright/test';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const { test, expect, chromium } = require('@playwright/test');
+const path = require('path');
 const extensionPath = path.join(__dirname, '..', '..', '..', 'chrome-extension');
 
 test.describe('Chrome to Chrome Extension Sync', () => {
@@ -19,21 +15,19 @@ test.describe('Chrome to Chrome Extension Sync', () => {
 
   test.beforeAll(async () => {
     // Launch two Chrome instances with the extension
-    browser1 = await chromium.launchPersistentContext('', {
+    browser1 = await chromium.launchPersistentContext('/tmp/chrome-test-profile-1', {
       headless: false,
       args: [
         `--disable-extensions-except=${extensionPath}`,
-        `--load-extension=${extensionPath}`,
-        '--user-data-dir=/tmp/chrome-test-profile-1'
+        `--load-extension=${extensionPath}`
       ]
     });
 
-    browser2 = await chromium.launchPersistentContext('', {
+    browser2 = await chromium.launchPersistentContext('/tmp/chrome-test-profile-2', {
       headless: false,
       args: [
         `--disable-extensions-except=${extensionPath}`,
-        `--load-extension=${extensionPath}`,
-        '--user-data-dir=/tmp/chrome-test-profile-2'
+        `--load-extension=${extensionPath}`
       ]
     });
 
@@ -161,12 +155,11 @@ test.describe('Chrome to Chrome Extension Sync', () => {
     await expect(popup1.locator('#peerCount')).toContainText('0');
 
     // Reconnect browser 2
-    browser2 = await chromium.launchPersistentContext('', {
+    browser2 = await chromium.launchPersistentContext('/tmp/chrome-test-profile-2', {
       headless: false,
       args: [
         `--disable-extensions-except=${extensionPath}`,
-        `--load-extension=${extensionPath}`,
-        '--user-data-dir=/tmp/chrome-test-profile-2'
+        `--load-extension=${extensionPath}`
       ]
     });
 

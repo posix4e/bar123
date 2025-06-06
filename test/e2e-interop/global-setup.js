@@ -3,9 +3,9 @@
  * Builds extensions before running tests
  */
 
-import { spawn } from 'child_process';
-import fs from 'fs/promises';
-import path from 'path';
+const { spawn } = require('child_process');
+const fs = require('fs/promises');
+const path = require('path');
 
 async function globalSetup() {
   console.log('🔧 Setting up test environment...\n');
@@ -53,4 +53,4 @@ async function runCommand(command, args) {
   });
 }
 
-export default globalSetup;
+module.exports = globalSetup;

@@ -1,4 +1,4 @@
-class HistoryTracker {
+xclass HistoryTracker {
   constructor() {
     this.lastUrl = window.location.href;
     this.startTime = Date.now();

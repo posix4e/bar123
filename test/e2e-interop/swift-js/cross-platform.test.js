@@ -3,14 +3,10 @@
  * This is the most important interop test
  */
 
-import { test, expect, chromium } from '@playwright/test';
-import { spawn } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import WebSocket from 'ws';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const { test, expect, chromium } = require('@playwright/test');
+const { spawn } = require('child_process');
+const path = require('path');
+const WebSocket = require('ws');
 const extensionPath = path.join(__dirname, '..', '..', '..', 'chrome-extension');
 
 // Test coordination server for iOS/Chrome communication
