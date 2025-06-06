@@ -1,7 +1,7 @@
 # Bar123 P2P Testing Summary
 
 ## Architecture Changes
-- **FROM**: Trystero (WebRTC-based P2P) with relay server
+- **FROM**: PeerJS (WebRTC-based P2P) with signaling server
 - **TO**: Direct P2P using libp2p with DHT and NAT traversal
 
 ## Current Implementation

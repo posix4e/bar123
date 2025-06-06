@@ -73,8 +73,6 @@ export default [
         afterEach: 'readonly',
                 
         // Project-specific globals
-        Trystero: 'readonly',
-        trystero: 'readonly',
         Readability: 'readonly',
         EventSource: 'readonly',
         Peer: 'readonly',

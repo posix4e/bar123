@@ -301,10 +301,10 @@ class LocalMultiplatformSyncTester {
           details: { statusText, sharedSecret: this.sharedSecret }
         };
                 
-        // Test Trystero functionality via background script
-        console.log('  🔗 Testing Trystero functionality...');
+        // Test libp2p functionality via background script
+        console.log('  🔗 Testing libp2p functionality...');
                 
-        const trysteroTest = await page.evaluate(async (sharedSecret) => {
+        const libp2pTest = await page.evaluate(async (sharedSecret) => {
           return new Promise((resolve) => {
             let hasResolved = false;
                         
@@ -316,9 +316,9 @@ class LocalMultiplatformSyncTester {
             }
                         
             try {
-              console.log('Starting Trystero test with shared secret:', sharedSecret);
+              console.log('Starting libp2p test with shared secret:', sharedSecret);
                             
-              // Test extension's Trystero functionality via runtime messaging
+              // Test extension's libp2p functionality via runtime messaging
               chrome.runtime.sendMessage({
                 action: 'connect',
                 sharedSecret: sharedSecret
@@ -336,15 +336,15 @@ class LocalMultiplatformSyncTester {
                 }
                                 
                 if (response && response.success) {
-                  // Wait a bit for Trystero to connect, then check status
+                  // Wait a bit for libp2p to connect, then check status
                   setTimeout(() => {
                     chrome.runtime.sendMessage({ action: 'getStats' }, (stats) => {
                       console.log('Stats response:', stats);
                       safeResolve({
                         success: stats && stats.isConnected,
                         message: (stats && stats.isConnected) ? 
-                          'Trystero connection successful via extension' : 
-                          'Extension connected but Trystero not ready',
+                          'libp2p connection successful via extension' : 
+                          'Extension connected but libp2p not ready',
                         stats: stats,
                         details: { response, stats }
                       });
@@ -363,24 +363,24 @@ class LocalMultiplatformSyncTester {
               setTimeout(() => {
                 safeResolve({
                   success: false,
-                  message: 'Trystero connection timeout (20s)',
+                  message: 'libp2p connection timeout (20s)',
                   details: { timeout: true }
                 });
               }, 20000);
             } catch (error) {
               safeResolve({
                 success: false,
-                message: 'Trystero test error: ' + error.message,
+                message: 'libp2p test error: ' + error.message,
                 details: { error: error.message, stack: error.stack }
               });
             }
           });
         }, this.sharedSecret);
                 
-        testResult.tests.trystero_functionality = {
-          passed: trysteroTest.success,
-          message: trysteroTest.message,
-          details: trysteroTest
+        testResult.tests.libp2p_functionality = {
+          passed: libp2pTest.success,
+          message: libp2pTest.message,
+          details: libp2pTest
         };
                 
         // Test history data operations
@@ -688,7 +688,6 @@ class LocalMultiplatformSyncTester {
 <head>
     <title>History Sync Test - iOS Safari</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://unpkg.com/trystero"></script>
 </head>
 <body>
     <h1>History Sync Test - iOS Safari</h1>
@@ -702,8 +701,6 @@ class LocalMultiplatformSyncTester {
         const sharedSecretInput = document.getElementById('sharedSecret');
         const connectBtn = document.getElementById('connectBtn');
         const log = document.getElementById('log');
-        
-        let room = null;
         
         function updateStatus(message) {
             status.textContent = message;
@@ -734,35 +731,18 @@ class LocalMultiplatformSyncTester {
                 const hashArray = Array.from(new Uint8Array(hashBuffer));
                 const roomId = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
                 
-                addLog('Joining Trystero room: ' + roomId);
+                addLog('Joining libp2p room: ' + roomId);
                 
-                // Join room using Trystero
-                room = trystero.joinRoom({ appId: 'history-sync' }, roomId);
+                // Note: libp2p is bundled in the extension and accessed via native messaging
+                // This test page simulates the connection UI
                 
-                room.onPeerJoin(peerId => {
-                    updateStatus('Peer joined: ' + peerId);
-                    addLog('Peer joined: ' + peerId);
-                });
+                updateStatus('Connected to libp2p room (simulated)');
+                addLog('Successfully joined room (simulated), waiting for peers...');
                 
-                room.onPeerLeave(peerId => {
-                    updateStatus('Peer left: ' + peerId);
-                    addLog('Peer left: ' + peerId);
-                });
-                
-                // Set up data channels
-                const [sendHistory, getHistory] = room.makeAction('history-sync');
-                const [sendDelete, getDelete] = room.makeAction('delete-item');
-                
-                getHistory((historyData, peerId) => {
-                    addLog('Received history from ' + peerId + ': ' + JSON.stringify(historyData));
-                });
-                
-                getDelete((deleteData, peerId) => {
-                    addLog('Received delete from ' + peerId + ': ' + JSON.stringify(deleteData));
-                });
-                
-                updateStatus('Connected to Trystero room');
-                addLog('Successfully joined room, waiting for peers...');
+                // Simulate peer events for testing
+                setTimeout(() => {
+                    addLog('Note: Real libp2p connectivity requires the Safari extension');
+                }, 3000);
                 
             } catch (error) {
                 updateStatus('Connection failed: ' + error.message);
@@ -824,7 +804,7 @@ class LocalMultiplatformSyncTester {
       };
             
       // Test actual Safari extension functionality 
-      console.log('  🔗 Testing Safari extension Trystero functionality...');
+      console.log('  🔗 Testing Safari extension libp2p functionality...');
             
       // Try to test if Safari extension is actually loaded and working
       // This requires the extension to be enabled in Safari simulator
@@ -905,7 +885,7 @@ class LocalMultiplatformSyncTester {
     };
         
     const chromeExtensionWorking = chromeResult.tests.extension_loaded && chromeResult.tests.extension_loaded.passed;
-    const chromeTrysteroWorking = chromeResult.tests.trystero_functionality && chromeResult.tests.trystero_functionality.passed;
+    const chromelibp2pWorking = chromeResult.tests.libp2p_functionality && chromeResult.tests.libp2p_functionality.passed;
     const chromeHistoryWorking = chromeResult.tests.history_operations && chromeResult.tests.history_operations.passed;
     const chromeDeleteWorking = chromeResult.tests.delete_operations && chromeResult.tests.delete_operations.passed;
         
@@ -925,12 +905,12 @@ class LocalMultiplatformSyncTester {
       try {
         // Test readiness for peer connections - real P2P requires manual verification
         peerConnectionTest = {
-          passed: chromeTrysteroWorking && iosSafariExtensionReady,
-          message: chromeTrysteroWorking && iosSafariExtensionReady ?
+          passed: chromelibp2pWorking && iosSafariExtensionReady,
+          message: chromelibp2pWorking && iosSafariExtensionReady ?
             'Both platforms ready for peer connection (manual verification required)' :
             'One or both platforms not ready for peer connection',
           details: {
-            chrome_ready: chromeTrysteroWorking,
+            chrome_ready: chromelibp2pWorking,
             safari_ready: iosSafariExtensionReady,
             manual_testing_required: true
           }
@@ -994,11 +974,11 @@ class LocalMultiplatformSyncTester {
           'Chrome extension loaded and functional' :
           'Chrome extension not properly loaded'
       },
-      chrome_trystero_ready: {
-        passed: chromeTrysteroWorking,
-        message: chromeTrysteroWorking ?
-          'Chrome Trystero functionality confirmed' :
-          'Chrome Trystero functionality failed'
+      chrome_libp2p_ready: {
+        passed: chromelibp2pWorking,
+        message: chromelibp2pWorking ?
+          'Chrome libp2p functionality confirmed' :
+          'Chrome libp2p functionality failed'
       },
       chrome_data_operations: {
         passed: chromeHistoryWorking && chromeDeleteWorking,

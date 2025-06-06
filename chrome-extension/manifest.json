@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "History Sync",
-  "description": "P2P history synchronization across devices using Trystero",
+  "description": "P2P history synchronization across devices using libp2p",
   "version": "1.0.0",
   
   "icons": {
@@ -35,8 +35,7 @@
     "tabs", 
     "history",
     "activeTab",
-    "scripting",
-    "offscreen"
+    "scripting"
   ],
   
   "host_permissions": [
@@ -44,7 +43,7 @@
   ],
   
   "web_accessible_resources": [{
-    "resources": ["connection.html", "connection.js", "libp2p-browser-client.js"],
+    "resources": ["libp2p-browser-client.js"],
     "matches": ["<all_urls>"]
   }],
   

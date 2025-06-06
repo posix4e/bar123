@@ -632,7 +632,7 @@ class ShowcasePageGenerator {
         </footer>
     </div>
 
-    <script src="./trystero-bundle.js"></script>
+    <!-- P2P viewer functionality removed - libp2p requires native integration -->
     <script>
         let room = null;
         let currentRoomSecret = null;
@@ -647,9 +647,8 @@ class ShowcasePageGenerator {
 
             try {
                 // Check if Trystero is loaded
-                if (typeof trystero === 'undefined') {
-                    throw new Error('Trystero P2P library failed to load. Please refresh the page.');
-                }
+                // P2P viewer not available - libp2p requires native integration
+                throw new Error('P2P viewer functionality not available in web page. Please use the extension.')
                 
                 updateConnectionStatus('Connecting...', 'connecting');
                 
@@ -661,9 +660,8 @@ class ShowcasePageGenerator {
                 const hashedSecret = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
                 
                 // Create room using Trystero
-                room = trystero.joinRoom({
-                    appId: 'history-sync'
-                }, hashedSecret);
+                // P2P connection not available in web
+                throw new Error('P2P connections require the browser extension with native libp2p integration.')
                 
                 // Set up history sync channel (read-only)
                 [sendHistory, getHistory] = room.makeAction('history-sync');
@@ -1134,7 +1132,7 @@ class ShowcasePageGenerator {
                 <h3>Architecture</h3>
                 <ul style="margin-left: 20px; margin-top: 10px;">
                     <li><strong>Protocol:</strong> WebRTC peer-to-peer connections</li>
-                    <li><strong>Discovery:</strong> Trystero signaling adapters</li>
+                    <li><strong>Discovery:</strong> libp2p mDNS and gossipsub</li>
                     <li><strong>Security:</strong> SHA-256 hashed shared secrets</li>
                     <li><strong>Chrome:</strong> Manifest V3 service worker extension</li>
                     <li><strong>iOS:</strong> Native app with Safari Web Extension</li>
@@ -1266,8 +1264,7 @@ class ShowcasePageGenerator {
     // iOS app available via TestFlight public link
 
     // Copy Trystero bundle for P2P functionality
-    if (fs.existsSync('dist/trystero-bundle.js')) {
-      fs.copyFileSync('dist/trystero-bundle.js', path.join(this.outputDir, 'trystero-bundle.js'));
+    // libp2p bundle copying removed - requires native integration
       console.log('🔗 Copied Trystero P2P bundle');
     }
 

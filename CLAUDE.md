@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Bar123 is a Safari iOS extension that enables real-time history synchronization across devices using P2P technology. The project has migrated from PeerJS → Trystero → Rust libp2p and supports both Safari iOS extensions and Chrome extensions. The new architecture uses Rust libp2p via FFI for P2P networking, with the sync logic handled natively in Swift for iOS.
+Bar123 is a Safari iOS extension that enables real-time history synchronization across devices using P2P technology. The project has migrated from PeerJS → Rust libp2p and supports both Safari iOS extensions and Chrome extensions. The new architecture uses Rust libp2p via FFI for P2P networking, with the sync logic handled natively in Swift for iOS.
 
 ## Essential Development Commands
 

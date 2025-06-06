@@ -2,8 +2,7 @@ build
 node_modules
 bar123 Extension/Resources/peerjs.min.js
 dist/
-chrome-extension/trystero-bundle.js
-bar123 Extension/Resources/trystero-bundle.js
+# Legacy bundle files (removed)
 chrome-extension/simplepeer-bundle.js
 chrome-extension/socket.io-bundle.js
 bar123 Extension/Resources/simplepeer-bundle.js
@@ -24,7 +23,7 @@ docs/screenshots/
 temp-chrome-profile-*
 # Ignore built bundle files
 dist/
-**/trystero-bundle.js
+# Legacy bundle patterns (removed)
 **/readability-bundle.js
 
 # Rust build artifacts

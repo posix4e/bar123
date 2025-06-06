@@ -1,6 +1,6 @@
 # Bar123 - Cross-Platform History Sync Extension
 
-A Safari iOS extension and Chrome extension that enables real-time history synchronization across devices using P2P technology and Trystero.
+A Safari iOS extension and Chrome extension that enables real-time history synchronization across devices using P2P technology and libp2p.
 
 ## 🚀 [Live Demo & Downloads](https://posix4e.github.io/bar123/)
 
@@ -81,12 +81,13 @@ npm run clean
 ### Multi-Platform Extension Architecture
 - **Safari Extension**: Uses `bar123 Extension/Resources/` with manifest v3 background scripts
 - **Chrome Extension**: Uses `chrome-extension/` with service worker architecture
-- **Shared Core**: Both platforms use the same Trystero-based P2P connection logic
+- **Shared Core**: Both platforms use the same libp2p-based P2P connection logic
 
 ### P2P Connection System
-- **Trystero Integration**: Bundled locally via esbuild to avoid CSP issues
+- **Rust libp2p FFI**: Native Rust libp2p implementation with C FFI bindings for Swift
 - **Room-Based Connections**: Devices join rooms using shared secrets (SHA-256 hashed)
-- **WebRTC Direct P2P**: No server-side data storage, encrypted peer connections
+- **Gossipsub Protocol**: Uses libp2p gossipsub for efficient message broadcasting
+- **mDNS Discovery**: Local peer discovery via multicast DNS
 - **Device Identification**: Persistent device IDs for reconnection handling
 
 ### Core Components
@@ -95,7 +96,7 @@ npm run clean
 3. **Popup Interface** (`popup.html/js/css`): Room configuration, connection status, and history management
 
 ### Build System
-- **Trystero Bundling**: `npm run build-trystero-bundle` creates IIFE bundle for both platforms
+- **Rust libp2p Compilation**: `npm run build-libp2p` compiles Rust FFI library and copies to dist/
 - **Asset Copying**: Shared images and resources copied between platform directories
 - **Cross-Platform**: Single build command supports both Safari and Chrome outputs
 - **Version Control**: Git-hashed artifacts prevent stale distributions
@@ -103,7 +104,7 @@ npm run clean
 ## ✨ Features
 
 - **Cross-Platform**: Works on both Safari iOS and Chrome desktop
-- **Zero Server Setup**: Uses Trystero for serverless P2P connections
+- **Zero Server Setup**: Uses libp2p for serverless P2P connections
 - **Real-Time Sync**: Instant history sharing as you browse
 - **Privacy-First**: Direct P2P connections, no data stored on servers
 - **Article Extraction**: Automatic content extraction from articles using Readability.js
@@ -164,7 +165,7 @@ npm run test:swift-js          # Chrome to Safari cross-platform tests (macOS)
 - ✅ Article content extraction and search
 - ✅ Multi-peer room management
 - ✅ WebRTC connection establishment
-- ✅ Trystero room joining and peer discovery
+- ✅ libp2p gossipsub messaging and peer discovery
 
 ## 📱 How to Use
 
@@ -209,7 +210,7 @@ bar123 Extension/Resources/     # Safari extension
 ├── background.js              # P2P service and history management
 ├── content.js                 # Page tracking and navigation timing
 ├── popup.html/css/js          # Settings UI and connection management
-├── trystero-bundle.js         # Trystero bundle (IIFE)
+├── libp2p-client.js           # libp2p client library
 
 chrome-extension/              # Chrome extension
 ├── manifest.json              # Chrome manifest v3 (service worker)
@@ -234,7 +235,7 @@ scripts/                       # Build and deployment automation
 
 ### Build Process
 1. `npm install` downloads dependencies
-2. `npm run build-trystero-bundle` creates IIFE bundle for WebRTC
+2. `npm run build-libp2p` compiles Rust FFI library for P2P networking
 3. `npm run build` copies shared resources to both platform directories
 4. Platform-specific manifests handle service worker vs background script differences
 5. `npm run ci:generate-showcase` creates GitHub Pages with embedded P2P viewer

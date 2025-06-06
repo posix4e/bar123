@@ -11,7 +11,7 @@ import { webSockets } from '@libp2p/websockets';
 import { webRTC } from '@libp2p/webrtc';
 import { all } from '@libp2p/websockets/filters';
 
-export class LibP2PClient {
+class LibP2PClient {
   constructor() {
     this.node = null;
     this.isConnected = false;
@@ -194,3 +194,5 @@ export class LibP2PClient {
     return Array.from(this.peers.keys());
   }
 }
+
+export { LibP2PClient };

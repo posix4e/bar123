@@ -5,7 +5,7 @@ const path = require('path');
 async function build() {
   try {
     await esbuild.build({
-      entryPoints: [path.join(__dirname, '../chrome-extension/libp2p-client.js')],
+      entryPoints: [path.join(__dirname, '../chrome-extension/libp2p-wrapper.js')],
       bundle: true,
       format: 'iife',
       globalName: 'LibP2PBundle',
