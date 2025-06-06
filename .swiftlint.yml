@@ -1,0 +1,48 @@
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+  - file_length
+  - type_body_length
+  - function_body_length
+  - static_over_final_class
+  - cyclomatic_complexity
+  - identifier_name # FFI functions require underscore naming
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - contains_over_first_not_nil
+  - discouraged_object_literal
+  - empty_string
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - last_where
+  - legacy_multiple
+  - multiline_parameters
+  - prohibited_super_call
+  - sorted_imports
+  - vertical_parameter_alignment_on_call
+  - vertical_whitespace_closing_braces
+  - vertical_whitespace_opening_braces
+
+excluded:
+  - .build
+  - build
+  - node_modules
+  - DerivedData
+  - scripts/temp-chrome-profile-*
+  - bar123UITests/HistorySyncUITests.swift
+  - bar123UITests/InteropUITests.swift
+
+  
+type_name:
+  min_length: 3
+  max_length: 40
+  excluded:
+    - bar123UITests
+    - bar123Tests
+    - bar123UITestsLaunchTests
+  
+nesting:
+  type_level: 2

@@ -151,7 +151,7 @@ class HistorySyncUI {
     this.disconnectBtn.style.display = isConnected ? 'block' : 'none';
   }
 
-  // Trystero handles P2P connections via multiple strategies
+  // libp2p handles P2P connections via gossipsub protocol
 
   async updateUI() {
     const stats = await browser.runtime.sendMessage({ action: 'getStats' });

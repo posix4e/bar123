@@ -1,5 +1,5 @@
-// iOS app JavaScript using Trystero for P2P connections directly
-// This replaces the complex native WebRTC bridge with simple JavaScript
+// iOS app JavaScript that interfaces with native Swift libp2p implementation
+// P2P connections are handled by Swift using Rust libp2p FFI
 
 class iOSHistorySyncService {
   constructor() {
@@ -48,6 +48,33 @@ class iOSHistorySyncService {
     console.log('📱 Received message from Swift:', message);
     
     switch (message.type) {
+    case 'p2pMessage':
+      // Handle P2P messages from Swift
+      if (message.channel === 'history-sync') {
+        this.handleHistoryMessage(message.data, message.peerId);
+      } else if (message.channel === 'delete-item') {
+        this.handleRemoteDelete(message.data);
+      }
+      break;
+    case 'peerJoined':
+      console.log('🎉 Peer joined:', message.peerId);
+      this.peers.set(message.peerId, { connected: true });
+      this.updateUI();
+      // Send current history to new peer
+      if (this.sendHistory && this.localHistory.length > 0) {
+        console.log(`📤 Sending ${this.localHistory.length} history entries to new peer`);
+        this.sendHistory({
+          entries: this.localHistory,
+          deviceId: this.deviceId,
+          timestamp: Date.now()
+        });
+      }
+      break;
+    case 'peerLeft':
+      console.log('👋 Peer left:', message.peerId);
+      this.peers.delete(message.peerId);
+      this.updateUI();
+      break;
     case 'sharedSecretResponse':
       if (message.secret && message.secret.trim()) {
         console.log('✅ Found shared secret, connecting...');
@@ -59,6 +86,25 @@ class iOSHistorySyncService {
         }
       }
       break;
+    }
+  }
+
+  handleHistoryMessage(data, peerId) {
+    console.log(`📥 Received data from ${peerId}:`, data.type || 'history');
+    
+    if (data.type === 'historyRequest') {
+      // This shouldn't happen since iOS app doesn't send history, but handle gracefully
+      console.log('📤 Received history request (iOS app has no history to share)');
+      return;
+    }
+    
+    if (data.type === 'historyResponse' || data.entries) {
+      const entries = data.entries || [];
+      console.log(`📥 Received ${entries.length} history entries from ${peerId}`);
+      if (entries.length > 0) {
+        console.log('📋 Sample entry structure:', entries[0]);
+        this.mergeHistoryEntries(entries, peerId);
+      }
     }
   }
 
@@ -90,8 +136,8 @@ class iOSHistorySyncService {
     this.roomId = await this.hashSecret(sharedSecret);
     
     try {
-      await this.initializeTrystero();
-      console.log('✅ Connected to Trystero room:', this.roomId);
+      await this.initializeP2P();
+      console.log('✅ Connected to libp2p room:', this.roomId);
       this.isConnected = true;
       this.updateUI();
       
@@ -109,19 +155,19 @@ class iOSHistorySyncService {
       }, 2000);
       
     } catch (error) {
-      console.error('❌ Failed to connect to Trystero:', error);
+      console.error('❌ Failed to connect to libp2p:', error);
       this.isConnected = false;
       this.updateUI();
     }
   }
 
   async disconnect() {
-    console.log('🔄 Disconnecting from Trystero...');
+    console.log('🔄 Disconnecting from libp2p...');
     
-    if (this.room) {
-      this.room.close();
-      this.room = null;
-    }
+    // Notify Swift to disconnect from libp2p
+    this.notifySwift({
+      type: 'disconnectP2P'
+    });
     
     this.isConnected = false;
     this.peers.clear();
@@ -148,18 +194,18 @@ class iOSHistorySyncService {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
   }
 
-  async initializeTrystero() {
-    console.log('🔧 Initializing Trystero connection...');
+  async initializeP2P() {
+    console.log('🔧 Initializing libp2p connection via Swift...');
     
-    if (typeof trystero === 'undefined') {
-      throw new Error('Trystero not loaded');
-    }
+    // Request Swift to connect to libp2p with the room ID
+    this.notifySwift({
+      type: 'connectP2P',
+      roomId: this.roomId
+    });
     
-    console.log('🚀 Joining Trystero room:', this.roomId);
-    this.room = trystero.joinRoom({ appId: 'history-sync' }, this.roomId);
+    // Swift will handle the actual P2P connection and send updates back
     
-    // Set up peer handlers
-    this.room.onPeerJoin(peerId => {
+    // Peer events will come from Swift via handleSwiftMessage
       console.log('🎉 Peer joined:', peerId);
       this.peers.set(peerId, { connected: true });
       this.updateUI();
@@ -174,61 +220,30 @@ class iOSHistorySyncService {
         });
       }
       
-      // Notify Swift
+      // Swift will notify us of peer changes
+    
+    // Data channels are managed by Swift libp2p
+    // Messages will come through handleSwiftMessage
+    
+    // Mock functions for compatibility
+    this.sendHistory = (data) => {
       this.notifySwift({
-        type: 'peerJoined',
-        peerId: peerId,
-        peerCount: this.peers.size
+        type: 'sendP2PMessage',
+        channel: 'history-sync',
+        data: data
       });
-    });
+    };
     
-    this.room.onPeerLeave(peerId => {
-      console.log('👋 Peer left:', peerId);
-      this.peers.delete(peerId);
-      this.updateUI();
-      
-      // Notify Swift
+    this.sendDelete = (data) => {
       this.notifySwift({
-        type: 'peerLeft',
-        peerId: peerId,
-        peerCount: this.peers.size
+        type: 'sendP2PMessage',
+        channel: 'delete-item',
+        data: data
       });
-    });
+    };
+    // Peer events will come from Swift via handleSwiftMessage
     
-    // Set up data channels - MUST match Safari extension channel names
-    const [sendHistory, getHistory] = this.room.makeAction('history-sync');
-    const [sendDelete, getDelete] = this.room.makeAction('delete-item');
-    
-    this.sendHistory = sendHistory;
-    this.sendDelete = sendDelete;
-    
-    // Listen for history data
-    getHistory((data, peerId) => {
-      console.log(`📥 Received data from ${peerId}:`, data.type || 'history');
-      
-      if (data.type === 'historyRequest') {
-        // This shouldn't happen since iOS app doesn't send history, but handle gracefully
-        console.log('📤 Received history request (iOS app has no history to share)');
-        return;
-      }
-      
-      if (data.type === 'historyResponse' || data.entries) {
-        const entries = data.entries || [];
-        console.log(`📥 Received ${entries.length} history entries from ${peerId}`);
-        if (entries.length > 0) {
-          console.log('📋 Sample entry structure:', entries[0]);
-          this.mergeHistoryEntries(entries, peerId);
-        }
-      }
-    });
-    
-    // Listen for delete commands
-    getDelete((data, peerId) => {
-      console.log(`🗑️ Received delete command from ${peerId}`);
-      this.handleRemoteDelete(data);
-    });
-    
-    console.log('✅ Trystero room setup complete');
+    console.log('✅ P2P setup request sent to Swift');
   }
 
   mergeHistoryEntries(entries, sourceDeviceId) {

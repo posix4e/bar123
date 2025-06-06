@@ -1,10 +1,10 @@
 {
     "extension_name": {
-        "message": "bar123 Extension",
+        "message": "History Sync",
         "description": "The display name for the extension."
     },
     "extension_description": {
-        "message": "This is bar123 Extension. You should tell us what your extension does here.",
+        "message": "P2P history synchronization across devices using libp2p",
         "description": "Description of what the extension does."
     }
 }

@@ -6,10 +6,15 @@ export default [
       'node_modules/**',
       '**/*.min.js',
       '**/*-bundle.js',
-      'chrome-extension/peerjs.min.js',
-      'bar123 Extension/Resources/peerjs.min.js',
+      'chrome-extension/libp2p-bundle.js',
+      'chrome-extension/readability-bundle.js',
+      'bar123 Extension/Resources/readability-bundle.js',
       'test-results/**',
-      'build/**'
+      'build/**',
+      'target/**',
+      'libp2p-ffi/target/**',
+      'coverage/**',
+      'docs/**'
     ]
   },
   {
@@ -68,8 +73,6 @@ export default [
         afterEach: 'readonly',
                 
         // Project-specific globals
-        Trystero: 'readonly',
-        trystero: 'readonly',
         Readability: 'readonly',
         EventSource: 'readonly',
         Peer: 'readonly',
@@ -83,7 +86,7 @@ export default [
       'no-console': 'warn',
       'no-debugger': 'error',
       'no-alert': 'error',
-      'no-unused-vars': ['error', { 'argsIgnorePattern': '^_' }],
+      'no-unused-vars': ['error', { 'argsIgnorePattern': '^_', 'caughtErrorsIgnorePattern': '^_' }],
       'no-undef': 'error',
       'no-redeclare': 'error',
       'no-duplicate-imports': 'error',
@@ -102,7 +105,7 @@ export default [
     }
   },
   {
-    files: ['scripts/**/*.js', 'test/**/*.js'],
+    files: ['scripts/**/*.js'],
     languageOptions: {
       sourceType: 'script'
     },
@@ -111,7 +114,16 @@ export default [
     }
   },
   {
-    files: ['**/background.js', '**/content.js', '**/popup.js', '**/offscreen.js', '**/connection.js', '**/signaling-adapters.js', '**/app.js', 'debug-connection.js', 'launch-chrome-extension.js'],
+    files: ['test/**/*.js', 'playwright.config.js'],
+    languageOptions: {
+      sourceType: 'module'
+    },
+    rules: {
+      'no-console': 'off'
+    }
+  },
+  {
+    files: ['**/background.js', '**/content.js', '**/popup.js', '**/offscreen.js', '**/connection.js', '**/signaling-adapters.js', '**/app.js', 'debug-connection.js', 'launch-chrome-extension.js', 'chrome-extension/libp2p-client.js', 'chrome-extension/offscreen-configurable.js'],
     rules: {
       'no-console': 'off',
       'no-alert': 'off'
