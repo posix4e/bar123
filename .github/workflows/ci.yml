@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop, 'feat/*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  signaling-server:
+    name: Signaling Server Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      working-directory: ./signaling-server
+      run: npm install
+      
+    - name: Run server tests
+      working-directory: ./signaling-server
+      run: |
+        # Add tests when available
+        echo "Server tests would run here"
+        
+  chrome-extension:
+    name: Chrome Extension Build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      working-directory: ./chrome-extension
+      run: |
+        npm install
+        npm run build
+        
+    - name: Verify extension files
+      working-directory: ./chrome-extension
+      run: |
+        test -f manifest.json
+        test -f background.js
+        test -f popup.html
+        test -f crypto-js.js
+        
+  ios-app:
+    name: iOS App Build
+    runs-on: macos-13
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app
+      
+    - name: Show Xcode version
+      run: xcodebuild -version
+      
+    - name: Cache Swift packages
+      uses: actions/cache@v3
+      with:
+        path: ~/Library/Developer/Xcode/DerivedData
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+          
+    - name: Build iOS App
+      run: |
+        set -o pipefail
+        xcodebuild build \
+          -project bar123.xcodeproj \
+          -scheme bar123 \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.2' \
+          -configuration Debug \
+          -skipPackagePluginValidation \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          | xcpretty --color
+          
+    - name: Build Safari Extension
+      run: |
+        set -o pipefail
+        xcodebuild build \
+          -project bar123.xcodeproj \
+          -scheme "bar123 Extension" \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.2' \
+          -configuration Debug \
+          -skipPackagePluginValidation \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          | xcpretty --color
