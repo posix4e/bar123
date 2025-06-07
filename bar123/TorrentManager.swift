@@ -110,12 +110,14 @@ class TorrentManager {
     }
     
     func searchHistory(query: String) async throws -> [HistoryItem] {
-        // Search both local and synced history
-        let allHistory = try await loadAllHistory()
-        
-        return allHistory.filter { item in
-            item.url.localizedCaseInsensitiveContains(query) ||
-            item.title.localizedCaseInsensitiveContains(query)
+        return try await PerformanceMonitor.shared.measure(PerformanceMonitor.Operation.historySearch) {
+            // Search both local and synced history
+            let allHistory = try await loadAllHistory()
+            
+            return allHistory.filter { item in
+                item.url.localizedCaseInsensitiveContains(query) ||
+                item.title.localizedCaseInsensitiveContains(query)
+            }
         }
     }
     
@@ -129,21 +131,35 @@ class TorrentManager {
     // MARK: - Private Methods
     
     func performSync() async {
-        do {
-            // 1. Prepare our history data for sharing
-            let syncData = try await prepareSyncData()
-            
-            // 2. Create and serialize the data
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            let jsonData = try encoder.encode(syncData)
-            
-            // 3. Broadcast to all connected peers
-            p2pManager.broadcast(jsonData)
-            
-            print("[TorrentManager] Broadcasted sync data to peers")
-        } catch {
-            print("[TorrentManager] Sync error: \(error)")
+        SyncAnalytics.shared.recordSyncAttempt()
+        
+        await PerformanceMonitor.shared.measure(PerformanceMonitor.Operation.syncTotal) {
+            do {
+                // 1. Prepare our history data for sharing
+                let syncData = try await PerformanceMonitor.shared.measure(PerformanceMonitor.Operation.syncPrepareData) {
+                    try await prepareSyncData()
+                }
+                
+                // 2. Create and serialize the data
+                let encoder = JSONEncoder()
+                encoder.dateEncodingStrategy = .iso8601
+                let jsonData = try encoder.encode(syncData)
+                
+                // 3. Broadcast to all connected peers
+                await PerformanceMonitor.shared.measure(PerformanceMonitor.Operation.syncBroadcast) {
+                    p2pManager.broadcast(jsonData)
+                }
+                
+                SyncAnalytics.shared.recordSyncSuccess(
+                    itemsSynced: syncData.historyItems.count,
+                    bytesSynced: jsonData.count
+                )
+                
+                print("[TorrentManager] Broadcasted sync data to peers")
+            } catch {
+                SyncAnalytics.shared.recordSyncFailure(error: error)
+                print("[TorrentManager] Sync error: \(error)")
+            }
         }
     }
     
@@ -159,6 +175,7 @@ class TorrentManager {
         p2pManager.onPeerConnected = { [weak self] peerId in
             print("[TorrentManager] Peer connected: \(peerId)")
             self?.syncedPeers.insert(peerId)
+            SyncAnalytics.shared.recordPeerConnection(peerId: peerId)
             
             // Send our current data to the new peer
             Task {
@@ -169,6 +186,7 @@ class TorrentManager {
         p2pManager.onPeerDisconnected = { [weak self] peerId in
             print("[TorrentManager] Peer disconnected: \(peerId)")
             self?.syncedPeers.remove(peerId)
+            SyncAnalytics.shared.recordPeerDisconnection(peerId: peerId)
         }
     }
     
