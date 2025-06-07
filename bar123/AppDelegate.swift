@@ -16,6 +16,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         
+        // Start network monitoring
+        NetworkMonitor.shared.startMonitoring()
+        
         // Initialize torrent manager if shared secret exists
         if let sharedSecret = UserDefaults.standard.string(forKey: "bar123_shared_secret") {
             torrentManager = TorrentManager(sharedSecret: sharedSecret)

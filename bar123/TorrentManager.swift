@@ -131,6 +131,12 @@ class TorrentManager {
     // MARK: - Private Methods
     
     func performSync() async {
+        // Check network conditions
+        guard NetworkMonitor.shared.shouldPerformSync() else {
+            print("[TorrentManager] Sync skipped due to network conditions")
+            return
+        }
+        
         SyncAnalytics.shared.recordSyncAttempt()
         
         await PerformanceMonitor.shared.measure(PerformanceMonitor.Operation.syncTotal) {
