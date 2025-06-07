@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="popup.css">
-    <script type="module" src="popup.js"></script>
+    <script src="popup.js"></script>
 </head>
 <body>
     <div class="container">
@@ -74,17 +74,6 @@
                     
                     <button id="saveSettings" class="btn btn-primary">Save & Connect</button>
                     <button id="disconnectButton" class="btn btn-danger">Disconnect</button>
-                    
-                    <hr>
-                    
-                    <h3>Manage Secrets</h3>
-                    <div class="form-group">
-                        <input type="text" id="secretName" placeholder="Secret name">
-                        <input type="password" id="newSecret" placeholder="Secret value">
-                        <button id="addSecret" class="btn btn-secondary">Add</button>
-                    </div>
-                    
-                    <div id="secretsList" class="secrets-list"></div>
                 </div>
             </div>
         </div>

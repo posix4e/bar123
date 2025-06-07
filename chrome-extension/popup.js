@@ -1,5 +1,5 @@
 /**
- * popup.js - Safari Extension Popup Script
+ * popup.js - Chrome Extension Popup Script
  * Manages the UI for history search, device management, and settings
  */
 
@@ -10,41 +10,14 @@ let searchResults = [];
 let devices = [];
 let historyEntries = [];
 
-// DOM Elements
-const elements = {
-    // Status
-    connectionStatus: document.getElementById('connectionStatus'),
-    
-    // Search
-    searchInput: document.getElementById('searchInput'),
-    searchButton: document.getElementById('searchButton'),
-    
-    // Tabs
-    tabButtons: document.querySelectorAll('.tab-button'),
-    tabPanes: document.querySelectorAll('.tab-pane'),
-    
-    // History
-    deviceFilter: document.getElementById('deviceFilter'),
-    historyList: document.getElementById('historyList'),
-    
-    // Devices
-    devicesList: document.getElementById('devicesList'),
-    
-    // Settings
-    serverUrl: document.getElementById('serverUrl'),
-    roomId: document.getElementById('roomId'),
-    sharedSecret: document.getElementById('sharedSecret'),
-    generateSecret: document.getElementById('generateSecret'),
-    saveSettings: document.getElementById('saveSettings'),
-    disconnectButton: document.getElementById('disconnectButton'),
-    secretName: document.getElementById('secretName'),
-    newSecret: document.getElementById('newSecret'),
-    addSecret: document.getElementById('addSecret'),
-    secretsList: document.getElementById('secretsList')
-};
+// Wait for DOM to load
+document.addEventListener('DOMContentLoaded', initialize);
 
 // Initialize
 async function initialize() {
+    // Get DOM elements
+    setupElements();
+    
     // Load current configuration
     await loadConfig();
     
@@ -55,10 +28,43 @@ async function initialize() {
     await refreshData();
 }
 
+// DOM elements
+let elements = {};
+
+function setupElements() {
+    elements = {
+        // Status
+        connectionStatus: document.getElementById('connectionStatus'),
+        
+        // Search
+        searchInput: document.getElementById('searchInput'),
+        searchButton: document.getElementById('searchButton'),
+        
+        // Tabs
+        tabButtons: document.querySelectorAll('.tab-button'),
+        tabPanes: document.querySelectorAll('.tab-pane'),
+        
+        // History
+        deviceFilter: document.getElementById('deviceFilter'),
+        historyList: document.getElementById('historyList'),
+        
+        // Devices
+        devicesList: document.getElementById('devicesList'),
+        
+        // Settings
+        serverUrl: document.getElementById('serverUrl'),
+        roomId: document.getElementById('roomId'),
+        sharedSecret: document.getElementById('sharedSecret'),
+        generateSecret: document.getElementById('generateSecret'),
+        saveSettings: document.getElementById('saveSettings'),
+        disconnectButton: document.getElementById('disconnectButton')
+    };
+}
+
 // Load configuration
 async function loadConfig() {
     try {
-        const response = await browser.runtime.sendMessage({ type: 'get_config' });
+        const response = await chrome.runtime.sendMessage({ type: 'get_config' });
         if (response.success) {
             currentConfig = response.config;
             updateConfigUI();
@@ -109,7 +115,6 @@ function setupEventListeners() {
     elements.generateSecret.addEventListener('click', generateSecret);
     elements.saveSettings.addEventListener('click', saveSettings);
     elements.disconnectButton.addEventListener('click', disconnect);
-    elements.addSecret.addEventListener('click', addNewSecret);
 }
 
 // Switch tabs
@@ -139,9 +144,6 @@ async function refreshTabData() {
         case 'devices':
             await loadDevices();
             break;
-        case 'settings':
-            await loadSecrets();
-            break;
     }
 }
 
@@ -162,7 +164,7 @@ async function performSearch() {
     }
     
     try {
-        const response = await browser.runtime.sendMessage({
+        const response = await chrome.runtime.sendMessage({
             type: 'search',
             query: query
         });
@@ -179,7 +181,7 @@ async function performSearch() {
 // Load history
 async function loadHistory() {
     try {
-        const response = await browser.runtime.sendMessage({
+        const response = await chrome.runtime.sendMessage({
             type: 'get_history'
         });
         
@@ -206,7 +208,7 @@ function displayHistory(entries) {
         const dateString = date.toLocaleDateString();
         
         return `
-            <div class="history-item">
+            <div class="history-item" data-url="${entry.url}">
                 <div class="history-title">${entry.title || 'Untitled'}</div>
                 <div class="history-url">${entry.url}</div>
                 <div class="history-meta">${entry.deviceName} • ${dateString} ${timeString}</div>
@@ -215,6 +217,13 @@ function displayHistory(entries) {
     }).join('');
     
     elements.historyList.innerHTML = html;
+    
+    // Add click handlers to open URLs
+    document.querySelectorAll('.history-item').forEach(item => {
+        item.addEventListener('click', () => {
+            chrome.tabs.create({ url: item.dataset.url });
+        });
+    });
 }
 
 // Update device filter
@@ -249,7 +258,7 @@ function filterHistory() {
 // Load devices
 async function loadDevices() {
     try {
-        const response = await browser.runtime.sendMessage({
+        const response = await chrome.runtime.sendMessage({
             type: 'get_devices'
         });
         
@@ -312,13 +321,13 @@ async function saveSettings() {
     
     try {
         // Update config
-        await browser.runtime.sendMessage({
+        await chrome.runtime.sendMessage({
             type: 'update_config',
             config: config
         });
         
         // Connect
-        const response = await browser.runtime.sendMessage({
+        const response = await chrome.runtime.sendMessage({
             type: 'connect'
         });
         
@@ -338,7 +347,7 @@ async function saveSettings() {
 // Disconnect
 async function disconnect() {
     try {
-        await browser.runtime.sendMessage({
+        await chrome.runtime.sendMessage({
             type: 'disconnect'
         });
         
@@ -348,83 +357,3 @@ async function disconnect() {
         console.error('Failed to disconnect:', error);
     }
 }
-
-// Add new secret
-async function addNewSecret() {
-    const name = elements.secretName.value.trim();
-    const secret = elements.newSecret.value.trim();
-    
-    if (!name || !secret) {
-        alert('Please enter both name and secret');
-        return;
-    }
-    
-    try {
-        await browser.runtime.sendMessage({
-            type: 'add_secret',
-            name: name,
-            secret: secret
-        });
-        
-        // Clear inputs
-        elements.secretName.value = '';
-        elements.newSecret.value = '';
-        
-        // Reload secrets
-        await loadSecrets();
-        
-        // Update current secret if this is the first one
-        if (!currentConfig.sharedSecret) {
-            elements.sharedSecret.value = secret;
-        }
-    } catch (error) {
-        console.error('Failed to add secret:', error);
-        alert('Failed to add secret');
-    }
-}
-
-// Load secrets
-async function loadSecrets() {
-    try {
-        const response = await browser.runtime.sendMessage({
-            type: 'get_secrets'
-        });
-        
-        if (response.success) {
-            displaySecrets(response.secrets);
-        }
-    } catch (error) {
-        console.error('Failed to load secrets:', error);
-    }
-}
-
-// Display secrets
-function displaySecrets(secretsList) {
-    if (secretsList.length === 0) {
-        elements.secretsList.innerHTML = '';
-        return;
-    }
-    
-    const html = secretsList.map(secret => `
-        <div class="secret-item">
-            <span class="secret-name">${secret.name}</span>
-            <button class="secret-remove" data-name="${secret.name}">Remove</button>
-        </div>
-    `).join('');
-    
-    elements.secretsList.innerHTML = html;
-    
-    // Add remove handlers
-    document.querySelectorAll('.secret-remove').forEach(button => {
-        button.addEventListener('click', () => removeSecret(button.dataset.name));
-    });
-}
-
-// Remove secret
-async function removeSecret(name) {
-    // TODO: Implement secret removal in background script
-    console.log('Remove secret:', name);
-}
-
-// Initialize on load
-document.addEventListener('DOMContentLoaded', initialize);
