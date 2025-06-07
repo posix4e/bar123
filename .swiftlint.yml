@@ -1,0 +1,37 @@
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+  - file_length
+  - type_body_length
+  - function_body_length
+
+opt_in_rules:
+  - empty_count
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - explicit_init
+
+included:
+  - bar123
+  - bar123 Extension
+  - bar123Tests
+  - bar123UITests
+
+excluded:
+  - Pods
+  - build
+  - DerivedData
+
+force_cast: warning
+force_try: warning
+
+type_name:
+  min_length: 3
+  max_length: 50
+
+identifier_name:
+  min_length: 2
+  max_length: 50
+  allowed_symbols: "_"
+
+reporter: "xcode"

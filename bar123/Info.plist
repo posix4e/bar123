@@ -21,5 +21,19 @@
 			</array>
 		</dict>
 	</dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>xyz.foo.bar123.historysync</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>processing</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>bar123 uses the local network to sync browser history with your other devices</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_bar123-sync._tcp</string>
+	</array>
 </dict>
 </plist>

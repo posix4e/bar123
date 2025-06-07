@@ -6,6 +6,44 @@
     <script type="module" src="popup.js"></script>
 </head>
 <body>
-    <strong>Hello World!</strong>
+    <div class="container">
+        <h1>History Sync</h1>
+        
+        <!-- Sync Status Section -->
+        <div class="section" id="syncStatus">
+            <h2>Sync Status</h2>
+            <div class="status-indicator">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Checking...</span>
+            </div>
+        </div>
+        
+        <!-- Shared Secret Section -->
+        <div class="section" id="secretSection">
+            <h2>Shared Secret</h2>
+            <div class="input-group">
+                <input type="password" id="sharedSecret" placeholder="Enter shared secret">
+                <button id="setSecretBtn">Set</button>
+            </div>
+            <div id="secretStatus" class="status-message"></div>
+        </div>
+        
+        <!-- Search Section -->
+        <div class="section" id="searchSection">
+            <h2>Search History</h2>
+            <div class="input-group">
+                <input type="text" id="searchInput" placeholder="Search across all devices...">
+                <button id="searchBtn">Search</button>
+            </div>
+            <div id="searchResults" class="results-container"></div>
+        </div>
+        
+        <!-- Devices Section -->
+        <div class="section" id="devicesSection">
+            <h2>Connected Devices</h2>
+            <button id="refreshDevicesBtn">Refresh</button>
+            <div id="devicesList" class="devices-container"></div>
+        </div>
+    </div>
 </body>
 </html>
