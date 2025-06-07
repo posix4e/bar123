@@ -79,9 +79,14 @@ SHARED_SECRET=your-secret-here npm start
 
 1. Open `bar123.xcodeproj` in Xcode
 2. Add WebRTC framework dependency:
-   - In Xcode, go to File > Add Package Dependencies
-   - Add: `https://github.com/stasel/WebRTC.git`
-   - Select the latest release
+   - In Xcode, select the project in the navigator
+   - Go to the "Package Dependencies" tab
+   - Click the "+" button
+   - Enter: `https://github.com/stasel/WebRTC.git`
+   - Click "Add Package"
+   - Select version: "Up to Next Major Version" from `120.0.0`
+   - Click "Add Package"
+   - Select "WebRTC" to add to your targets
 3. Build and run on device/simulator
 4. Enable the extension in Safari settings
 
@@ -90,7 +95,8 @@ SHARED_SECRET=your-secret-here npm start
 1. Install dependencies:
 ```bash
 cd chrome-extension
-curl -o crypto-js.min.js https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js
+npm install
+npm run build
 ```
 
 2. Add placeholder icons or your own 16x16, 48x48, and 128x128 PNG icons

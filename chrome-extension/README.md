@@ -2,9 +2,10 @@
 
 ## Installation
 
-1. Download the CryptoJS library for HMAC support:
+1. Install dependencies:
    ```bash
-   curl -o crypto-js.min.js https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js
+   npm install
+   npm run build
    ```
 
 2. Create placeholder icons (or use your own):

@@ -4,7 +4,7 @@
  */
 
 // Import crypto for HMAC
-importScripts('crypto-js.min.js');
+importScripts('crypto-js.js');
 
 // Configuration
 const config = {
