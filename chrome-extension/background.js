@@ -1,40 +1,30 @@
 /**
  * background.js - Chrome Extension Background Service Worker
- * Manages WebRTC connections, history tracking, and P2P sync
+ * P2P history sync without signaling server
  */
 
-// Import crypto for HMAC
-importScripts('crypto-js.js');
+// Import dependencies
+importScripts('lib/crypto-js.min.js');
+importScripts('lib/p2p-core.js');
 
 // Configuration
 const config = {
-    signalingServerUrl: 'ws://localhost:8080',
     roomId: 'history-sync-default',
-    sharedSecret: null,
-    isConnected: false,
     deviceId: null,
     deviceName: 'Chrome Browser'
 };
 
-// WebRTC configuration
-const webRTCConfig = {
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-    ]
-};
+// P2P Manager instance
+let p2pManager = null;
 
-// State
-let webSocket = null;
-const peerConnections = new Map();
-const dataChannels = new Map();
+// History cache
 const historyCache = new Map();
 const connectedDevices = new Map();
 
 // Initialize
 async function initialize() {
     // Generate or load device ID
-    const stored = await chrome.storage.local.get(['deviceId', 'signalingServerUrl', 'roomId', 'sharedSecret']);
+    const stored = await chrome.storage.local.get(['deviceId', 'sharedSecret']);
     
     if (stored.deviceId) {
         config.deviceId = stored.deviceId;
@@ -43,18 +33,29 @@ async function initialize() {
         await chrome.storage.local.set({ deviceId: config.deviceId });
     }
     
-    // Load saved config
-    if (stored.signalingServerUrl) config.signalingServerUrl = stored.signalingServerUrl;
-    if (stored.roomId) config.roomId = stored.roomId;
-    if (stored.sharedSecret) config.sharedSecret = stored.sharedSecret;
+    // Initialize P2P manager
+    p2pManager = new P2PConnectionManager({
+        sharedSecret: stored.sharedSecret,
+        deviceId: config.deviceId,
+        deviceInfo: {
+            name: config.deviceName,
+            type: 'chrome'
+        },
+        onPeerConnected: handlePeerConnected,
+        onPeerDisconnected: handlePeerDisconnected,
+        onDataReceived: handleDataReceived
+    });
+    
+    // Override HMAC calculation with CryptoJS
+    p2pManager.calculateHMAC = (data, secret) => {
+        return CryptoJS.HmacSHA256(data, secret).toString();
+    };
     
     // Setup history listener
     chrome.history.onVisited.addListener(handleHistoryVisit);
     
-    // Auto-connect if configured
-    if (config.sharedSecret) {
-        await connect();
-    }
+    // Load cached history
+    await loadHistoryFromStorage();
 }
 
 // Generate device ID
@@ -62,353 +63,69 @@ function generateDeviceId() {
     return 'chrome-' + Math.random().toString(36).substr(2, 9);
 }
 
-// Generate HMAC
-function generateHMAC(data) {
-    const dataString = JSON.stringify(data);
-    return CryptoJS.HmacSHA256(dataString, config.sharedSecret).toString();
+// Handle peer connected
+function handlePeerConnected(peerId, deviceInfo) {
+    console.log(`Peer connected: ${peerId}`, deviceInfo);
+    connectedDevices.set(peerId, deviceInfo);
+    
+    // Send device info
+    sendDeviceInfo(peerId);
+    
+    // Request full sync
+    p2pManager.sendData({
+        type: 'sync_request',
+        timestamp: new Date().toISOString(),
+        deviceId: config.deviceId
+    }, peerId);
+    
+    updateBadge();
 }
 
-// Verify HMAC
-function verifyHMAC(message) {
-    if (!message.hmac || !message.data) return false;
-    
-    const dataString = JSON.stringify(message.data);
-    const expectedHmac = CryptoJS.HmacSHA256(dataString, config.sharedSecret).toString();
-    
-    return message.hmac === expectedHmac;
+// Handle peer disconnected
+function handlePeerDisconnected(peerId) {
+    console.log(`Peer disconnected: ${peerId}`);
+    connectedDevices.delete(peerId);
+    updateBadge();
 }
 
-// Connect to signaling server
-async function connect() {
-    if (!config.sharedSecret) {
-        throw new Error('No shared secret configured');
-    }
-    
-    return new Promise((resolve, reject) => {
-        webSocket = new WebSocket(config.signalingServerUrl);
-        
-        webSocket.onopen = () => {
-            console.log('Connected to signaling server');
-            
-            // Send join message
-            sendSignalingMessage({
-                type: 'join',
-                roomId: config.roomId,
-                peerId: config.deviceId,
-                deviceInfo: {
-                    name: config.deviceName,
-                    type: 'chrome'
-                }
-            });
-            
-            config.isConnected = true;
-            updateBadge(true);
-            resolve();
-        };
-        
-        webSocket.onmessage = (event) => {
-            handleSignalingMessage(event.data);
-        };
-        
-        webSocket.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            config.isConnected = false;
-            updateBadge(false);
-            reject(error);
-        };
-        
-        webSocket.onclose = () => {
-            console.log('Disconnected from signaling server');
-            config.isConnected = false;
-            updateBadge(false);
-            
-            // Clean up peer connections
-            peerConnections.forEach(pc => pc.close());
-            peerConnections.clear();
-            dataChannels.clear();
-        };
-    });
-}
-
-// Disconnect
-async function disconnect() {
-    if (webSocket) {
-        webSocket.close();
-        webSocket = null;
-    }
-    
-    config.isConnected = false;
-    updateBadge(false);
-}
-
-// Send signaling message
-function sendSignalingMessage(data) {
-    if (!webSocket || webSocket.readyState !== WebSocket.OPEN) {
-        console.error('WebSocket not connected');
-        return;
-    }
-    
-    const message = {
-        data: data,
-        hmac: generateHMAC(data)
-    };
-    
-    webSocket.send(JSON.stringify(message));
-}
-
-// Handle signaling message
-function handleSignalingMessage(messageText) {
-    try {
-        const message = JSON.parse(messageText);
-        
-        if (!verifyHMAC(message)) {
-            console.error('Invalid HMAC');
-            return;
-        }
-        
-        const data = message.data;
-        
-        switch (data.type) {
-            case 'room-peers':
-                handleRoomPeers(data);
-                break;
-            case 'peer-joined':
-                handlePeerJoined(data);
-                break;
-            case 'offer':
-                handleOffer(data);
-                break;
-            case 'answer':
-                handleAnswer(data);
-                break;
-            case 'ice-candidate':
-                handleIceCandidate(data);
-                break;
-            case 'peer-left':
-                handlePeerLeft(data);
-                break;
-        }
-    } catch (error) {
-        console.error('Error handling signaling message:', error);
-    }
-}
-
-// Create peer connection
-function createPeerConnection(remotePeerId) {
-    const pc = new RTCPeerConnection(webRTCConfig);
-    
-    // Handle ICE candidates
-    pc.onicecandidate = (event) => {
-        if (event.candidate) {
-            sendSignalingMessage({
-                type: 'ice-candidate',
-                targetPeerId: remotePeerId,
-                candidate: {
-                    candidate: event.candidate.candidate,
-                    sdpMLineIndex: event.candidate.sdpMLineIndex,
-                    sdpMid: event.candidate.sdpMid
-                }
-            });
-        }
-    };
-    
-    // Handle connection state
-    pc.onconnectionstatechange = () => {
-        console.log(`Connection state: ${pc.connectionState}`);
-        
-        if (pc.connectionState === 'connected') {
-            // Peer connected, send device info
-            sendDeviceInfo(remotePeerId);
-        }
-    };
-    
-    // Create data channel
-    const dataChannel = pc.createDataChannel('history-sync', {
-        ordered: true
-    });
-    
-    dataChannel.onopen = () => {
-        console.log(`Data channel opened with ${remotePeerId}`);
-        dataChannels.set(remotePeerId, dataChannel);
-        
-        // Request full sync
-        sendSyncMessage({
-            type: 'sync_request',
-            timestamp: new Date().toISOString(),
-            deviceId: config.deviceId
-        }, remotePeerId);
-    };
-    
-    dataChannel.onmessage = (event) => {
-        handleDataChannelMessage(event.data, remotePeerId);
-    };
-    
-    dataChannel.onclose = () => {
-        console.log(`Data channel closed with ${remotePeerId}`);
-        dataChannels.delete(remotePeerId);
-    };
-    
-    // Handle incoming data channel
-    pc.ondatachannel = (event) => {
-        const channel = event.channel;
-        
-        channel.onopen = () => {
-            console.log(`Incoming data channel opened from ${remotePeerId}`);
-            dataChannels.set(remotePeerId, channel);
-        };
-        
-        channel.onmessage = (event) => {
-            handleDataChannelMessage(event.data, remotePeerId);
-        };
-        
-        channel.onclose = () => {
-            dataChannels.delete(remotePeerId);
-        };
-    };
-    
-    peerConnections.set(remotePeerId, pc);
-    return pc;
-}
-
-// Handle room peers
-async function handleRoomPeers(data) {
-    const peers = data.peers || [];
-    
-    for (const peer of peers) {
-        const pc = createPeerConnection(peer.peerId);
-        
-        // Create offer
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        
-        sendSignalingMessage({
-            type: 'offer',
-            targetPeerId: peer.peerId,
-            offer: {
-                type: offer.type,
-                sdp: offer.sdp
-            }
-        });
-    }
-}
-
-// Handle peer joined
-function handlePeerJoined(data) {
-    console.log(`Peer joined: ${data.peerId}`);
-    // Wait for their offer
-}
-
-// Handle offer
-async function handleOffer(data) {
-    const remotePeerId = data.fromPeerId;
-    const pc = createPeerConnection(remotePeerId);
-    
-    await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-    
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    
-    sendSignalingMessage({
-        type: 'answer',
-        targetPeerId: remotePeerId,
-        answer: {
-            type: answer.type,
-            sdp: answer.sdp
-        }
-    });
-}
-
-// Handle answer
-async function handleAnswer(data) {
-    const pc = peerConnections.get(data.fromPeerId);
-    if (pc) {
-        await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-    }
-}
-
-// Handle ICE candidate
-async function handleIceCandidate(data) {
-    const pc = peerConnections.get(data.fromPeerId);
-    if (pc) {
-        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-    }
-}
-
-// Handle peer left
-function handlePeerLeft(data) {
-    const pc = peerConnections.get(data.peerId);
-    if (pc) {
-        pc.close();
-        peerConnections.delete(data.peerId);
-        dataChannels.delete(data.peerId);
-        connectedDevices.delete(data.peerId);
-    }
-}
-
-// Handle data channel message
-function handleDataChannelMessage(data, remotePeerId) {
-    try {
-        const message = JSON.parse(data);
-        
-        switch (message.type) {
-            case 'device_info':
-                handleDeviceInfo(message, remotePeerId);
-                break;
-            case 'full_sync':
-                handleFullSync(message);
-                break;
-            case 'incremental_update':
-                handleIncrementalUpdate(message);
-                break;
-            case 'sync_request':
-                handleSyncRequest(remotePeerId);
-                break;
-        }
-    } catch (error) {
-        console.error('Error handling data channel message:', error);
+// Handle received data
+function handleDataReceived(message, fromPeerId) {
+    switch (message.type) {
+        case 'device_info':
+            handleDeviceInfo(message, fromPeerId);
+            break;
+        case 'full_sync':
+            handleFullSync(message);
+            break;
+        case 'incremental_update':
+            handleIncrementalUpdate(message);
+            break;
+        case 'sync_request':
+            handleSyncRequest(fromPeerId);
+            break;
     }
 }
 
 // Send device info
-function sendDeviceInfo(remotePeerId) {
+function sendDeviceInfo(toPeerId) {
     const deviceInfo = {
         id: config.deviceId,
         name: config.deviceName,
         type: 'chrome',
-        lastSeen: new Date().toISOString(),
-        isConnected: true
+        lastSeen: new Date().toISOString()
     };
     
-    sendSyncMessage({
+    p2pManager.sendData({
         type: 'device_info',
         timestamp: new Date().toISOString(),
         deviceId: config.deviceId,
         data: deviceInfo
-    }, remotePeerId);
+    }, toPeerId);
 }
 
 // Handle device info
-function handleDeviceInfo(message, remotePeerId) {
-    connectedDevices.set(remotePeerId, message.data);
-}
-
-// Send sync message
-function sendSyncMessage(message, remotePeerId = null) {
-    const messageString = JSON.stringify(message);
-    
-    if (remotePeerId) {
-        const channel = dataChannels.get(remotePeerId);
-        if (channel && channel.readyState === 'open') {
-            channel.send(messageString);
-        }
-    } else {
-        // Broadcast to all
-        dataChannels.forEach(channel => {
-            if (channel.readyState === 'open') {
-                channel.send(messageString);
-            }
-        });
-    }
+function handleDeviceInfo(message, fromPeerId) {
+    connectedDevices.set(fromPeerId, message.data);
 }
 
 // Handle history visit
@@ -428,9 +145,10 @@ async function handleHistoryVisit(historyItem) {
     
     // Cache locally
     historyCache.set(entry.id, entry);
+    await saveHistoryToStorage();
     
     // Send to peers
-    sendSyncMessage({
+    p2pManager.sendData({
         type: 'incremental_update',
         timestamp: new Date().toISOString(),
         deviceId: config.deviceId,
@@ -439,7 +157,7 @@ async function handleHistoryVisit(historyItem) {
 }
 
 // Handle sync request
-async function handleSyncRequest(remotePeerId) {
+async function handleSyncRequest(fromPeerId) {
     // Get all history from the last 30 days
     const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
     
@@ -458,32 +176,35 @@ async function handleSyncRequest(remotePeerId) {
         deviceName: config.deviceName
     }));
     
-    sendSyncMessage({
+    p2pManager.sendData({
         type: 'full_sync',
         timestamp: new Date().toISOString(),
         deviceId: config.deviceId,
         data: entries
-    }, remotePeerId);
+    }, fromPeerId);
 }
 
 // Handle full sync
-function handleFullSync(message) {
+async function handleFullSync(message) {
     const entries = message.data || [];
     
     entries.forEach(entry => {
         historyCache.set(entry.id, entry);
     });
     
+    await saveHistoryToStorage();
     console.log(`Received ${entries.length} history entries from ${message.deviceId}`);
 }
 
 // Handle incremental update
-function handleIncrementalUpdate(message) {
+async function handleIncrementalUpdate(message) {
     const entries = message.data || [];
     
     entries.forEach(entry => {
         historyCache.set(entry.id, entry);
     });
+    
+    await saveHistoryToStorage();
 }
 
 // Search history
@@ -526,29 +247,60 @@ function getConnectedDevices() {
 }
 
 // Update badge
-function updateBadge(connected) {
-    if (connected) {
-        chrome.action.setBadgeText({ text: '✓' });
+function updateBadge() {
+    const peerCount = connectedDevices.size;
+    
+    if (peerCount > 0) {
+        chrome.action.setBadgeText({ text: peerCount.toString() });
         chrome.action.setBadgeBackgroundColor({ color: '#4CAF50' });
     } else {
         chrome.action.setBadgeText({ text: '' });
     }
 }
 
+// Storage helpers
+async function saveHistoryToStorage() {
+    const entries = Array.from(historyCache.values());
+    await chrome.storage.local.set({ historyCache: entries });
+}
+
+async function loadHistoryFromStorage() {
+    const stored = await chrome.storage.local.get(['historyCache']);
+    if (stored.historyCache) {
+        stored.historyCache.forEach(entry => {
+            historyCache.set(entry.id, entry);
+        });
+    }
+}
+
 // Message handler
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     switch (request.type) {
-        case 'connect':
-            connect().then(() => {
-                sendResponse({ success: true });
+        case 'create_offer':
+            p2pManager.createConnectionOffer().then(offer => {
+                // Also save shared secret after creating offer
+                chrome.storage.local.set({ sharedSecret: p2pManager.sharedSecret });
+                sendResponse({ success: true, offer });
             }).catch(error => {
                 sendResponse({ success: false, error: error.message });
             });
             return true;
             
-        case 'disconnect':
-            disconnect().then(() => {
+        case 'process_offer':
+            p2pManager.processConnectionOffer(request.offer).then(answer => {
+                // Save shared secret from offer
+                chrome.storage.local.set({ sharedSecret: p2pManager.sharedSecret });
+                sendResponse({ success: true, answer });
+            }).catch(error => {
+                sendResponse({ success: false, error: error.message });
+            });
+            return true;
+            
+        case 'complete_connection':
+            p2pManager.completeConnection(request.answer).then(() => {
                 sendResponse({ success: true });
+            }).catch(error => {
+                sendResponse({ success: false, error: error.message });
             });
             return true;
             
@@ -565,25 +317,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
             
         case 'get_devices':
-            sendResponse({ success: true, devices: getConnectedDevices() });
+            sendResponse({ 
+                success: true, 
+                devices: getConnectedDevices(),
+                peerCount: connectedDevices.size
+            });
             break;
             
         case 'get_config':
             sendResponse({
                 success: true,
                 config: {
-                    ...config,
-                    sharedSecret: config.sharedSecret ? '***' : null
+                    deviceId: config.deviceId,
+                    deviceName: config.deviceName,
+                    hasSharedSecret: !!p2pManager.sharedSecret,
+                    peerCount: connectedDevices.size
                 }
             });
             break;
             
-        case 'update_config':
-            Object.assign(config, request.config);
-            chrome.storage.local.set(request.config).then(() => {
-                sendResponse({ success: true });
-            });
-            return true;
+        case 'disconnect_peer':
+            p2pManager.disconnectPeer(request.peerId);
+            sendResponse({ success: true });
+            break;
+            
+        case 'disconnect_all':
+            p2pManager.disconnectAll();
+            sendResponse({ success: true });
+            break;
             
         default:
             sendResponse({ success: false, error: 'Unknown request type' });

@@ -4,9 +4,9 @@
  * 
  * Features:
  * - Receives browsing history updates from JavaScript
- * - Manages WebRTC connections for P2P sync
+ * - Manages serverless P2P connections via QR codes
  * - Handles search queries and device management
- * - Provides configuration updates to JavaScript
+ * - Provides connection status to JavaScript
  */
 
 import SafariServices
@@ -20,14 +20,17 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     
     // MARK: - Message Types
     enum MessageType: String {
+        case initializeP2P = "initialize_p2p"
         case trackVisit = "track_visit"
-        case connect = "connect"
+        case createOffer = "create_offer"
+        case processOffer = "process_offer"
+        case completeConnection = "complete_connection"
         case disconnect = "disconnect"
         case searchHistory = "search_history"
         case getDevices = "get_devices"
         case getHistory = "get_history"
-        case addSecret = "add_secret"
-        case getSecrets = "get_secrets"
+        case updateSharedSecret = "update_shared_secret"
+        case getConnectionStatus = "get_connection_status"
     }
     
     // MARK: - Extension Request Handling
@@ -74,11 +77,20 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         }
         
         switch type {
+        case .initializeP2P:
+            handleInitializeP2P(context: context)
+            
         case .trackVisit:
             handleTrackVisit(message, context: context)
             
-        case .connect:
-            handleConnect(message, context: context)
+        case .createOffer:
+            handleCreateOffer(context: context)
+            
+        case .processOffer:
+            handleProcessOffer(message, context: context)
+            
+        case .completeConnection:
+            handleCompleteConnection(message, context: context)
             
         case .disconnect:
             handleDisconnect(context: context)
@@ -92,15 +104,20 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         case .getHistory:
             handleGetHistory(message, context: context)
             
-        case .addSecret:
-            handleAddSecret(message, context: context)
+        case .updateSharedSecret:
+            handleUpdateSharedSecret(message, context: context)
             
-        case .getSecrets:
-            handleGetSecrets(context: context)
+        case .getConnectionStatus:
+            handleGetConnectionStatus(context: context)
         }
     }
     
     // MARK: - Message Handlers
+    private func handleInitializeP2P(context: NSExtensionContext) {
+        Self.historySyncManager.initializeP2P()
+        sendSuccessResponse(["initialized": true], context: context)
+    }
+    
     private func handleTrackVisit(_ message: [String: Any], context: NSExtensionContext) {
         guard let url = message["url"] as? String else {
             sendErrorResponse("Missing URL", context: context)
@@ -114,22 +131,47 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         sendSuccessResponse(["tracked": true], context: context)
     }
     
-    private func handleConnect(_ message: [String: Any], context: NSExtensionContext) {
-        guard let roomId = message["roomId"] as? String,
-              let sharedSecret = message["sharedSecret"] as? String,
-              let serverUrl = message["serverUrl"] as? String,
-              let signalingURL = URL(string: serverUrl) else {
-            sendErrorResponse("Missing connection parameters", context: context)
+    private func handleCreateOffer(context: NSExtensionContext) {
+        Self.historySyncManager.createConnectionOffer { result in
+            switch result {
+            case .success(let offer):
+                self.sendSuccessResponse(["offer": offer], context: context)
+            case .failure(let error):
+                self.sendErrorResponse(error.localizedDescription, context: context)
+            }
+        }
+    }
+    
+    private func handleProcessOffer(_ message: [String: Any], context: NSExtensionContext) {
+        guard let offer = message["offer"] as? String else {
+            sendErrorResponse("Missing offer", context: context)
             return
         }
         
-        Self.historySyncManager.connect(
-            roomId: roomId,
-            sharedSecret: sharedSecret,
-            signalingServerURL: signalingURL
-        )
+        Self.historySyncManager.processConnectionOffer(offer) { result in
+            switch result {
+            case .success(let answer):
+                self.sendSuccessResponse(["answer": answer], context: context)
+            case .failure(let error):
+                self.sendErrorResponse(error.localizedDescription, context: context)
+            }
+        }
+    }
+    
+    private func handleCompleteConnection(_ message: [String: Any], context: NSExtensionContext) {
+        guard let answer = message["answer"] as? String else {
+            sendErrorResponse("Missing answer", context: context)
+            return
+        }
         
-        sendSuccessResponse(["connected": true], context: context)
+        Self.historySyncManager.completeConnection(answer) { result in
+            switch result {
+            case .success:
+                self.sendSuccessResponse(["connected": true], context: context)
+            case .failure(let error):
+                self.sendErrorResponse(error.localizedDescription, context: context)
+            }
+        }
     }
     
     private func handleDisconnect(context: NSExtensionContext) {
@@ -159,14 +201,14 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     }
     
     private func handleGetDevices(context: NSExtensionContext) {
-        let devices = Self.historySyncManager.getAllKnownDevices()
+        let devices = Self.historySyncManager.getConnectedDevices()
         let encodedDevices = devices.map { device in
             [
-                "id": device.id,
+                "id": "device-\(UUID().uuidString)", // Generate temporary ID
                 "name": device.name,
                 "type": device.type,
-                "lastSeen": ISO8601DateFormatter().string(from: device.lastSeen),
-                "isConnected": device.isConnected
+                "lastSeen": ISO8601DateFormatter().string(from: Date()),
+                "isConnected": true
             ]
         }
         
@@ -191,38 +233,27 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         sendSuccessResponse(["history": encodedHistory], context: context)
     }
     
-    private func handleAddSecret(_ message: [String: Any], context: NSExtensionContext) {
-        guard let secret = message["secret"] as? String,
-              let name = message["name"] as? String else {
-            sendErrorResponse("Missing secret or name", context: context)
+    private func handleUpdateSharedSecret(_ message: [String: Any], context: NSExtensionContext) {
+        guard let secret = message["secret"] as? String else {
+            sendErrorResponse("Missing secret", context: context)
             return
         }
         
-        // Store secret securely
-        let secrets = loadSecrets()
-        var updatedSecrets = secrets
-        updatedSecrets[name] = secret
-        saveSecrets(updatedSecrets)
+        Self.historySyncManager.updateSharedSecret(secret)
+        sendSuccessResponse(["updated": true], context: context)
+    }
+    
+    private func handleGetConnectionStatus(context: NSExtensionContext) {
+        let connectedDevices = Self.historySyncManager.getConnectedDevices()
+        let hasSharedSecret = UserDefaults(suiteName: "group.com.historysync")?.string(forKey: "com.historysync.sharedSecret") != nil
         
-        sendSuccessResponse(["added": true], context: context)
-    }
-    
-    private func handleGetSecrets(context: NSExtensionContext) {
-        let secrets = loadSecrets()
-        let secretsList = secrets.map { ["name": $0.key, "secret": $0.value] }
+        let status = [
+            "connected": !connectedDevices.isEmpty,
+            "hasSharedSecret": hasSharedSecret,
+            "peerCount": connectedDevices.count
+        ]
         
-        sendSuccessResponse(["secrets": secretsList], context: context)
-    }
-    
-    // MARK: - Secret Management
-    private func loadSecrets() -> [String: String] {
-        let userDefaults = UserDefaults(suiteName: "group.com.historysync")!
-        return userDefaults.dictionary(forKey: "sharedSecrets") as? [String: String] ?? [:]
-    }
-    
-    private func saveSecrets(_ secrets: [String: String]) {
-        let userDefaults = UserDefaults(suiteName: "group.com.historysync")!
-        userDefaults.set(secrets, forKey: "sharedSecrets")
+        sendSuccessResponse(status, context: context)
     }
     
     // MARK: - Response Helpers

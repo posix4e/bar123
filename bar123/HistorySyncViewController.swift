@@ -1,13 +1,13 @@
 /**
  * HistorySyncViewController.swift
- * iOS Native App for P2P History Sync
+ * iOS Native App for Serverless P2P History Sync
  * 
  * Features:
- * - WebRTC-based P2P connections
+ * - Serverless P2P connections via QR codes
  * - Real-time history synchronization
  * - Search and browse synced history
  * - Device management
- * - Shared secret configuration
+ * - No signaling server required
  */
 
 import UIKit
@@ -21,10 +21,9 @@ class HistorySyncViewController: UIViewController {
     private let logger = OSLog(subsystem: "com.historysync", category: "HistorySyncViewController")
     
     // UI State
-    private var currentConfig = HistorySyncConfig()
     private var historyEntries: [HistoryEntry] = []
     private var filteredEntries: [HistoryEntry] = []
-    private var connectedDevices: [DeviceInfo] = []
+    private var connectedDevices: [P2PDeviceInfo] = []
     private var selectedDeviceId: String?
     
     // MARK: - UI Components
@@ -33,7 +32,7 @@ class HistorySyncViewController: UIViewController {
     private let searchBar = UISearchBar()
     private let segmentControl = UISegmentedControl(items: ["History", "Devices"])
     private let tableView = UITableView()
-    private let settingsButton = UIBarButtonItem(title: "Settings", style: .plain, target: nil, action: nil)
+    private let connectButton = UIBarButtonItem(title: "Connect", style: .plain, target: nil, action: nil)
     private let refreshButton = UIBarButtonItem(barButtonSystemItem: .refresh, target: nil, action: nil)
     
     // MARK: - View Lifecycle
@@ -43,12 +42,10 @@ class HistorySyncViewController: UIViewController {
         setupUI()
         setupConstraints()
         setupDelegates()
-        loadConfiguration()
         
-        // Auto-connect if configured
-        if currentConfig.isConfigured {
-            connectToNetwork()
-        }
+        // Initialize P2P manager
+        historySyncManager.initializeP2P()
+        updateConnectionStatus()
     }
     
     // MARK: - Setup
@@ -57,9 +54,9 @@ class HistorySyncViewController: UIViewController {
         title = "History Sync"
         
         // Navigation bar
-        navigationItem.rightBarButtonItems = [settingsButton, refreshButton]
-        settingsButton.target = self
-        settingsButton.action = #selector(settingsButtonTapped)
+        navigationItem.rightBarButtonItems = [connectButton, refreshButton]
+        connectButton.target = self
+        connectButton.action = #selector(connectButtonTapped)
         refreshButton.target = self
         refreshButton.action = #selector(refreshButtonTapped)
         
@@ -71,7 +68,7 @@ class HistorySyncViewController: UIViewController {
         connectionStatusLabel.font = .systemFont(ofSize: 14, weight: .medium)
         connectionStatusLabel.textColor = .white
         connectionStatusView.addSubview(connectionStatusLabel)
-        updateConnectionStatus(false)
+        updateConnectionStatus()
         
         // Search bar
         searchBar.placeholder = "Search history..."
@@ -130,38 +127,18 @@ class HistorySyncViewController: UIViewController {
         tableView.delegate = self
     }
     
-    // MARK: - Configuration
-    private func loadConfiguration() {
-        currentConfig = HistorySyncConfig.load()
-    }
-    
-    private func saveConfiguration() {
-        currentConfig.save()
-    }
-    
     // MARK: - Connection Management
-    private func connectToNetwork() {
-        guard currentConfig.isConfigured,
-              let serverURL = URL(string: currentConfig.signalingServerUrl) else {
-            showAlert(title: "Configuration Error", message: "Please configure connection settings first")
-            return
-        }
+    private func updateConnectionStatus() {
+        let devices = historySyncManager.getConnectedDevices()
+        let isConnected = !devices.isEmpty
         
-        historySyncManager.connect(
-            roomId: currentConfig.roomId,
-            sharedSecret: currentConfig.sharedSecret,
-            signalingServerURL: serverURL
-        )
-    }
-    
-    private func disconnect() {
-        historySyncManager.disconnect()
-        updateConnectionStatus(false)
-    }
-    
-    private func updateConnectionStatus(_ connected: Bool) {
-        connectionStatusView.backgroundColor = connected ? .systemGreen : .systemRed
-        connectionStatusLabel.text = connected ? "Connected" : "Disconnected"
+        connectionStatusView.backgroundColor = isConnected ? .systemGreen : .systemOrange
+        connectionStatusLabel.text = isConnected ? "Connected (\(devices.count) devices)" : "Not Connected"
+        
+        connectedDevices = devices
+        if segmentControl.selectedSegmentIndex == 1 {
+            tableView.reloadData()
+        }
     }
     
     // MARK: - Data Management
@@ -182,7 +159,7 @@ class HistorySyncViewController: UIViewController {
     }
     
     private func loadDevices() {
-        connectedDevices = historySyncManager.getAllKnownDevices()
+        connectedDevices = historySyncManager.getConnectedDevices()
         tableView.reloadData()
     }
     
@@ -202,76 +179,69 @@ class HistorySyncViewController: UIViewController {
         refreshData()
     }
     
-    @objc private func settingsButtonTapped() {
-        showSettingsAlert()
+    @objc private func connectButtonTapped() {
+        showConnectionOptions()
     }
     
     @objc private func refreshButtonTapped() {
         refreshData()
     }
     
-    // MARK: - Settings
-    private func showSettingsAlert() {
-        let alert = UIAlertController(title: "Connection Settings", message: nil, preferredStyle: .alert)
+    // MARK: - Connection UI
+    private func showConnectionOptions() {
+        let alert = UIAlertController(title: "P2P Connection", message: "Choose how to connect", preferredStyle: .actionSheet)
         
-        alert.addTextField { textField in
-            textField.placeholder = "Signaling Server URL"
-            textField.text = self.currentConfig.signalingServerUrl
-            textField.keyboardType = .URL
-            textField.autocapitalizationType = .none
+        let createAction = UIAlertAction(title: "Create New Connection", style: .default) { [weak self] _ in
+            self?.showQRConnectionController(mode: .create)
         }
         
-        alert.addTextField { textField in
-            textField.placeholder = "Room ID"
-            textField.text = self.currentConfig.roomId
-            textField.autocapitalizationType = .none
+        let joinAction = UIAlertAction(title: "Join Existing Connection", style: .default) { [weak self] _ in
+            self?.showQRConnectionController(mode: .join)
         }
         
-        alert.addTextField { textField in
-            textField.placeholder = "Shared Secret"
-            textField.text = self.currentConfig.sharedSecret
-            textField.isSecureTextEntry = true
-            textField.autocapitalizationType = .none
-        }
-        
-        let generateAction = UIAlertAction(title: "Generate Secret", style: .default) { _ in
-            if let secretField = alert.textFields?[2] {
-                secretField.text = HistorySyncConfig.generateSecret()
-            }
-            self.present(alert, animated: true)
-        }
-        
-        let connectAction = UIAlertAction(title: "Save & Connect", style: .default) { _ in
-            guard let serverUrl = alert.textFields?[0].text,
-                  let roomId = alert.textFields?[1].text,
-                  let secret = alert.textFields?[2].text,
-                  !serverUrl.isEmpty, !roomId.isEmpty, !secret.isEmpty else {
-                self.showAlert(title: "Error", message: "Please fill in all fields")
-                return
-            }
-            
-            self.currentConfig.signalingServerUrl = serverUrl
-            self.currentConfig.roomId = roomId
-            self.currentConfig.sharedSecret = secret
-            self.saveConfiguration()
-            
-            self.connectToNetwork()
-        }
-        
-        let disconnectAction = UIAlertAction(title: "Disconnect", style: .destructive) { _ in
-            self.disconnect()
+        let disconnectAction = UIAlertAction(title: "Disconnect All", style: .destructive) { [weak self] _ in
+            self?.historySyncManager.disconnect()
+            self?.updateConnectionStatus()
         }
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
         
-        alert.addAction(generateAction)
-        alert.addAction(connectAction)
-        if historySyncManager.isConnected {
+        alert.addAction(createAction)
+        alert.addAction(joinAction)
+        
+        if !connectedDevices.isEmpty {
             alert.addAction(disconnectAction)
         }
+        
         alert.addAction(cancelAction)
         
+        if let popover = alert.popoverPresentationController {
+            popover.barButtonItem = connectButton
+        }
+        
         present(alert, animated: true)
+    }
+    
+    private func showQRConnectionController(mode: QRConnectionMode) {
+        let qrController = QRConnectionViewController()
+        qrController.delegate = self
+        
+        let navController = UINavigationController(rootViewController: qrController)
+        navController.modalPresentationStyle = .fullScreen
+        
+        present(navController, animated: true) {
+            switch mode {
+            case .create:
+                qrController.startNewConnection()
+            case .join:
+                qrController.joinExistingConnection()
+            }
+        }
+    }
+    
+    enum QRConnectionMode {
+        case create
+        case join
     }
     
     // MARK: - Helper Methods
@@ -313,19 +283,12 @@ extension HistorySyncViewController: UITableViewDataSource {
         case 1: // Devices
             let cell = tableView.dequeueReusableCell(withIdentifier: "DeviceCell", for: indexPath) as! DeviceTableViewCell
             let device = connectedDevices[indexPath.row]
-            cell.configure(with: device, isSelected: device.id == selectedDeviceId)
+            cell.configure(with: device, isSelected: false)
             return cell
             
         default:
             return UITableViewCell()
         }
-    }
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
     }
 }
 
@@ -340,16 +303,8 @@ extension HistorySyncViewController: UITableViewDelegate {
             openURL(entry.url)
             
         case 1: // Devices
-            let device = connectedDevices[indexPath.row]
-            
-            if selectedDeviceId == device.id {
-                selectedDeviceId = nil
-            } else {
-                selectedDeviceId = device.id
-            }
-            
-            segmentControl.selectedSegmentIndex = 0
-            loadHistory()
+            // Could implement device-specific actions here
+            break
             
         default:
             break
@@ -377,24 +332,75 @@ extension HistorySyncViewController: HistorySyncManagerDelegate {
     func historySyncManager(_ manager: HistorySyncManager, didUpdateHistory entries: [HistoryEntry]) {
         DispatchQueue.main.async {
             self.loadHistory()
-            self.updateConnectionStatus(true)
+            self.updateConnectionStatus()
         }
     }
     
-    func historySyncManager(_ manager: HistorySyncManager, didUpdateDevices devices: [DeviceInfo]) {
+    func historySyncManager(_ manager: HistorySyncManager, didUpdateDevices devices: [P2PDeviceInfo]) {
         DispatchQueue.main.async {
             self.connectedDevices = devices
             if self.segmentControl.selectedSegmentIndex == 1 {
                 self.tableView.reloadData()
             }
-            self.updateConnectionStatus(true)
+            self.updateConnectionStatus()
         }
     }
     
     func historySyncManager(_ manager: HistorySyncManager, didEncounterError error: Error) {
         DispatchQueue.main.async {
-            self.showAlert(title: "Sync Error", message: error.localizedDescription)
-            self.updateConnectionStatus(false)
+            self.showAlert(title: "Connection Error", message: error.localizedDescription)
+            self.updateConnectionStatus()
+        }
+    }
+}
+
+// MARK: - QRConnectionDelegate
+extension HistorySyncViewController: QRConnectionDelegate {
+    func qrConnectionControllerCreateOffer(_ controller: QRConnectionViewController) {
+        historySyncManager.createConnectionOffer { [weak controller] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let offer):
+                    controller?.showConnectionOffer(offer)
+                case .failure(let error):
+                    controller?.dismiss(animated: true) {
+                        self.showAlert(title: "Connection Error", message: error.localizedDescription)
+                    }
+                }
+            }
+        }
+    }
+    
+    func qrConnectionController(_ controller: QRConnectionViewController, didScanOffer offer: String) {
+        historySyncManager.processConnectionOffer(offer) { [weak controller] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let answer):
+                    controller?.showConnectionAnswer(answer)
+                case .failure(let error):
+                    controller?.dismiss(animated: true) {
+                        self.showAlert(title: "Connection Error", message: error.localizedDescription)
+                    }
+                }
+            }
+        }
+    }
+    
+    func qrConnectionController(_ controller: QRConnectionViewController, didScanAnswer answer: String) {
+        historySyncManager.completeConnection(answer) { [weak controller] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    controller?.dismiss(animated: true) {
+                        self.showAlert(title: "Success", message: "Connection established!")
+                        self.updateConnectionStatus()
+                    }
+                case .failure(let error):
+                    controller?.dismiss(animated: true) {
+                        self.showAlert(title: "Connection Error", message: error.localizedDescription)
+                    }
+                }
+            }
         }
     }
 }
@@ -440,69 +446,11 @@ class DeviceTableViewCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func configure(with device: DeviceInfo, isSelected: Bool) {
+    func configure(with device: P2PDeviceInfo, isSelected: Bool) {
         textLabel?.text = device.name
-        
-        if device.isConnected {
-            detailTextLabel?.text = "Connected"
-            detailTextLabel?.textColor = .systemGreen
-        } else {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .short
-            formatter.timeStyle = .short
-            let dateString = formatter.string(from: device.lastSeen)
-            detailTextLabel?.text = "Last seen \(dateString)"
-            detailTextLabel?.textColor = .secondaryLabel
-        }
+        detailTextLabel?.text = "Type: \(device.type) • Connected"
+        detailTextLabel?.textColor = .systemGreen
         
         accessoryType = isSelected ? .checkmark : .none
-    }
-}
-
-// MARK: - Configuration Model
-struct HistorySyncConfig {
-    var signalingServerUrl: String = "ws://localhost:8080"
-    var roomId: String = "history-sync-default"
-    var sharedSecret: String = ""
-    
-    var isConfigured: Bool {
-        return !signalingServerUrl.isEmpty && !roomId.isEmpty && !sharedSecret.isEmpty
-    }
-    
-    static func load() -> HistorySyncConfig {
-        let defaults = UserDefaults.standard
-        var config = HistorySyncConfig()
-        
-        if let url = defaults.string(forKey: "signalingServerUrl") {
-            config.signalingServerUrl = url
-        }
-        if let roomId = defaults.string(forKey: "roomId") {
-            config.roomId = roomId
-        }
-        if let secret = defaults.string(forKey: "sharedSecret") {
-            config.sharedSecret = secret
-        }
-        
-        return config
-    }
-    
-    func save() {
-        let defaults = UserDefaults.standard
-        defaults.set(signalingServerUrl, forKey: "signalingServerUrl")
-        defaults.set(roomId, forKey: "roomId")
-        defaults.set(sharedSecret, forKey: "sharedSecret")
-    }
-    
-    static func generateSecret() -> String {
-        let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-        return String((0..<32).map { _ in characters.randomElement()! })
-    }
-}
-
-// MARK: - HistorySyncManager Extension
-extension HistorySyncManager {
-    var isConnected: Bool {
-        // Add this computed property to check connection status
-        return webRTCManager != nil
     }
 }

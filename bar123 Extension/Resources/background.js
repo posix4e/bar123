@@ -1,14 +1,12 @@
 /**
  * background.js - Safari Extension Background Script
- * Manages history tracking, WebRTC connections, and native messaging
+ * Manages history tracking and native messaging with serverless P2P
  */
 
 // Configuration
 const config = {
-    signalingServerUrl: 'ws://localhost:8080',
-    roomId: 'history-sync-default',
-    sharedSecret: null,
-    isConnected: false
+    isConnected: false,
+    hasSharedSecret: false
 };
 
 // History cache
@@ -30,56 +28,99 @@ async function sendNativeMessage(message) {
 
 // Initialize extension
 async function initialize() {
-    // Load saved configuration
-    const saved = await browser.storage.local.get(['signalingServerUrl', 'roomId', 'sharedSecret']);
-    if (saved.signalingServerUrl) config.signalingServerUrl = saved.signalingServerUrl;
-    if (saved.roomId) config.roomId = saved.roomId;
-    if (saved.sharedSecret) config.sharedSecret = saved.sharedSecret;
-    
-    // Auto-connect if we have a shared secret
-    if (config.sharedSecret) {
-        await connect();
+    // Initialize P2P manager in native app
+    try {
+        await sendNativeMessage({ type: 'initialize_p2p' });
+        
+        // Check connection status
+        const status = await getConnectionStatus();
+        config.isConnected = status.connected;
+        config.hasSharedSecret = status.hasSharedSecret;
+        
+        updateBadge();
+    } catch (error) {
+        console.error('Failed to initialize:', error);
     }
 }
 
-// Connect to P2P network
-async function connect() {
-    if (!config.sharedSecret) {
-        throw new Error('No shared secret configured');
-    }
-    
-    try {
-        await sendNativeMessage({
-            type: 'connect',
-            roomId: config.roomId,
-            sharedSecret: config.sharedSecret,
-            serverUrl: config.signalingServerUrl
-        });
-        
-        config.isConnected = true;
-        
-        // Update extension icon
+// Update badge based on connection status
+function updateBadge() {
+    if (config.isConnected) {
         browser.action.setBadgeText({ text: '✓' });
         browser.action.setBadgeBackgroundColor({ color: '#4CAF50' });
-        
+    } else if (config.hasSharedSecret) {
+        browser.action.setBadgeText({ text: '•' });
+        browser.action.setBadgeBackgroundColor({ color: '#FFC107' });
+    } else {
+        browser.action.setBadgeText({ text: '' });
+    }
+}
+
+// Get connection status
+async function getConnectionStatus() {
+    try {
+        const result = await sendNativeMessage({ type: 'get_connection_status' });
+        return {
+            connected: result.connected || false,
+            hasSharedSecret: result.hasSharedSecret || false,
+            peerCount: result.peerCount || 0
+        };
     } catch (error) {
-        console.error('Connection failed:', error);
-        config.isConnected = false;
-        
-        browser.action.setBadgeText({ text: '!' });
-        browser.action.setBadgeBackgroundColor({ color: '#F44336' });
-        
+        console.error('Failed to get connection status:', error);
+        return { connected: false, hasSharedSecret: false, peerCount: 0 };
+    }
+}
+
+// Create connection offer
+async function createOffer() {
+    try {
+        const result = await sendNativeMessage({ type: 'create_offer' });
+        return result.offer;
+    } catch (error) {
+        console.error('Failed to create offer:', error);
         throw error;
     }
 }
 
-// Disconnect from P2P network
+// Process connection offer
+async function processOffer(offer) {
+    try {
+        const result = await sendNativeMessage({ 
+            type: 'process_offer',
+            offer: offer 
+        });
+        return result.answer;
+    } catch (error) {
+        console.error('Failed to process offer:', error);
+        throw error;
+    }
+}
+
+// Complete connection with answer
+async function completeConnection(answer) {
+    try {
+        await sendNativeMessage({ 
+            type: 'complete_connection',
+            answer: answer 
+        });
+        
+        // Update connection status
+        const status = await getConnectionStatus();
+        config.isConnected = status.connected;
+        updateBadge();
+        
+    } catch (error) {
+        console.error('Failed to complete connection:', error);
+        throw error;
+    }
+}
+
+// Disconnect from all peers
 async function disconnect() {
     try {
         await sendNativeMessage({ type: 'disconnect' });
         config.isConnected = false;
-        
-        browser.action.setBadgeText({ text: '' });
+        updateBadge();
     } catch (error) {
         console.error('Disconnect failed:', error);
     }
@@ -153,36 +194,20 @@ async function getHistory(deviceId = null) {
     }
 }
 
-// Add new shared secret
-async function addSecret(name, secret) {
+// Update shared secret
+async function updateSharedSecret(secret) {
     try {
         await sendNativeMessage({
-            type: 'add_secret',
-            name: name,
+            type: 'update_shared_secret',
             secret: secret
         });
         
-        // Auto-connect with new secret
-        config.sharedSecret = secret;
-        await browser.storage.local.set({ sharedSecret: secret });
-        await connect();
+        config.hasSharedSecret = true;
+        updateBadge();
         
     } catch (error) {
-        console.error('Failed to add secret:', error);
+        console.error('Failed to update shared secret:', error);
         throw error;
-    }
-}
-
-// Get saved secrets
-async function getSecrets() {
-    try {
-        const result = await sendNativeMessage({
-            type: 'get_secrets'
-        });
-        return result.secrets || [];
-    } catch (error) {
-        console.error('Failed to get secrets:', error);
-        return [];
     }
 }
 
@@ -197,13 +222,29 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: true });
             break;
             
-        case 'connect':
-            connect().then(() => {
-                sendResponse({ success: true, connected: true });
+        case 'create_offer':
+            createOffer().then(offer => {
+                sendResponse({ success: true, offer });
             }).catch(error => {
                 sendResponse({ success: false, error: error.message });
             });
             return true; // Will respond asynchronously
+            
+        case 'process_offer':
+            processOffer(request.offer).then(answer => {
+                sendResponse({ success: true, answer });
+            }).catch(error => {
+                sendResponse({ success: false, error: error.message });
+            });
+            return true;
+            
+        case 'complete_connection':
+            completeConnection(request.answer).then(() => {
+                sendResponse({ success: true });
+            }).catch(error => {
+                sendResponse({ success: false, error: error.message });
+            });
+            return true;
             
         case 'disconnect':
             disconnect().then(() => {
@@ -237,28 +278,23 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
             return true;
             
-        case 'add_secret':
-            addSecret(request.name, request.secret).then(() => {
+        case 'update_shared_secret':
+            updateSharedSecret(request.secret).then(() => {
                 sendResponse({ success: true });
             }).catch(error => {
                 sendResponse({ success: false, error: error.message });
             });
             return true;
             
-        case 'get_config':
-            sendResponse({
-                success: true,
-                config: {
-                    ...config,
-                    sharedSecret: config.sharedSecret ? '***' : null
-                }
-            });
-            break;
-            
-        case 'update_config':
-            Object.assign(config, request.config);
-            browser.storage.local.set(request.config).then(() => {
-                sendResponse({ success: true });
+        case 'get_connection_status':
+            getConnectionStatus().then(status => {
+                sendResponse({ 
+                    success: true, 
+                    ...status,
+                    isConnected: status.connected
+                });
+            }).catch(error => {
+                sendResponse({ success: false, error: error.message });
             });
             return true;
             

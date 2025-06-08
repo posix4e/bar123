@@ -4,7 +4,7 @@
  * 
  * Features:
  * - Tracks browsing history from Safari
- * - Syncs history across devices via WebRTC
+ * - Syncs history across devices via serverless P2P
  * - Handles conflict resolution
  * - Provides search functionality
  * - Manages device information
@@ -48,19 +48,13 @@ struct SyncMessage: Codable {
     let data: Data?
 }
 
-// MARK: - Device Info
-struct DeviceInfo: Codable {
-    let id: String
-    let name: String
-    let type: String // "ios", "chrome", "native"
-    let lastSeen: Date
-    var isConnected: Bool
-}
+// MARK: - Device Info (using from P2PConnectionManager)
+typealias P2PDeviceInfo = DeviceInfo
 
 // MARK: - HistorySyncManagerDelegate
 protocol HistorySyncManagerDelegate: AnyObject {
     func historySyncManager(_ manager: HistorySyncManager, didUpdateHistory entries: [HistoryEntry])
-    func historySyncManager(_ manager: HistorySyncManager, didUpdateDevices devices: [DeviceInfo])
+    func historySyncManager(_ manager: HistorySyncManager, didUpdateDevices devices: [P2PDeviceInfo])
     func historySyncManager(_ manager: HistorySyncManager, didEncounterError error: Error)
 }
 
@@ -72,15 +66,16 @@ class HistorySyncManager: NSObject {
     
     private let deviceId: String
     private let deviceName: String
-    private var webRTCManager: WebRTCManager?
+    private var p2pManager: P2PConnectionManager?
     
     // History storage
     private var historyEntries: Set<HistoryEntry> = []
-    private var connectedDevices: [String: DeviceInfo] = [:]
+    private var connectedDevices: [String: P2PDeviceInfo] = [:]
     
     // Persistence
     private let historyStorageKey = "com.historysync.history"
     private let devicesStorageKey = "com.historysync.devices"
+    private let sharedSecretKey = "com.historysync.sharedSecret"
     private let userDefaults = UserDefaults(suiteName: "group.com.historysync")!
     
     // Sync state
@@ -111,33 +106,71 @@ class HistorySyncManager: NSObject {
     }
     
     // MARK: - Connection Management
-    func connect(roomId: String, sharedSecret: String, signalingServerURL: URL) {
-        let peerId = "\(deviceId)-\(UUID().uuidString.prefix(8))"
+    func initializeP2P() {
+        // Get or create shared secret
+        let sharedSecret = getOrCreateSharedSecret()
         
-        webRTCManager = WebRTCManager(
-            peerId: peerId,
-            roomId: roomId,
-            sharedSecret: sharedSecret,
-            signalingServerURL: signalingServerURL
+        let deviceInfo = P2PDeviceInfo(name: deviceName, type: "ios")
+        
+        p2pManager = P2PConnectionManager(
+            deviceId: deviceId,
+            deviceInfo: deviceInfo,
+            sharedSecret: sharedSecret
         )
         
-        webRTCManager?.delegate = self
-        webRTCManager?.connect()
+        p2pManager?.delegate = self
+    }
+    
+    private func getOrCreateSharedSecret() -> String {
+        if let existing = userDefaults.string(forKey: sharedSecretKey) {
+            return existing
+        }
         
-        // Send device info when connected
-        sendDeviceInfo()
+        let newSecret = P2PConnectionManager.generateSharedSecret()
+        userDefaults.set(newSecret, forKey: sharedSecretKey)
+        return newSecret
+    }
+    
+    func updateSharedSecret(_ secret: String) {
+        userDefaults.set(secret, forKey: sharedSecretKey)
+        p2pManager?.sharedSecret = secret
+    }
+    
+    // Connection methods for QR code flow
+    func createConnectionOffer(completion: @escaping (Result<String, Error>) -> Void) {
+        guard let p2pManager = p2pManager else {
+            completion(.failure(NSError(domain: "HistorySync", code: 1, userInfo: [NSLocalizedDescriptionKey: "P2P manager not initialized"])))
+            return
+        }
+        
+        p2pManager.createConnectionOffer(completion: completion)
+    }
+    
+    func processConnectionOffer(_ offer: String, completion: @escaping (Result<String, Error>) -> Void) {
+        guard let p2pManager = p2pManager else {
+            completion(.failure(NSError(domain: "HistorySync", code: 1, userInfo: [NSLocalizedDescriptionKey: "P2P manager not initialized"])))
+            return
+        }
+        
+        p2pManager.processConnectionOffer(offer, completion: completion)
+    }
+    
+    func completeConnection(_ answer: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let p2pManager = p2pManager else {
+            completion(.failure(NSError(domain: "HistorySync", code: 1, userInfo: [NSLocalizedDescriptionKey: "P2P manager not initialized"])))
+            return
+        }
+        
+        p2pManager.completeConnection(answer, completion: completion)
     }
     
     func disconnect() {
-        webRTCManager?.disconnect()
-        webRTCManager = nil
+        p2pManager?.disconnectAll()
         
         // Mark all devices as disconnected
         syncQueue.async(flags: .barrier) {
-            self.connectedDevices.values.forEach { device in
-                var updatedDevice = device
-                updatedDevice.isConnected = false
-                self.connectedDevices[device.id] = updatedDevice
+            for (deviceId, device) in self.connectedDevices {
+                self.connectedDevices[deviceId] = P2PDeviceInfo(name: device.name, type: device.type)
             }
         }
         
@@ -195,13 +228,12 @@ class HistorySyncManager: NSObject {
     }
     
     // MARK: - Device Management
-    func getConnectedDevices() -> [DeviceInfo] {
-        return syncQueue.sync {
-            Array(connectedDevices.values).filter { $0.isConnected }
-        }
+    func getConnectedDevices() -> [P2PDeviceInfo] {
+        guard let p2pManager = p2pManager else { return [] }
+        return p2pManager.getConnectedPeers().map { $0.deviceInfo }
     }
     
-    func getAllKnownDevices() -> [DeviceInfo] {
+    func getAllKnownDevices() -> [P2PDeviceInfo] {
         return syncQueue.sync {
             Array(connectedDevices.values)
         }
@@ -219,15 +251,9 @@ class HistorySyncManager: NSObject {
         
         // Load devices
         if let devicesData = userDefaults.data(forKey: devicesStorageKey),
-           let decodedDevices = try? JSONDecoder().decode([String: DeviceInfo].self, from: devicesData) {
+           let decodedDevices = try? JSONDecoder().decode([String: P2PDeviceInfo].self, from: devicesData) {
             syncQueue.async(flags: .barrier) {
                 self.connectedDevices = decodedDevices
-                // Mark all as disconnected initially
-                self.connectedDevices.values.forEach { device in
-                    var updatedDevice = device
-                    updatedDevice.isConnected = false
-                    self.connectedDevices[device.id] = updatedDevice
-                }
             }
         }
     }
@@ -246,12 +272,9 @@ class HistorySyncManager: NSObject {
     
     // MARK: - Sync Protocol
     private func sendDeviceInfo() {
-        let deviceInfo = DeviceInfo(
-            id: deviceId,
+        let deviceInfo = P2PDeviceInfo(
             name: deviceName,
-            type: "ios",
-            lastSeen: Date(),
-            isConnected: true
+            type: "ios"
         )
         
         guard let data = try? JSONEncoder().encode(deviceInfo) else { return }
@@ -308,7 +331,7 @@ class HistorySyncManager: NSObject {
     private func sendSyncMessage(_ message: SyncMessage, to peerId: String? = nil) {
         guard let messageData = try? JSONEncoder().encode(message) else { return }
         
-        webRTCManager?.sendData(messageData, to: peerId)
+        p2pManager?.sendData(messageData, to: peerId)
     }
     
     // MARK: - Sync Message Handling
@@ -320,7 +343,7 @@ class HistorySyncManager: NSObject {
         
         switch message.type {
         case .deviceInfo:
-            handleDeviceInfo(message)
+            handleDeviceInfo(message, from: peerId)
             
         case .fullSync:
             handleFullSync(message)
@@ -334,14 +357,12 @@ class HistorySyncManager: NSObject {
         }
     }
     
-    private func handleDeviceInfo(_ message: SyncMessage) {
+    private func handleDeviceInfo(_ message: SyncMessage, from peerId: String) {
         guard let data = message.data,
-              let deviceInfo = try? JSONDecoder().decode(DeviceInfo.self, from: data) else { return }
+              let deviceInfo = try? JSONDecoder().decode(P2PDeviceInfo.self, from: data) else { return }
         
         syncQueue.async(flags: .barrier) {
-            var info = deviceInfo
-            info.isConnected = true
-            self.connectedDevices[info.id] = info
+            self.connectedDevices[peerId] = deviceInfo
             self.saveDevicesToPersistence()
         }
         
@@ -383,44 +404,44 @@ class HistorySyncManager: NSObject {
     }
 }
 
-// MARK: - WebRTCManagerDelegate
-extension HistorySyncManager: WebRTCManagerDelegate {
-    func webRTCManager(_ manager: WebRTCManager, didReceiveData data: Data, from peerId: String) {
-        handleSyncMessage(data, from: peerId)
-    }
-    
-    func webRTCManager(_ manager: WebRTCManager, didConnectPeer peerId: String) {
+// MARK: - P2PConnectionManagerDelegate
+extension HistorySyncManager: P2PConnectionManagerDelegate {
+    func p2pManager(_ manager: P2PConnectionManager, didConnectPeer peerId: String, deviceInfo: DeviceInfo) {
         os_log(.info, log: logger, "Connected to peer: %@", peerId)
+        
+        // Store device info
+        syncQueue.async(flags: .barrier) {
+            self.connectedDevices[peerId] = deviceInfo
+            self.saveDevicesToPersistence()
+        }
         
         // Request full sync from new peer
         sendSyncRequest(to: peerId)
         
         // Send our device info
         sendDeviceInfo()
+        
+        // Update delegate
+        DispatchQueue.main.async {
+            self.delegate?.historySyncManager(self, didUpdateDevices: self.getConnectedDevices())
+        }
     }
     
-    func webRTCManager(_ manager: WebRTCManager, didDisconnectPeer peerId: String) {
+    func p2pManager(_ manager: P2PConnectionManager, didDisconnectPeer peerId: String) {
         os_log(.info, log: logger, "Disconnected from peer: %@", peerId)
         
-        // Update device connection status
-        syncQueue.async(flags: .barrier) {
-            for (deviceId, var device) in self.connectedDevices {
-                if peerId.hasPrefix(deviceId) {
-                    device.isConnected = false
-                    self.connectedDevices[deviceId] = device
-                    break
-                }
-            }
-            self.saveDevicesToPersistence()
-        }
-        
+        // Update delegate
         DispatchQueue.main.async {
-            self.delegate?.historySyncManager(self, didUpdateDevices: self.getAllKnownDevices())
+            self.delegate?.historySyncManager(self, didUpdateDevices: self.getConnectedDevices())
         }
     }
     
-    func webRTCManager(_ manager: WebRTCManager, didEncounterError error: Error) {
-        os_log(.error, log: logger, "WebRTC error: %@", error.localizedDescription)
+    func p2pManager(_ manager: P2PConnectionManager, didReceiveData data: Data, from peerId: String) {
+        handleSyncMessage(data, from: peerId)
+    }
+    
+    func p2pManager(_ manager: P2PConnectionManager, didEncounterError error: Error) {
+        os_log(.error, log: logger, "P2P error: %@", error.localizedDescription)
         
         DispatchQueue.main.async {
             self.delegate?.historySyncManager(self, didEncounterError: error)

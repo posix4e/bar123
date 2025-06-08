@@ -1,13 +1,19 @@
 {
   "name": "history-sync-chrome-extension",
-  "version": "1.0.0",
-  "description": "Chrome Extension for P2P history sync",
+  "version": "2.0.0",
+  "description": "Chrome Extension for P2P history sync without signaling server",
   "scripts": {
     "build": "npm run copy-deps",
-    "copy-deps": "cp node_modules/crypto-js/crypto-js.js ./crypto-js.min.js"
+    "copy-deps": "npm run copy-crypto && npm run copy-qrcode && npm run copy-qr-scanner && npm run copy-p2p",
+    "copy-crypto": "cp node_modules/crypto-js/crypto-js.js ./lib/crypto-js.min.js",
+    "copy-qrcode": "cp node_modules/qrcode/build/qrcode.min.js ./lib/qrcode.min.js",
+    "copy-qr-scanner": "cp -r node_modules/qr-scanner/dist/* ./lib/",
+    "copy-p2p": "cp ../shared/p2p-core.js ./lib/p2p-core.js"
   },
   "dependencies": {
-    "crypto-js": "^4.2.0"
+    "crypto-js": "^4.2.0",
+    "qrcode": "^1.5.3",
+    "qr-scanner": "^1.4.2"
   },
   "devDependencies": {}
 }

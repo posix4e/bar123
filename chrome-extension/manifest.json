@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "History Sync",
-  "version": "1.0.0",
-  "description": "P2P browsing history sync across devices using WebRTC",
+  "name": "History Sync P2P",
+  "version": "2.0.0",
+  "description": "Serverless P2P browsing history sync using QR codes",
   "permissions": [
     "history",
     "storage",
@@ -33,5 +33,11 @@
     "16": "icon-16.png",
     "48": "icon-48.png",
     "128": "icon-128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

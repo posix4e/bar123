@@ -1,0 +1,6 @@
+# Dependencies will be copied here by npm scripts
+*.js
+*.min.js
+*.mjs
+*.map
+qr-scanner-worker.min.js.map

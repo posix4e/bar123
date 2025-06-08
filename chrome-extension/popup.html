@@ -25,15 +25,52 @@
         
         <!-- Tabs -->
         <div class="tabs">
-            <button class="tab-button active" data-tab="history">History</button>
+            <button class="tab-button active" data-tab="connect">Connect</button>
+            <button class="tab-button" data-tab="history">History</button>
             <button class="tab-button" data-tab="devices">Devices</button>
             <button class="tab-button" data-tab="settings">Settings</button>
         </div>
         
         <!-- Tab Content -->
         <div class="tab-content">
+            <!-- Connect Tab -->
+            <div id="connectTab" class="tab-pane active">
+                <div class="connect-section">
+                    <div class="connect-mode">
+                        <button id="startConnectionBtn" class="btn btn-primary">Start New Connection</button>
+                        <button id="joinConnectionBtn" class="btn btn-secondary">Join Existing Connection</button>
+                    </div>
+                    
+                    <div id="connectionFlow" class="connection-flow hidden">
+                        <!-- QR Code Display -->
+                        <div id="qrCodeSection" class="qr-section hidden">
+                            <h3>Scan this QR code on another device</h3>
+                            <canvas id="qrCanvas"></canvas>
+                            <div class="connection-bundle">
+                                <textarea id="connectionBundle" readonly placeholder="Connection data will appear here"></textarea>
+                                <button id="copyBundleBtn" class="btn btn-secondary">Copy to Clipboard</button>
+                            </div>
+                        </div>
+                        
+                        <!-- QR Scanner -->
+                        <div id="qrScannerSection" class="qr-section hidden">
+                            <h3>Scan QR code from other device</h3>
+                            <video id="qrVideo"></video>
+                            <div class="manual-input">
+                                <p>Or paste connection data:</p>
+                                <textarea id="manualInput" placeholder="Paste connection data here"></textarea>
+                                <button id="processManualBtn" class="btn btn-primary">Connect</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Messages -->
+                        <div id="connectionStatus" class="connection-status"></div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- History Tab -->
-            <div id="historyTab" class="tab-pane active">
+            <div id="historyTab" class="tab-pane">
                 <div class="filter-section">
                     <select id="deviceFilter" class="device-filter">
                         <option value="">All Devices</option>
@@ -57,23 +94,19 @@
                     <h3>Connection Settings</h3>
                     
                     <div class="form-group">
-                        <label for="serverUrl">Signaling Server URL:</label>
-                        <input type="text" id="serverUrl" placeholder="ws://localhost:8080">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="roomId">Room ID:</label>
-                        <input type="text" id="roomId" placeholder="history-sync-default">
+                        <label for="deviceName">Device Name:</label>
+                        <input type="text" id="deviceName" placeholder="Chrome Browser">
                     </div>
                     
                     <div class="form-group">
                         <label for="sharedSecret">Shared Secret:</label>
-                        <input type="password" id="sharedSecret" placeholder="Enter shared secret">
-                        <button id="generateSecret" class="btn btn-secondary">Generate</button>
+                        <input type="password" id="sharedSecret" placeholder="Used for secure connections" readonly>
+                        <button id="generateSecret" class="btn btn-secondary">Generate New</button>
                     </div>
                     
-                    <button id="saveSettings" class="btn btn-primary">Save & Connect</button>
-                    <button id="disconnectButton" class="btn btn-danger">Disconnect</button>
+                    <p class="settings-info">The shared secret is automatically generated when you create your first connection. All devices must use the same secret to communicate.</p>
+                    
+                    <button id="disconnectButton" class="btn btn-danger">Disconnect All Peers</button>
                 </div>
             </div>
         </div>
