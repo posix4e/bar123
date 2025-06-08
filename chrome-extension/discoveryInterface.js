@@ -533,6 +533,9 @@ class DiscoveryManager {
             case 'stun-only':
                 this.activeDiscovery = new STUNOnlyDiscovery(config);
                 break;
+            case 'cloudflare-dns':
+                this.activeDiscovery = new CloudflareDNSDiscovery(config);
+                break;
             default:
                 throw new Error(`Unknown discovery method: ${method}`);
         }
@@ -545,6 +548,8 @@ class DiscoveryManager {
                         return new WebSocketDiscovery(fallback.config);
                     case 'stun-only':
                         return new STUNOnlyDiscovery(fallback.config);
+                    case 'cloudflare-dns':
+                        return new CloudflareDNSDiscovery(fallback.config);
                     default:
                         return null;
                 }

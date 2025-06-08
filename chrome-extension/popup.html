@@ -61,6 +61,7 @@
                         <select id="discoveryMethod" class="form-control">
                             <option value="websocket">WebSocket Server (Default)</option>
                             <option value="stun-only">STUN Only (Manual Exchange)</option>
+                            <option value="cloudflare-dns">Cloudflare DNS (Your Domain)</option>
                         </select>
                     </div>
                     
@@ -133,6 +134,37 @@
                                 <div class="connected-peers" id="connectedPeersList"></div>
                                 <button id="newConnection" class="btn btn-secondary">New Connection</button>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cloudflare DNS Settings -->
+                    <div id="cloudflareSettings" class="discovery-settings" style="display: none;">
+                        <div class="form-group">
+                            <label for="cloudflareDomain">Your Domain:</label>
+                            <input type="text" id="cloudflareDomain" placeholder="example.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cloudflareZoneId">Zone ID:</label>
+                            <input type="text" id="cloudflareZoneId" placeholder="Zone ID from Cloudflare dashboard">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cloudflareApiToken">API Token:</label>
+                            <input type="password" id="cloudflareApiToken" placeholder="Cloudflare API token with DNS edit permissions">
+                            <small class="help-text">Create at: <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Cloudflare API Tokens</a></small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cloudflareRoomId">Room ID:</label>
+                            <input type="text" id="cloudflareRoomId" placeholder="unique-room-name">
+                        </div>
+                        
+                        <div class="connection-info">
+                            <h4>Share with Other Devices</h4>
+                            <p>After connecting, you can share these credentials with your iOS device:</p>
+                            <button id="generateCloudflareShare" class="btn btn-secondary">Generate Share Code</button>
+                            <textarea id="cloudflareShareCode" readonly rows="4" style="display: none; margin-top: 10px;"></textarea>
                         </div>
                     </div>
                     

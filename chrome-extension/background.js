@@ -7,6 +7,7 @@
 importScripts('crypto-js.js');
 importScripts('connectionShare.js');
 importScripts('discoveryInterface.js');
+importScripts('cloudflareDiscovery.js');
 
 // Configuration
 const config = {
@@ -121,6 +122,13 @@ async function connect() {
                 const expectedHmac = generateHMAC(message.payload, secret);
                 return message.hmac === expectedHmac;
             };
+        } else if (config.discoveryMethod === 'cloudflare-dns') {
+            // Add Cloudflare-specific config
+            discoveryConfig.cloudflareApiToken = config.cloudflareApiToken;
+            discoveryConfig.cloudflareZoneId = config.cloudflareZoneId;
+            discoveryConfig.domain = config.cloudflareDomain;
+            discoveryConfig.roomId = config.cloudflareRoomId || config.roomId;
+            discoveryConfig.recordPrefix = '_p2psync';
         }
         
         activeDiscovery = await discoveryManager.initialize(config.discoveryMethod, discoveryConfig);

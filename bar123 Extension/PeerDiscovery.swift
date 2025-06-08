@@ -381,6 +381,7 @@ class DiscoveryManager {
     enum DiscoveryMethod {
         case websocket(url: String, roomId: String, secret: String)
         case stunOnly(servers: [String])
+        case cloudflareDNS(apiToken: String, zoneId: String, domain: String, roomId: String)
     }
     
     private var activeDiscovery: PeerDiscovery?
@@ -448,6 +449,15 @@ class DiscoveryManager {
         case .stunOnly(let servers):
             return STUNOnlyDiscovery(
                 stunServers: servers,
+                deviceInfo: deviceInfo
+            )
+            
+        case .cloudflareDNS(let apiToken, let zoneId, let domain, let roomId):
+            return CloudflareDNSDiscovery(
+                apiToken: apiToken,
+                zoneId: zoneId,
+                domain: domain,
+                roomId: roomId,
                 deviceInfo: deviceInfo
             )
         }

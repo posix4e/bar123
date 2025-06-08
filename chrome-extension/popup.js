@@ -76,7 +76,16 @@ function setupElements() {
         connectedPeersList: document.getElementById('connectedPeersList'),
         newConnection: document.getElementById('newConnection'),
         saveSettings: document.getElementById('saveSettings'),
-        disconnectButton: document.getElementById('disconnectButton')
+        disconnectButton: document.getElementById('disconnectButton'),
+        
+        // Cloudflare elements
+        cloudflareSettings: document.getElementById('cloudflareSettings'),
+        cloudflareDomain: document.getElementById('cloudflareDomain'),
+        cloudflareZoneId: document.getElementById('cloudflareZoneId'),
+        cloudflareApiToken: document.getElementById('cloudflareApiToken'),
+        cloudflareRoomId: document.getElementById('cloudflareRoomId'),
+        generateCloudflareShare: document.getElementById('generateCloudflareShare'),
+        cloudflareShareCode: document.getElementById('cloudflareShareCode')
     };
 }
 
@@ -111,6 +120,12 @@ function updateConfigUI() {
     ];
     elements.stunServers.value = stunServers.join('\n');
     
+    // Cloudflare settings
+    elements.cloudflareDomain.value = currentConfig.cloudflareDomain || '';
+    elements.cloudflareZoneId.value = currentConfig.cloudflareZoneId || '';
+    elements.cloudflareApiToken.value = currentConfig.cloudflareApiToken || '';
+    elements.cloudflareRoomId.value = currentConfig.cloudflareRoomId || '';
+    
     // Show/hide appropriate settings
     updateDiscoveryUI();
 }
@@ -132,11 +147,14 @@ function updateConnectionStatus() {
 function updateDiscoveryUI() {
     const method = elements.discoveryMethod.value;
     
+    // Hide all settings first
+    elements.websocketSettings.style.display = 'none';
+    elements.stunSettings.style.display = 'none';
+    elements.cloudflareSettings.style.display = 'none';
+    
     if (method === 'websocket') {
         elements.websocketSettings.style.display = 'block';
-        elements.stunSettings.style.display = 'none';
     } else if (method === 'stun-only') {
-        elements.websocketSettings.style.display = 'none';
         elements.stunSettings.style.display = 'block';
         
         // Show connection flow if connected
@@ -144,6 +162,8 @@ function updateDiscoveryUI() {
             elements.connectionFlow.style.display = 'block';
             updateConnectionFlow();
         }
+    } else if (method === 'cloudflare-dns') {
+        elements.cloudflareSettings.style.display = 'block';
     }
 }
 
@@ -178,6 +198,9 @@ function setupEventListeners() {
     elements.copyOfferCode.addEventListener('click', copyOfferCode);
     elements.processConnection.addEventListener('click', processConnection);
     elements.newConnection.addEventListener('click', resetConnectionFlow);
+    
+    // Cloudflare share
+    elements.generateCloudflareShare.addEventListener('click', generateCloudflareShare);
     
     // Auto-detect connection data in input
     elements.connectionInput.addEventListener('paste', (e) => {
@@ -406,6 +429,17 @@ async function saveSettings() {
         
         if (config.stunServers.length === 0) {
             alert('Please provide at least one STUN server');
+            return;
+        }
+    } else if (discoveryMethod === 'cloudflare-dns') {
+        config.cloudflareDomain = elements.cloudflareDomain.value.trim();
+        config.cloudflareZoneId = elements.cloudflareZoneId.value.trim();
+        config.cloudflareApiToken = elements.cloudflareApiToken.value.trim();
+        config.cloudflareRoomId = elements.cloudflareRoomId.value.trim();
+        
+        if (!config.cloudflareDomain || !config.cloudflareZoneId || 
+            !config.cloudflareApiToken || !config.cloudflareRoomId) {
+            alert('Please fill in all Cloudflare fields');
             return;
         }
     }
@@ -671,4 +705,69 @@ function showTemporaryButtonFeedback(button, message) {
     setTimeout(() => {
         button.textContent = originalText;
     }, 2000);
+}
+
+// Generate Cloudflare share code
+async function generateCloudflareShare() {
+    // Get current Cloudflare config
+    const config = {
+        domain: elements.cloudflareDomain.value.trim(),
+        zoneId: elements.cloudflareZoneId.value.trim(),
+        apiToken: elements.cloudflareApiToken.value.trim(),
+        roomId: elements.cloudflareRoomId.value.trim()
+    };
+    
+    if (!config.domain || !config.zoneId || !config.apiToken || !config.roomId) {
+        showStatus('Please fill in all Cloudflare fields first', 'error');
+        return;
+    }
+    
+    // Create shareable config
+    const shareData = {
+        type: 'cloudflare-dns-config',
+        version: 1,
+        config: {
+            domain: config.domain,
+            zoneId: config.zoneId,
+            apiToken: config.apiToken,
+            roomId: config.roomId,
+            recordPrefix: '_p2psync',
+            ttl: 120
+        },
+        createdAt: new Date().toISOString(),
+        deviceName: 'Chrome Extension'
+    };
+    
+    // Encode as base64
+    const encoded = btoa(JSON.stringify(shareData));
+    
+    // Format for sharing
+    const shareText = `🔐 History Sync Cloudflare Config
+
+This allows other devices to join the same P2P network using your Cloudflare domain for discovery.
+
+⚠️ Keep this secure - it contains your API token!
+
+${encoded}
+
+To use on iOS:
+1. Copy this entire message
+2. Open the iOS app
+3. Go to Settings > Discovery Method > Cloudflare DNS
+4. Paste this code
+
+Expires: Never (revoke API token to disable)`;
+    
+    // Show the share code
+    elements.cloudflareShareCode.value = shareText;
+    elements.cloudflareShareCode.style.display = 'block';
+    elements.cloudflareShareCode.select();
+    
+    // Copy to clipboard
+    try {
+        await navigator.clipboard.writeText(shareText);
+        showTemporaryButtonFeedback(elements.generateCloudflareShare, 'Copied to Clipboard!');
+    } catch (error) {
+        console.error('Failed to copy to clipboard:', error);
+    }
 }
