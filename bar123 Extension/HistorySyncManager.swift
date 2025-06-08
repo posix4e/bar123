@@ -83,6 +83,11 @@ class HistorySyncManager: NSObject {
     private let devicesStorageKey = "com.historysync.devices"
     private let userDefaults = UserDefaults(suiteName: "group.com.historysync")!
     
+    // Discovery configuration keys
+    private let discoveryMethodKey = "com.historysync.discoveryMethod"
+    private let stunServersKey = "com.historysync.stunServers"
+    private let websocketConfigKey = "com.historysync.websocketConfig"
+    
     // Sync state
     private var lastSyncTimestamp: Date?
     private let syncQueue = DispatchQueue(label: "com.historysync.sync", attributes: .concurrent)
@@ -111,25 +116,54 @@ class HistorySyncManager: NSObject {
     }
     
     // MARK: - Connection Management
-    func connect(roomId: String, sharedSecret: String, signalingServerURL: URL) {
-        let peerId = "\(deviceId)-\(UUID().uuidString.prefix(8))"
-        
+    func connect(discoveryMethod: DiscoveryManager.DiscoveryMethod, fallbacks: [DiscoveryManager.DiscoveryMethod] = []) async throws {
         webRTCManager = WebRTCManager(
-            peerId: peerId,
-            roomId: roomId,
-            sharedSecret: sharedSecret,
-            signalingServerURL: signalingServerURL
+            deviceId: deviceId,
+            deviceName: deviceName
         )
         
         webRTCManager?.delegate = self
-        webRTCManager?.connect()
+        
+        try await webRTCManager?.connect(
+            discoveryMethod: discoveryMethod,
+            fallbacks: fallbacks
+        )
         
         // Send device info when connected
         sendDeviceInfo()
     }
     
-    func disconnect() {
-        webRTCManager?.disconnect()
+    // Legacy connection method for WebSocket discovery
+    func connect(roomId: String, sharedSecret: String, signalingServerURL: URL) async throws {
+        let discoveryMethod = DiscoveryManager.DiscoveryMethod.websocket(
+            url: signalingServerURL.absoluteString,
+            roomId: roomId,
+            secret: sharedSecret
+        )
+        
+        try await connect(discoveryMethod: discoveryMethod)
+    }
+    
+    // STUN-only connection method
+    func connectSTUNOnly(stunServers: [String]? = nil) async throws {
+        let servers = stunServers ?? WebRTCConfig.defaultStunServers
+        let discoveryMethod = DiscoveryManager.DiscoveryMethod.stunOnly(servers: servers)
+        
+        // Set up fallback to WebSocket if configured
+        var fallbacks: [DiscoveryManager.DiscoveryMethod] = []
+        if let config = loadWebSocketConfig() {
+            fallbacks.append(.websocket(
+                url: config.url,
+                roomId: config.roomId,
+                secret: config.secret
+            ))
+        }
+        
+        try await connect(discoveryMethod: discoveryMethod, fallbacks: fallbacks)
+    }
+    
+    func disconnect() async {
+        await webRTCManager?.disconnect()
         webRTCManager = nil
         
         // Mark all devices as disconnected
@@ -205,6 +239,43 @@ class HistorySyncManager: NSObject {
         return syncQueue.sync {
             Array(connectedDevices.values)
         }
+    }
+    
+    // MARK: - Configuration Persistence
+    private func loadWebSocketConfig() -> (url: String, roomId: String, secret: String)? {
+        guard let data = userDefaults.data(forKey: websocketConfigKey),
+              let config = try? JSONDecoder().decode([String: String].self, from: data),
+              let url = config["url"],
+              let roomId = config["roomId"],
+              let secret = config["secret"] else {
+            return nil
+        }
+        return (url: url, roomId: roomId, secret: secret)
+    }
+    
+    func saveDiscoveryPreferences(method: String, stunServers: [String]? = nil, websocketConfig: [String: String]? = nil) {
+        userDefaults.set(method, forKey: discoveryMethodKey)
+        
+        if let stunServers = stunServers {
+            userDefaults.set(stunServers, forKey: stunServersKey)
+        }
+        
+        if let websocketConfig = websocketConfig,
+           let data = try? JSONEncoder().encode(websocketConfig) {
+            userDefaults.set(data, forKey: websocketConfigKey)
+        }
+    }
+    
+    func getDiscoveryPreferences() -> (method: String, stunServers: [String]?, websocketConfig: [String: String]?) {
+        let method = userDefaults.string(forKey: discoveryMethodKey) ?? "websocket"
+        let stunServers = userDefaults.array(forKey: stunServersKey) as? [String]
+        
+        var websocketConfig: [String: String]?
+        if let data = userDefaults.data(forKey: websocketConfigKey) {
+            websocketConfig = try? JSONDecoder().decode([String: String].self, from: data)
+        }
+        
+        return (method: method, stunServers: stunServers, websocketConfig: websocketConfig)
     }
     
     // MARK: - Persistence

@@ -3,29 +3,47 @@
  * Manages WebRTC connections, history tracking, and P2P sync
  */
 
-// Import crypto for HMAC
+// Import crypto for HMAC and discovery interface
 importScripts('crypto-js.js');
+importScripts('connectionShare.js');
+importScripts('discoveryInterface.js');
 
 // Configuration
 const config = {
+    discoveryMethod: 'websocket', // 'websocket' or 'stun-only'
     signalingServerUrl: 'ws://localhost:8080',
     roomId: 'history-sync-default',
     sharedSecret: null,
     isConnected: false,
     deviceId: null,
-    deviceName: 'Chrome Browser'
+    deviceName: 'Chrome Browser',
+    stunServers: [
+        'stun:stun.l.google.com:19302',
+        'stun:stun1.l.google.com:19302',
+        'stun:stun2.l.google.com:19302',
+        'stun:stun3.l.google.com:19302'
+    ],
+    fallbackMethods: [
+        {
+            method: 'stun-only',
+            config: {
+                stunServers: [
+                    'stun:stun.l.google.com:19302',
+                    'stun:stun1.l.google.com:19302'
+                ]
+            }
+        }
+    ]
 };
 
 // WebRTC configuration
 const webRTCConfig = {
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-    ]
+    iceServers: config.stunServers.map(url => ({ urls: url }))
 };
 
 // State
-let webSocket = null;
+const discoveryManager = new DiscoveryManager();
+let activeDiscovery = null;
 const peerConnections = new Map();
 const dataChannels = new Map();
 const historyCache = new Map();
@@ -34,7 +52,14 @@ const connectedDevices = new Map();
 // Initialize
 async function initialize() {
     // Generate or load device ID
-    const stored = await chrome.storage.local.get(['deviceId', 'signalingServerUrl', 'roomId', 'sharedSecret']);
+    const stored = await chrome.storage.local.get([
+        'deviceId', 
+        'discoveryMethod',
+        'signalingServerUrl', 
+        'roomId', 
+        'sharedSecret',
+        'stunServers'
+    ]);
     
     if (stored.deviceId) {
         config.deviceId = stored.deviceId;
@@ -44,15 +69,20 @@ async function initialize() {
     }
     
     // Load saved config
+    if (stored.discoveryMethod) config.discoveryMethod = stored.discoveryMethod;
     if (stored.signalingServerUrl) config.signalingServerUrl = stored.signalingServerUrl;
     if (stored.roomId) config.roomId = stored.roomId;
     if (stored.sharedSecret) config.sharedSecret = stored.sharedSecret;
+    if (stored.stunServers) config.stunServers = stored.stunServers;
+    
+    // Update WebRTC config with loaded STUN servers
+    webRTCConfig.iceServers = config.stunServers.map(url => ({ urls: url }));
     
     // Setup history listener
     chrome.history.onVisited.addListener(handleHistoryVisit);
     
     // Auto-connect if configured
-    if (config.sharedSecret) {
+    if (config.sharedSecret || config.discoveryMethod === 'stun-only') {
         await connect();
     }
 }
@@ -62,135 +92,133 @@ function generateDeviceId() {
     return 'chrome-' + Math.random().toString(36).substr(2, 9);
 }
 
-// Generate HMAC
-function generateHMAC(data) {
-    const dataString = JSON.stringify(data);
-    return CryptoJS.HmacSHA256(dataString, config.sharedSecret).toString();
+// Generate HMAC (for WebSocket discovery)
+function generateHMAC(message, secret) {
+    return CryptoJS.HmacSHA256(message, secret).toString();
 }
 
-// Verify HMAC
-function verifyHMAC(message) {
-    if (!message.hmac || !message.data) return false;
-    
-    const dataString = JSON.stringify(message.data);
-    const expectedHmac = CryptoJS.HmacSHA256(dataString, config.sharedSecret).toString();
-    
-    return message.hmac === expectedHmac;
-}
-
-// Connect to signaling server
+// Connect using configured discovery method
 async function connect() {
-    if (!config.sharedSecret) {
-        throw new Error('No shared secret configured');
+    try {
+        // Initialize discovery with appropriate config
+        const discoveryConfig = {
+            signalingServerUrl: config.signalingServerUrl,
+            roomId: config.roomId,
+            sharedSecret: config.sharedSecret,
+            deviceInfo: {
+                id: config.deviceId,
+                name: config.deviceName,
+                type: 'chrome'
+            },
+            stunServers: config.stunServers,
+            fallbackMethods: config.fallbackMethods
+        };
+        
+        // Add HMAC generation for WebSocket discovery
+        if (config.discoveryMethod === 'websocket') {
+            discoveryConfig.generateHMAC = generateHMAC;
+            discoveryConfig.verifyHMAC = (message, secret) => {
+                const expectedHmac = generateHMAC(message.payload, secret);
+                return message.hmac === expectedHmac;
+            };
+        }
+        
+        activeDiscovery = await discoveryManager.initialize(config.discoveryMethod, discoveryConfig);
+        
+        // Set up discovery event handlers
+        activeDiscovery.onPeerDiscovered = handlePeerDiscovered;
+        activeDiscovery.onPeerLost = handlePeerLost;
+        activeDiscovery.onSignalingMessage = handleSignalingMessage;
+        activeDiscovery.onError = handleDiscoveryError;
+        
+        // Start discovery
+        await discoveryManager.start();
+        
+        config.isConnected = true;
+        updateBadge(true);
+        
+        console.log(`Connected using ${config.discoveryMethod} discovery`);
+    } catch (error) {
+        console.error('Connection failed:', error);
+        config.isConnected = false;
+        updateBadge(false);
+        throw error;
     }
-    
-    return new Promise((resolve, reject) => {
-        webSocket = new WebSocket(config.signalingServerUrl);
-        
-        webSocket.onopen = () => {
-            console.log('Connected to signaling server');
-            
-            // Send join message
-            sendSignalingMessage({
-                type: 'join',
-                roomId: config.roomId,
-                peerId: config.deviceId,
-                deviceInfo: {
-                    name: config.deviceName,
-                    type: 'chrome'
-                }
-            });
-            
-            config.isConnected = true;
-            updateBadge(true);
-            resolve();
-        };
-        
-        webSocket.onmessage = (event) => {
-            handleSignalingMessage(event.data);
-        };
-        
-        webSocket.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            config.isConnected = false;
-            updateBadge(false);
-            reject(error);
-        };
-        
-        webSocket.onclose = () => {
-            console.log('Disconnected from signaling server');
-            config.isConnected = false;
-            updateBadge(false);
-            
-            // Clean up peer connections
-            peerConnections.forEach(pc => pc.close());
-            peerConnections.clear();
-            dataChannels.clear();
-        };
-    });
 }
 
 // Disconnect
 async function disconnect() {
-    if (webSocket) {
-        webSocket.close();
-        webSocket = null;
+    if (activeDiscovery) {
+        await activeDiscovery.stop();
+        activeDiscovery = null;
     }
+    
+    // Clean up peer connections
+    peerConnections.forEach(pc => pc.close());
+    peerConnections.clear();
+    dataChannels.clear();
+    connectedDevices.clear();
     
     config.isConnected = false;
     updateBadge(false);
 }
 
-// Send signaling message
-function sendSignalingMessage(data) {
-    if (!webSocket || webSocket.readyState !== WebSocket.OPEN) {
-        console.error('WebSocket not connected');
-        return;
+// Handle peer discovered
+async function handlePeerDiscovered(peerId, peerInfo) {
+    console.log(`Peer discovered: ${peerId}`, peerInfo);
+    
+    // Create peer connection and offer
+    const pc = createPeerConnection(peerId);
+    
+    try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        
+        await activeDiscovery.sendSignalingMessage(peerId, {
+            type: 'offer',
+            offer: {
+                type: offer.type,
+                sdp: offer.sdp
+            }
+        });
+    } catch (error) {
+        console.error(`Failed to create offer for ${peerId}:`, error);
     }
-    
-    const message = {
-        data: data,
-        hmac: generateHMAC(data)
-    };
-    
-    webSocket.send(JSON.stringify(message));
 }
 
-// Handle signaling message
-function handleSignalingMessage(messageText) {
-    try {
-        const message = JSON.parse(messageText);
-        
-        if (!verifyHMAC(message)) {
-            console.error('Invalid HMAC');
-            return;
-        }
-        
-        const data = message.data;
-        
-        switch (data.type) {
-            case 'room-peers':
-                handleRoomPeers(data);
-                break;
-            case 'peer-joined':
-                handlePeerJoined(data);
-                break;
-            case 'offer':
-                handleOffer(data);
-                break;
-            case 'answer':
-                handleAnswer(data);
-                break;
-            case 'ice-candidate':
-                handleIceCandidate(data);
-                break;
-            case 'peer-left':
-                handlePeerLeft(data);
-                break;
-        }
-    } catch (error) {
-        console.error('Error handling signaling message:', error);
+// Handle peer lost
+function handlePeerLost(peerId, peerInfo) {
+    console.log(`Peer lost: ${peerId}`);
+    
+    const pc = peerConnections.get(peerId);
+    if (pc) {
+        pc.close();
+        peerConnections.delete(peerId);
+        dataChannels.delete(peerId);
+        connectedDevices.delete(peerId);
     }
+}
+
+// Handle signaling message from discovery
+async function handleSignalingMessage(fromPeerId, message) {
+    switch (message.type) {
+        case 'offer':
+            await handleOffer(fromPeerId, message.offer);
+            break;
+        case 'answer':
+            await handleAnswer(fromPeerId, message.answer);
+            break;
+        case 'ice-candidate':
+            await handleIceCandidate(fromPeerId, message.candidate);
+            break;
+    }
+}
+
+// Handle discovery error
+function handleDiscoveryError(error) {
+    console.error('Discovery error:', error);
+    config.isConnected = false;
+    updateBadge(false);
 }
 
 // Create peer connection
@@ -199,22 +227,23 @@ function createPeerConnection(remotePeerId) {
     
     // Handle ICE candidates
     pc.onicecandidate = (event) => {
-        if (event.candidate) {
-            sendSignalingMessage({
+        if (event.candidate && activeDiscovery) {
+            activeDiscovery.sendSignalingMessage(remotePeerId, {
                 type: 'ice-candidate',
-                targetPeerId: remotePeerId,
                 candidate: {
                     candidate: event.candidate.candidate,
                     sdpMLineIndex: event.candidate.sdpMLineIndex,
                     sdpMid: event.candidate.sdpMid
                 }
+            }).catch(error => {
+                console.error('Failed to send ICE candidate:', error);
             });
         }
     };
     
     // Handle connection state
     pc.onconnectionstatechange = () => {
-        console.log(`Connection state: ${pc.connectionState}`);
+        console.log(`Connection state with ${remotePeerId}: ${pc.connectionState}`);
         
         if (pc.connectionState === 'connected') {
             // Peer connected, send device info
@@ -270,78 +299,53 @@ function createPeerConnection(remotePeerId) {
     return pc;
 }
 
-// Handle room peers
-async function handleRoomPeers(data) {
-    const peers = data.peers || [];
+// Handle offer
+async function handleOffer(remotePeerId, offer) {
+    let pc = peerConnections.get(remotePeerId);
     
-    for (const peer of peers) {
-        const pc = createPeerConnection(peer.peerId);
+    if (!pc) {
+        pc = createPeerConnection(remotePeerId);
+    }
+    
+    try {
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
         
-        // Create offer
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
         
-        sendSignalingMessage({
-            type: 'offer',
-            targetPeerId: peer.peerId,
-            offer: {
-                type: offer.type,
-                sdp: offer.sdp
+        await activeDiscovery.sendSignalingMessage(remotePeerId, {
+            type: 'answer',
+            answer: {
+                type: answer.type,
+                sdp: answer.sdp
             }
         });
+    } catch (error) {
+        console.error(`Failed to handle offer from ${remotePeerId}:`, error);
     }
 }
 
-// Handle peer joined
-function handlePeerJoined(data) {
-    console.log(`Peer joined: ${data.peerId}`);
-    // Wait for their offer
-}
-
-// Handle offer
-async function handleOffer(data) {
-    const remotePeerId = data.fromPeerId;
-    const pc = createPeerConnection(remotePeerId);
-    
-    await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-    
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    
-    sendSignalingMessage({
-        type: 'answer',
-        targetPeerId: remotePeerId,
-        answer: {
-            type: answer.type,
-            sdp: answer.sdp
-        }
-    });
-}
-
 // Handle answer
-async function handleAnswer(data) {
-    const pc = peerConnections.get(data.fromPeerId);
+async function handleAnswer(remotePeerId, answer) {
+    const pc = peerConnections.get(remotePeerId);
     if (pc) {
-        await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        try {
+            await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        } catch (error) {
+            console.error(`Failed to handle answer from ${remotePeerId}:`, error);
+        }
     }
 }
 
 // Handle ICE candidate
-async function handleIceCandidate(data) {
-    const pc = peerConnections.get(data.fromPeerId);
+async function handleIceCandidate(remotePeerId, candidate) {
+    const pc = peerConnections.get(remotePeerId);
     if (pc) {
-        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-    }
-}
-
-// Handle peer left
-function handlePeerLeft(data) {
-    const pc = peerConnections.get(data.peerId);
-    if (pc) {
-        pc.close();
-        peerConnections.delete(data.peerId);
-        dataChannels.delete(data.peerId);
-        connectedDevices.delete(data.peerId);
+        try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (error) {
+            console.error(`Failed to add ICE candidate from ${remotePeerId}:`, error);
+        }
     }
 }
 
@@ -584,6 +588,68 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: true });
             });
             return true;
+            
+        case 'create_connection_offer':
+            // Create a connection offer for STUN-only mode
+            if (activeDiscovery && activeDiscovery.createConnectionOffer) {
+                activeDiscovery.createConnectionOffer()
+                    .then(result => {
+                        sendResponse({ success: true, ...result });
+                    })
+                    .catch(error => {
+                        sendResponse({ success: false, error: error.message });
+                    });
+                return true;
+            } else {
+                sendResponse({ success: false, error: 'Not in STUN-only mode' });
+            }
+            break;
+            
+        case 'process_connection':
+            // Process a connection offer or response
+            if (activeDiscovery && activeDiscovery.processConnectionOffer) {
+                const data = request.data.trim();
+                
+                // Detect if it's an offer or response
+                try {
+                    const decoded = JSON.parse(atob(data.replace(/-/g, '+').replace(/_/g, '/')));
+                    const isOffer = !!decoded.offer;
+                    
+                    if (isOffer) {
+                        activeDiscovery.processConnectionOffer(data)
+                            .then(result => {
+                                sendResponse({ success: true, isOffer: true, ...result });
+                            })
+                            .catch(error => {
+                                sendResponse({ success: false, error: error.message });
+                            });
+                    } else {
+                        activeDiscovery.processConnectionResponse(data)
+                            .then(result => {
+                                sendResponse({ success: true, isOffer: false, ...result });
+                            })
+                            .catch(error => {
+                                sendResponse({ success: false, error: error.message });
+                            });
+                    }
+                } catch (error) {
+                    sendResponse({ success: false, error: 'Invalid connection data' });
+                }
+                return true;
+            } else {
+                sendResponse({ success: false, error: 'Not in STUN-only mode' });
+            }
+            break;
+            
+        case 'get_connection_stats':
+            // Get connection statistics for STUN-only mode
+            if (activeDiscovery && activeDiscovery.getConnectionStats) {
+                const stats = activeDiscovery.getConnectionStats();
+                sendResponse({ success: true, stats });
+            } else {
+                sendResponse({ success: false, error: 'Not in STUN-only mode' });
+            }
+            break;
             
         default:
             sendResponse({ success: false, error: 'Unknown request type' });

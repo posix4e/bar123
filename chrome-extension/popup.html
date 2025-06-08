@@ -57,19 +57,83 @@
                     <h3>Connection Settings</h3>
                     
                     <div class="form-group">
-                        <label for="serverUrl">Signaling Server URL:</label>
-                        <input type="text" id="serverUrl" placeholder="ws://localhost:8080">
+                        <label for="discoveryMethod">Discovery Method:</label>
+                        <select id="discoveryMethod" class="form-control">
+                            <option value="websocket">WebSocket Server (Default)</option>
+                            <option value="stun-only">STUN Only (Manual Exchange)</option>
+                        </select>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="roomId">Room ID:</label>
-                        <input type="text" id="roomId" placeholder="history-sync-default">
+                    <!-- WebSocket Settings -->
+                    <div id="websocketSettings" class="discovery-settings">
+                        <div class="form-group">
+                            <label for="serverUrl">Signaling Server URL:</label>
+                            <input type="text" id="serverUrl" placeholder="ws://localhost:8080">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="roomId">Room ID:</label>
+                            <input type="text" id="roomId" placeholder="history-sync-default">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="sharedSecret">Shared Secret:</label>
+                            <input type="password" id="sharedSecret" placeholder="Enter shared secret">
+                            <button id="generateSecret" class="btn btn-secondary">Generate</button>
+                        </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="sharedSecret">Shared Secret:</label>
-                        <input type="password" id="sharedSecret" placeholder="Enter shared secret">
-                        <button id="generateSecret" class="btn btn-secondary">Generate</button>
+                    <!-- STUN Settings -->
+                    <div id="stunSettings" class="discovery-settings" style="display: none;">
+                        <div class="form-group">
+                            <label for="stunServers">STUN Servers (one per line):</label>
+                            <textarea id="stunServers" rows="5" placeholder="stun:stun.l.google.com:19302&#10;stun:stun1.l.google.com:19302"></textarea>
+                        </div>
+                        
+                        <div class="connection-flow" id="connectionFlow" style="display: none;">
+                            <!-- Connection Step 1: Create Offer -->
+                            <div id="createOfferStep" class="connection-step">
+                                <h4>Step 1: Create Connection Request</h4>
+                                <p>Share this with the device you want to connect to:</p>
+                                <button id="createOffer" class="btn btn-primary">Create Connection Request</button>
+                            </div>
+                            
+                            <!-- Connection Step 2: Share Offer -->
+                            <div id="shareOfferStep" class="connection-step" style="display: none;">
+                                <h4>Step 2: Share Connection Request</h4>
+                                <div class="share-options">
+                                    <button id="shareViaChat" class="btn btn-secondary">
+                                        <span class="icon">💬</span> Share via Chat
+                                    </button>
+                                    <button id="copyOfferLink" class="btn btn-secondary">
+                                        <span class="icon">🔗</span> Copy Link
+                                    </button>
+                                    <button id="copyOfferCode" class="btn btn-secondary">
+                                        <span class="icon">📋</span> Copy Code
+                                    </button>
+                                </div>
+                                <div class="connection-preview">
+                                    <textarea id="connectionOffer" readonly rows="6"></textarea>
+                                </div>
+                                <p class="help-text">Waiting for response... (expires in 5 minutes)</p>
+                            </div>
+                            
+                            <!-- Connection Step 3: Process Response/Offer -->
+                            <div id="processStep" class="connection-step">
+                                <h4>Or: Connect to Another Device</h4>
+                                <p>Paste the connection request or response you received:</p>
+                                <textarea id="connectionInput" rows="4" placeholder="Paste connection code here..."></textarea>
+                                <button id="processConnection" class="btn btn-primary">Connect</button>
+                            </div>
+                            
+                            <!-- Connection Status -->
+                            <div id="connectionStatusStep" class="connection-step" style="display: none;">
+                                <h4>Connection Status</h4>
+                                <div class="status-message" id="connectionStatusMessage"></div>
+                                <div class="connected-peers" id="connectedPeersList"></div>
+                                <button id="newConnection" class="btn btn-secondary">New Connection</button>
+                            </div>
+                        </div>
                     </div>
                     
                     <button id="saveSettings" class="btn btn-primary">Save & Connect</button>

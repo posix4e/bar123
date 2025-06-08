@@ -5,17 +5,16 @@
  * This class handles:
  * - WebRTC peer connection lifecycle
  * - Data channel creation and management
- * - Signaling via WebSocket with HMAC authentication
+ * - Pluggable peer discovery (WebSocket, STUN-only, etc.)
  * - ICE candidate handling
  */
 
 import Foundation
 import WebRTC
-import CryptoKit
 
 // MARK: - WebRTC Configuration
 struct WebRTCConfig {
-    static let iceServers = [
+    static let defaultStunServers = [
         "stun:stun.l.google.com:19302",
         "stun:stun1.l.google.com:19302",
         "stun:stun2.l.google.com:19302",
@@ -44,26 +43,30 @@ class WebRTCManager: NSObject {
     
     // MARK: - Properties
     weak var delegate: WebRTCManagerDelegate?
+    static var factory: RTCPeerConnectionFactory?
     
-    private let peerId: String
-    private let roomId: String
-    private let sharedSecret: String
-    private let signalingServerURL: URL
+    private let deviceInfo: PeerInfo
+    private var discoveryManager: DiscoveryManager
+    private var activeDiscovery: PeerDiscovery?
     
     private var peerConnectionFactory: RTCPeerConnectionFactory!
     private var peerConnections: [String: RTCPeerConnection] = [:]
     private var dataChannels: [String: RTCDataChannel] = [:]
-    private var webSocketTask: URLSessionWebSocketTask?
-    private let urlSession = URLSession(configuration: .default)
     
     private let queue = DispatchQueue(label: "com.historysync.webrtc", attributes: .concurrent)
     
+    // Configuration
+    private var stunServers: [String] = WebRTCConfig.defaultStunServers
+    
     // MARK: - Initialization
-    init(peerId: String, roomId: String, sharedSecret: String, signalingServerURL: URL) {
-        self.peerId = peerId
-        self.roomId = roomId
-        self.sharedSecret = sharedSecret
-        self.signalingServerURL = signalingServerURL
+    init(deviceId: String, deviceName: String) {
+        self.deviceInfo = PeerInfo(
+            id: deviceId,
+            name: deviceName,
+            type: "ios",
+            timestamp: Date()
+        )
+        self.discoveryManager = DiscoveryManager()
         
         super.init()
         
@@ -80,6 +83,9 @@ class WebRTCManager: NSObject {
             encoderFactory: videoEncoderFactory,
             decoderFactory: videoDecoderFactory
         )
+        
+        // Store factory for discovery implementations
+        WebRTCManager.factory = peerConnectionFactory
     }
     
     deinit {
@@ -87,12 +93,23 @@ class WebRTCManager: NSObject {
     }
     
     // MARK: - Connection Management
-    func connect() {
-        connectToSignalingServer()
+    func connect(discoveryMethod: DiscoveryManager.DiscoveryMethod, fallbacks: [DiscoveryManager.DiscoveryMethod] = []) async throws {
+        // Initialize discovery with the selected method
+        activeDiscovery = discoveryManager.initialize(
+            method: discoveryMethod,
+            deviceInfo: deviceInfo,
+            fallbacks: fallbacks
+        )
+        
+        // Set ourselves as the discovery delegate
+        activeDiscovery?.delegate = self
+        
+        // Start discovery
+        try await discoveryManager.start()
     }
     
-    func disconnect() {
-        webSocketTask?.cancel(with: .normalClosure, reason: nil)
+    func disconnect() async {
+        await discoveryManager.stop()
         
         queue.async(flags: .barrier) { [weak self] in
             self?.peerConnections.values.forEach { $0.close() }
@@ -101,132 +118,10 @@ class WebRTCManager: NSObject {
         }
     }
     
-    // MARK: - Signaling Server Connection
-    private func connectToSignalingServer() {
-        webSocketTask = urlSession.webSocketTask(with: signalingServerURL)
-        webSocketTask?.resume()
-        
-        // Send join message
-        let joinMessage: [String: Any] = [
-            "type": "join",
-            "roomId": roomId,
-            "peerId": peerId,
-            "deviceInfo": [
-                "name": UIDevice.current.name,
-                "type": "ios"
-            ]
-        ]
-        
-        sendSignalingMessage(joinMessage)
-        receiveSignalingMessages()
-    }
-    
-    // MARK: - HMAC Authentication
-    private func generateHMAC(for data: Data) -> String {
-        let key = SymmetricKey(data: sharedSecret.data(using: .utf8)!)
-        let hmac = HMAC<SHA256>.authenticationCode(for: data, using: key)
-        return Data(hmac).map { String(format: "%02hhx", $0) }.joined()
-    }
-    
-    private func verifyHMAC(_ hmac: String, for data: Data) -> Bool {
-        let expectedHMAC = generateHMAC(for: data)
-        return hmac == expectedHMAC
-    }
-    
-    // MARK: - Signaling Messages
-    private func sendSignalingMessage(_ data: [String: Any]) {
-        guard let webSocketTask = webSocketTask else { return }
-        
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: data)
-            let hmac = generateHMAC(for: jsonData)
-            
-            let message: [String: Any] = [
-                "data": data,
-                "hmac": hmac
-            ]
-            
-            let messageData = try JSONSerialization.data(withJSONObject: message)
-            let messageString = String(data: messageData, encoding: .utf8)!
-            
-            webSocketTask.send(.string(messageString)) { error in
-                if let error = error {
-                    print("WebSocket send error: \(error)")
-                }
-            }
-        } catch {
-            print("Error sending signaling message: \(error)")
-        }
-    }
-    
-    private func receiveSignalingMessages() {
-        webSocketTask?.receive { [weak self] result in
-            guard let self = self else { return }
-            
-            switch result {
-            case .success(let message):
-                switch message {
-                case .string(let text):
-                    self.handleSignalingMessage(text)
-                case .data(let data):
-                    if let text = String(data: data, encoding: .utf8) {
-                        self.handleSignalingMessage(text)
-                    }
-                @unknown default:
-                    break
-                }
-                
-                // Continue receiving messages
-                self.receiveSignalingMessages()
-                
-            case .failure(let error):
-                print("WebSocket receive error: \(error)")
-                self.delegate?.webRTCManager(self, didEncounterError: error)
-            }
-        }
-    }
-    
-    private func handleSignalingMessage(_ text: String) {
-        guard let data = text.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let messageData = json["data"] as? [String: Any],
-              let hmac = json["hmac"] as? String else {
-            print("Invalid signaling message format")
-            return
-        }
-        
-        // Verify HMAC
-        let dataToVerify = try! JSONSerialization.data(withJSONObject: messageData)
-        guard verifyHMAC(hmac, for: dataToVerify) else {
-            print("Invalid HMAC in signaling message")
-            return
-        }
-        
-        // Handle message based on type
-        guard let type = messageData["type"] as? String else { return }
-        
-        switch type {
-        case "room-peers":
-            handleRoomPeers(messageData)
-        case "peer-joined":
-            handlePeerJoined(messageData)
-        case "offer":
-            handleOffer(messageData)
-        case "answer":
-            handleAnswer(messageData)
-        case "ice-candidate":
-            handleIceCandidate(messageData)
-        case "peer-left":
-            handlePeerLeft(messageData)
-        default:
-            print("Unknown message type: \(type)")
-        }
-    }
-    
     // MARK: - Peer Connection Management
     private func createPeerConnection(for remotePeerId: String) -> RTCPeerConnection? {
         let config = RTCConfiguration()
-        config.iceServers = WebRTCConfig.iceServers.map { url in
+        config.iceServers = stunServers.map { url in
             RTCIceServer(urlStrings: [url])
         }
         config.sdpSemantics = .unifiedPlan
@@ -264,164 +159,49 @@ class WebRTCManager: NSObject {
         return peerConnection
     }
     
-    // MARK: - Signaling Message Handlers
-    private func handleRoomPeers(_ message: [String: Any]) {
-        guard let peers = message["peers"] as? [[String: Any]] else { return }
-        
-        for peer in peers {
-            guard let remotePeerId = peer["peerId"] as? String else { continue }
-            
-            // Create offer for each existing peer
-            if let pc = createPeerConnection(for: remotePeerId) {
-                createOffer(for: pc, remotePeerId: remotePeerId)
-            }
-        }
-    }
-    
-    private func handlePeerJoined(_ message: [String: Any]) {
-        guard let remotePeerId = message["peerId"] as? String else { return }
-        
-        // New peer joined, wait for their offer
-        print("Peer joined: \(remotePeerId)")
-    }
-    
-    private func handleOffer(_ message: [String: Any]) {
-        guard let offerDict = message["offer"] as? [String: Any],
-              let sdp = offerDict["sdp"] as? String,
-              let remotePeerId = message["fromPeerId"] as? String else { return }
-        
-        let sessionDescription = RTCSessionDescription(type: .offer, sdp: sdp)
-        
-        if let pc = createPeerConnection(for: remotePeerId) {
-            pc.setRemoteDescription(sessionDescription) { [weak self] error in
-                if let error = error {
-                    print("Error setting remote description: \(error)")
-                    return
-                }
-                
-                self?.createAnswer(for: pc, remotePeerId: remotePeerId)
-            }
-        }
-    }
-    
-    private func handleAnswer(_ message: [String: Any]) {
-        guard let answerDict = message["answer"] as? [String: Any],
-              let sdp = answerDict["sdp"] as? String,
-              let remotePeerId = message["fromPeerId"] as? String else { return }
-        
-        let sessionDescription = RTCSessionDescription(type: .answer, sdp: sdp)
-        
-        queue.sync {
-            guard let pc = peerConnections[remotePeerId] else { return }
-            
-            pc.setRemoteDescription(sessionDescription) { error in
-                if let error = error {
-                    print("Error setting remote description: \(error)")
-                }
-            }
-        }
-    }
-    
-    private func handleIceCandidate(_ message: [String: Any]) {
-        guard let candidateDict = message["candidate"] as? [String: Any],
-              let sdp = candidateDict["candidate"] as? String,
-              let sdpMLineIndex = candidateDict["sdpMLineIndex"] as? Int32,
-              let sdpMid = candidateDict["sdpMid"] as? String,
-              let remotePeerId = message["fromPeerId"] as? String else { return }
-        
-        let candidate = RTCIceCandidate(
-            sdp: sdp,
-            sdpMLineIndex: sdpMLineIndex,
-            sdpMid: sdpMid
-        )
-        
-        queue.sync {
-            guard let pc = peerConnections[remotePeerId] else { return }
-            pc.add(candidate)
-        }
-    }
-    
-    private func handlePeerLeft(_ message: [String: Any]) {
-        guard let remotePeerId = message["peerId"] as? String else { return }
-        
-        queue.async(flags: .barrier) {
-            self.peerConnections[remotePeerId]?.close()
-            self.peerConnections.removeValue(forKey: remotePeerId)
-            self.dataChannels.removeValue(forKey: remotePeerId)
-        }
-        
-        DispatchQueue.main.async {
-            self.delegate?.webRTCManager(self, didDisconnectPeer: remotePeerId)
-        }
-    }
-    
     // MARK: - Offer/Answer Creation
-    private func createOffer(for peerConnection: RTCPeerConnection, remotePeerId: String) {
+    private func createOffer(for peerConnection: RTCPeerConnection, remotePeerId: String) async throws {
         let constraints = RTCMediaConstraints(
             mandatoryConstraints: ["OfferToReceiveAudio": "false", "OfferToReceiveVideo": "false"],
             optionalConstraints: nil
         )
         
-        peerConnection.offer(for: constraints) { [weak self] sessionDescription, error in
-            guard let self = self,
-                  let sdp = sessionDescription else {
-                print("Error creating offer: \(error?.localizedDescription ?? "Unknown")")
-                return
-            }
-            
-            peerConnection.setLocalDescription(sdp) { error in
-                if let error = error {
-                    print("Error setting local description: \(error)")
-                    return
-                }
-                
-                // Send offer via signaling
-                let offerMessage: [String: Any] = [
-                    "type": "offer",
-                    "targetPeerId": remotePeerId,
-                    "offer": [
-                        "type": sdp.type.rawValue,
-                        "sdp": sdp.sdp
-                    ]
-                ]
-                
-                self.sendSignalingMessage(offerMessage)
-            }
+        guard let sdp = try await peerConnection.offer(for: constraints) else {
+            throw WebRTCError.failedToCreateOffer
         }
+        
+        try await peerConnection.setLocalDescription(sdp)
+        
+        // Send offer via discovery
+        let offerData = try JSONEncoder().encode([
+            "type": sdp.type.rawValue,
+            "sdp": sdp.sdp
+        ])
+        
+        let message = SignalingMessage(type: .offer, data: offerData)
+        try await activeDiscovery?.sendSignalingMessage(message, to: remotePeerId)
     }
     
-    private func createAnswer(for peerConnection: RTCPeerConnection, remotePeerId: String) {
+    private func createAnswer(for peerConnection: RTCPeerConnection, remotePeerId: String) async throws {
         let constraints = RTCMediaConstraints(
             mandatoryConstraints: ["OfferToReceiveAudio": "false", "OfferToReceiveVideo": "false"],
             optionalConstraints: nil
         )
         
-        peerConnection.answer(for: constraints) { [weak self] sessionDescription, error in
-            guard let self = self,
-                  let sdp = sessionDescription else {
-                print("Error creating answer: \(error?.localizedDescription ?? "Unknown")")
-                return
-            }
-            
-            peerConnection.setLocalDescription(sdp) { error in
-                if let error = error {
-                    print("Error setting local description: \(error)")
-                    return
-                }
-                
-                // Send answer via signaling
-                let answerMessage: [String: Any] = [
-                    "type": "answer",
-                    "targetPeerId": remotePeerId,
-                    "answer": [
-                        "type": sdp.type.rawValue,
-                        "sdp": sdp.sdp
-                    ]
-                ]
-                
-                self.sendSignalingMessage(answerMessage)
-            }
+        guard let sdp = try await peerConnection.answer(for: constraints) else {
+            throw WebRTCError.failedToCreateAnswer
         }
+        
+        try await peerConnection.setLocalDescription(sdp)
+        
+        // Send answer via discovery
+        let answerData = try JSONEncoder().encode([
+            "type": sdp.type.rawValue,
+            "sdp": sdp.sdp
+        ])
+        
+        let message = SignalingMessage(type: .answer, data: answerData)
+        try await activeDiscovery?.sendSignalingMessage(message, to: remotePeerId)
     }
     
     // MARK: - Data Sending
@@ -442,6 +222,122 @@ class WebRTCManager: NSObject {
                 }
             }
         }
+    }
+    
+    // MARK: - Configuration
+    func updateSTUNServers(_ servers: [String]) {
+        stunServers = servers
+    }
+}
+
+// MARK: - PeerDiscoveryDelegate
+extension WebRTCManager: PeerDiscoveryDelegate {
+    func peerDiscovery(_ discovery: PeerDiscovery, didDiscoverPeer peerId: String, info: PeerInfo) {
+        print("Discovered peer: \(peerId)")
+        
+        // Create peer connection and offer
+        if let pc = createPeerConnection(for: peerId) {
+            Task {
+                do {
+                    try await createOffer(for: pc, remotePeerId: peerId)
+                } catch {
+                    print("Failed to create offer for \(peerId): \(error)")
+                    delegate?.webRTCManager(self, didEncounterError: error)
+                }
+            }
+        }
+    }
+    
+    func peerDiscovery(_ discovery: PeerDiscovery, didLosePeer peerId: String) {
+        print("Lost peer: \(peerId)")
+        
+        queue.async(flags: .barrier) {
+            self.peerConnections[peerId]?.close()
+            self.peerConnections.removeValue(forKey: peerId)
+            self.dataChannels.removeValue(forKey: peerId)
+        }
+        
+        DispatchQueue.main.async {
+            self.delegate?.webRTCManager(self, didDisconnectPeer: peerId)
+        }
+    }
+    
+    func peerDiscovery(_ discovery: PeerDiscovery, didReceiveSignalingMessage message: SignalingMessage, from peerId: String) {
+        Task {
+            do {
+                switch message.type {
+                case .offer:
+                    try await handleOffer(message.data, from: peerId)
+                case .answer:
+                    try await handleAnswer(message.data, from: peerId)
+                case .iceCandidate:
+                    try await handleIceCandidate(message.data, from: peerId)
+                }
+            } catch {
+                print("Error handling signaling message: \(error)")
+                delegate?.webRTCManager(self, didEncounterError: error)
+            }
+        }
+    }
+    
+    func peerDiscovery(_ discovery: PeerDiscovery, didEncounterError error: Error) {
+        delegate?.webRTCManager(self, didEncounterError: error)
+    }
+    
+    // MARK: - Signaling Message Handlers
+    private func handleOffer(_ data: Data, from peerId: String) async throws {
+        let offerDict = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        guard let sdp = offerDict?["sdp"] as? String,
+              let typeStr = offerDict?["type"] as? String else {
+            throw WebRTCError.invalidSignalingMessage
+        }
+        
+        let sessionDescription = RTCSessionDescription(type: .offer, sdp: sdp)
+        
+        let pc = queue.sync { peerConnections[peerId] } ?? createPeerConnection(for: peerId)
+        guard let peerConnection = pc else {
+            throw WebRTCError.failedToCreatePeerConnection
+        }
+        
+        try await peerConnection.setRemoteDescription(sessionDescription)
+        try await createAnswer(for: peerConnection, remotePeerId: peerId)
+    }
+    
+    private func handleAnswer(_ data: Data, from peerId: String) async throws {
+        let answerDict = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        guard let sdp = answerDict?["sdp"] as? String,
+              let typeStr = answerDict?["type"] as? String else {
+            throw WebRTCError.invalidSignalingMessage
+        }
+        
+        let sessionDescription = RTCSessionDescription(type: .answer, sdp: sdp)
+        
+        guard let peerConnection = queue.sync(execute: { peerConnections[peerId] }) else {
+            throw WebRTCError.peerConnectionNotFound
+        }
+        
+        try await peerConnection.setRemoteDescription(sessionDescription)
+    }
+    
+    private func handleIceCandidate(_ data: Data, from peerId: String) async throws {
+        let candidateDict = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        guard let sdp = candidateDict?["candidate"] as? String,
+              let sdpMLineIndex = candidateDict?["sdpMLineIndex"] as? Int32,
+              let sdpMid = candidateDict?["sdpMid"] as? String else {
+            throw WebRTCError.invalidSignalingMessage
+        }
+        
+        let candidate = RTCIceCandidate(
+            sdp: sdp,
+            sdpMLineIndex: sdpMLineIndex,
+            sdpMid: sdpMid
+        )
+        
+        guard let peerConnection = queue.sync(execute: { peerConnections[peerId] }) else {
+            throw WebRTCError.peerConnectionNotFound
+        }
+        
+        try await peerConnection.add(candidate)
     }
 }
 
@@ -483,18 +379,21 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
         
         guard let peerId = remotePeerId else { return }
         
-        // Send ICE candidate via signaling
-        let candidateMessage: [String: Any] = [
-            "type": "ice-candidate",
-            "targetPeerId": peerId,
-            "candidate": [
-                "candidate": candidate.sdp,
-                "sdpMLineIndex": candidate.sdpMLineIndex,
-                "sdpMid": candidate.sdpMid ?? ""
-            ]
-        ]
-        
-        sendSignalingMessage(candidateMessage)
+        // Send ICE candidate via discovery
+        Task {
+            do {
+                let candidateData = try JSONEncoder().encode([
+                    "candidate": candidate.sdp,
+                    "sdpMLineIndex": candidate.sdpMLineIndex,
+                    "sdpMid": candidate.sdpMid ?? ""
+                ])
+                
+                let message = SignalingMessage(type: .iceCandidate, data: candidateData)
+                try await activeDiscovery?.sendSignalingMessage(message, to: peerId)
+            } catch {
+                print("Failed to send ICE candidate: \(error)")
+            }
+        }
     }
     
     func peerConnection(_ peerConnection: RTCPeerConnection, didRemove candidates: [RTCIceCandidate]) {
@@ -539,6 +438,93 @@ extension WebRTCManager: RTCDataChannelDelegate {
         
         DispatchQueue.main.async {
             self.delegate?.webRTCManager(self, didReceiveData: buffer.data, from: peerId)
+        }
+    }
+}
+
+// MARK: - Errors
+enum WebRTCError: LocalizedError {
+    case failedToCreateOffer
+    case failedToCreateAnswer
+    case failedToCreatePeerConnection
+    case invalidSignalingMessage
+    case peerConnectionNotFound
+    
+    var errorDescription: String? {
+        switch self {
+        case .failedToCreateOffer:
+            return "Failed to create WebRTC offer"
+        case .failedToCreateAnswer:
+            return "Failed to create WebRTC answer"
+        case .failedToCreatePeerConnection:
+            return "Failed to create peer connection"
+        case .invalidSignalingMessage:
+            return "Invalid signaling message format"
+        case .peerConnectionNotFound:
+            return "Peer connection not found"
+        }
+    }
+}
+
+// MARK: - Async Extensions for WebRTC
+extension RTCPeerConnection {
+    func offer(for constraints: RTCMediaConstraints) async throws -> RTCSessionDescription? {
+        return try await withCheckedThrowingContinuation { continuation in
+            self.offer(for: constraints) { sdp, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: sdp)
+                }
+            }
+        }
+    }
+    
+    func answer(for constraints: RTCMediaConstraints) async throws -> RTCSessionDescription? {
+        return try await withCheckedThrowingContinuation { continuation in
+            self.answer(for: constraints) { sdp, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: sdp)
+                }
+            }
+        }
+    }
+    
+    func setLocalDescription(_ sdp: RTCSessionDescription) async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            self.setLocalDescription(sdp) { error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
+    }
+    
+    func setRemoteDescription(_ sdp: RTCSessionDescription) async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            self.setRemoteDescription(sdp) { error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
+    }
+    
+    func add(_ candidate: RTCIceCandidate) async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            self.add(candidate) { error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
+            }
         }
     }
 }

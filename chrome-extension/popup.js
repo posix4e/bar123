@@ -52,10 +52,29 @@ function setupElements() {
         devicesList: document.getElementById('devicesList'),
         
         // Settings
+        discoveryMethod: document.getElementById('discoveryMethod'),
+        websocketSettings: document.getElementById('websocketSettings'),
+        stunSettings: document.getElementById('stunSettings'),
         serverUrl: document.getElementById('serverUrl'),
         roomId: document.getElementById('roomId'),
         sharedSecret: document.getElementById('sharedSecret'),
         generateSecret: document.getElementById('generateSecret'),
+        stunServers: document.getElementById('stunServers'),
+        connectionFlow: document.getElementById('connectionFlow'),
+        createOfferStep: document.getElementById('createOfferStep'),
+        shareOfferStep: document.getElementById('shareOfferStep'),
+        processStep: document.getElementById('processStep'),
+        connectionStatusStep: document.getElementById('connectionStatusStep'),
+        createOffer: document.getElementById('createOffer'),
+        shareViaChat: document.getElementById('shareViaChat'),
+        copyOfferLink: document.getElementById('copyOfferLink'),
+        copyOfferCode: document.getElementById('copyOfferCode'),
+        connectionOffer: document.getElementById('connectionOffer'),
+        connectionInput: document.getElementById('connectionInput'),
+        processConnection: document.getElementById('processConnection'),
+        connectionStatusMessage: document.getElementById('connectionStatusMessage'),
+        connectedPeersList: document.getElementById('connectedPeersList'),
+        newConnection: document.getElementById('newConnection'),
         saveSettings: document.getElementById('saveSettings'),
         disconnectButton: document.getElementById('disconnectButton')
     };
@@ -77,9 +96,23 @@ async function loadConfig() {
 
 // Update configuration UI
 function updateConfigUI() {
+    // Set discovery method
+    elements.discoveryMethod.value = currentConfig.discoveryMethod || 'websocket';
+    
+    // WebSocket settings
     elements.serverUrl.value = currentConfig.signalingServerUrl || '';
     elements.roomId.value = currentConfig.roomId || '';
     elements.sharedSecret.value = currentConfig.sharedSecret || '';
+    
+    // STUN servers
+    const stunServers = currentConfig.stunServers || [
+        'stun:stun.l.google.com:19302',
+        'stun:stun1.l.google.com:19302'
+    ];
+    elements.stunServers.value = stunServers.join('\n');
+    
+    // Show/hide appropriate settings
+    updateDiscoveryUI();
 }
 
 // Update connection status
@@ -95,8 +128,30 @@ function updateConnectionStatus() {
     }
 }
 
+// Update discovery UI based on selected method
+function updateDiscoveryUI() {
+    const method = elements.discoveryMethod.value;
+    
+    if (method === 'websocket') {
+        elements.websocketSettings.style.display = 'block';
+        elements.stunSettings.style.display = 'none';
+    } else if (method === 'stun-only') {
+        elements.websocketSettings.style.display = 'none';
+        elements.stunSettings.style.display = 'block';
+        
+        // Show connection flow if connected
+        if (currentConfig.isConnected) {
+            elements.connectionFlow.style.display = 'block';
+            updateConnectionFlow();
+        }
+    }
+}
+
 // Setup event listeners
 function setupEventListeners() {
+    // Discovery method change
+    elements.discoveryMethod.addEventListener('change', updateDiscoveryUI);
+    
     // Tab switching
     elements.tabButtons.forEach(button => {
         button.addEventListener('click', () => switchTab(button.dataset.tab));
@@ -115,6 +170,29 @@ function setupEventListeners() {
     elements.generateSecret.addEventListener('click', generateSecret);
     elements.saveSettings.addEventListener('click', saveSettings);
     elements.disconnectButton.addEventListener('click', disconnect);
+    
+    // STUN-only features
+    elements.createOffer.addEventListener('click', createConnectionOffer);
+    elements.shareViaChat.addEventListener('click', shareViaChat);
+    elements.copyOfferLink.addEventListener('click', copyOfferLink);
+    elements.copyOfferCode.addEventListener('click', copyOfferCode);
+    elements.processConnection.addEventListener('click', processConnection);
+    elements.newConnection.addEventListener('click', resetConnectionFlow);
+    
+    // Auto-detect connection data in input
+    elements.connectionInput.addEventListener('paste', (e) => {
+        setTimeout(() => {
+            const input = elements.connectionInput.value.trim();
+            if (input.includes('🔗 History Sync Connection') || 
+                input.includes('✅ History Sync Connection')) {
+                // Extract just the code from the formatted message
+                const match = input.match(/\n\n([A-Za-z0-9\-_]+)\n\n/);
+                if (match) {
+                    elements.connectionInput.value = match[1];
+                }
+            }
+        }, 100);
+    });
 }
 
 // Switch tabs
@@ -308,15 +386,28 @@ function generateSecret() {
 
 // Save settings
 async function saveSettings() {
+    const discoveryMethod = elements.discoveryMethod.value;
     const config = {
-        signalingServerUrl: elements.serverUrl.value.trim(),
-        roomId: elements.roomId.value.trim(),
-        sharedSecret: elements.sharedSecret.value.trim()
+        discoveryMethod: discoveryMethod
     };
     
-    if (!config.signalingServerUrl || !config.roomId || !config.sharedSecret) {
-        alert('Please fill in all fields');
-        return;
+    if (discoveryMethod === 'websocket') {
+        config.signalingServerUrl = elements.serverUrl.value.trim();
+        config.roomId = elements.roomId.value.trim();
+        config.sharedSecret = elements.sharedSecret.value.trim();
+        
+        if (!config.signalingServerUrl || !config.roomId || !config.sharedSecret) {
+            alert('Please fill in all WebSocket fields');
+            return;
+        }
+    } else if (discoveryMethod === 'stun-only') {
+        const stunServersText = elements.stunServers.value.trim();
+        config.stunServers = stunServersText.split('\n').filter(s => s.trim());
+        
+        if (config.stunServers.length === 0) {
+            alert('Please provide at least one STUN server');
+            return;
+        }
     }
     
     try {
@@ -332,8 +423,10 @@ async function saveSettings() {
         });
         
         if (response.success) {
+            currentConfig = { ...currentConfig, ...config };
             currentConfig.isConnected = true;
             updateConnectionStatus();
+            updateDiscoveryUI();
             await refreshData();
         } else {
             alert('Connection failed: ' + response.error);
@@ -353,7 +446,229 @@ async function disconnect() {
         
         currentConfig.isConnected = false;
         updateConnectionStatus();
+        updateDiscoveryUI();
     } catch (error) {
         console.error('Failed to disconnect:', error);
     }
+}
+
+// STUN-only connection flow
+let currentConnectionOffer = null;
+let connectionTimer = null;
+
+function updateConnectionFlow() {
+    // Check connection status and update UI
+    updateConnectionStatus();
+}
+
+function resetConnectionFlow() {
+    currentConnectionOffer = null;
+    if (connectionTimer) {
+        clearInterval(connectionTimer);
+        connectionTimer = null;
+    }
+    
+    elements.createOfferStep.style.display = 'block';
+    elements.shareOfferStep.style.display = 'none';
+    elements.processStep.style.display = 'block';
+    elements.connectionStatusStep.style.display = 'none';
+    elements.connectionInput.value = '';
+}
+
+async function createConnectionOffer() {
+    try {
+        const response = await chrome.runtime.sendMessage({
+            type: 'create_connection_offer'
+        });
+        
+        if (response.success) {
+            currentConnectionOffer = response;
+            
+            // Update UI
+            elements.createOfferStep.style.display = 'none';
+            elements.shareOfferStep.style.display = 'block';
+            elements.connectionOffer.value = response.shareText;
+            
+            // Start expiry timer
+            let timeLeft = 300; // 5 minutes
+            connectionTimer = setInterval(() => {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    clearInterval(connectionTimer);
+                    resetConnectionFlow();
+                    showStatus('Connection request expired', 'error');
+                } else {
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = timeLeft % 60;
+                    document.querySelector('.help-text').textContent = 
+                        `Waiting for response... (expires in ${minutes}:${seconds.toString().padStart(2, '0')})`;
+                }
+            }, 1000);
+            
+            // Auto-select the text for easy copying
+            elements.connectionOffer.select();
+        } else {
+            showStatus('Failed to create connection request: ' + response.error, 'error');
+        }
+    } catch (error) {
+        console.error('Failed to create offer:', error);
+        showStatus('Failed to create connection request', 'error');
+    }
+}
+
+async function shareViaChat() {
+    if (!currentConnectionOffer) return;
+    
+    try {
+        // Use Web Share API if available
+        if (navigator.share) {
+            await navigator.share({
+                title: 'History Sync Connection',
+                text: currentConnectionOffer.shareText
+            });
+        } else {
+            // Fallback to copying to clipboard
+            await navigator.clipboard.writeText(currentConnectionOffer.shareText);
+            showTemporaryButtonFeedback(elements.shareViaChat, 'Copied!');
+        }
+    } catch (error) {
+        console.error('Failed to share:', error);
+    }
+}
+
+async function copyOfferLink() {
+    if (!currentConnectionOffer) return;
+    
+    try {
+        await navigator.clipboard.writeText(currentConnectionOffer.link);
+        showTemporaryButtonFeedback(elements.copyOfferLink, 'Copied!');
+    } catch (error) {
+        console.error('Failed to copy link:', error);
+        showStatus('Failed to copy link', 'error');
+    }
+}
+
+async function copyOfferCode() {
+    if (!currentConnectionOffer) return;
+    
+    try {
+        await navigator.clipboard.writeText(currentConnectionOffer.encoded);
+        showTemporaryButtonFeedback(elements.copyOfferCode, 'Copied!');
+    } catch (error) {
+        console.error('Failed to copy code:', error);
+        showStatus('Failed to copy code', 'error');
+    }
+}
+
+async function processConnection() {
+    const input = elements.connectionInput.value.trim();
+    
+    if (!input) {
+        showStatus('Please paste connection code', 'error');
+        return;
+    }
+    
+    try {
+        // Disable button during processing
+        elements.processConnection.disabled = true;
+        elements.processConnection.textContent = 'Connecting...';
+        
+        const response = await chrome.runtime.sendMessage({
+            type: 'process_connection',
+            data: input
+        });
+        
+        if (response.success) {
+            if (response.isOffer) {
+                // We received an offer and created a response
+                showStatus('Connection established! Send the response back:', 'success');
+                elements.connectionInput.value = response.shareText;
+                elements.connectionInput.select();
+                
+                // Update button to copy response
+                elements.processConnection.textContent = 'Copy Response';
+                elements.processConnection.onclick = async () => {
+                    await navigator.clipboard.writeText(response.shareText);
+                    showTemporaryButtonFeedback(elements.processConnection, 'Copied!');
+                };
+            } else {
+                // We received a response and completed the connection
+                showStatus(`Connected to ${response.peerName}!`, 'success');
+                elements.connectionInput.value = '';
+                
+                // Update connection status
+                setTimeout(() => {
+                    updateConnectionStatus();
+                    refreshData();
+                }, 1000);
+            }
+        } else {
+            showStatus('Connection failed: ' + response.error, 'error');
+        }
+    } catch (error) {
+        console.error('Failed to process connection:', error);
+        showStatus('Failed to process connection', 'error');
+    } finally {
+        // Re-enable button
+        elements.processConnection.disabled = false;
+        if (elements.processConnection.textContent === 'Connecting...') {
+            elements.processConnection.textContent = 'Connect';
+        }
+    }
+}
+
+async function updateConnectionStatus() {
+    try {
+        const response = await chrome.runtime.sendMessage({
+            type: 'get_connection_stats'
+        });
+        
+        if (response.success && response.stats) {
+            const stats = response.stats;
+            
+            if (stats.active > 0) {
+                elements.createOfferStep.style.display = 'none';
+                elements.shareOfferStep.style.display = 'none';
+                elements.processStep.style.display = 'none';
+                elements.connectionStatusStep.style.display = 'block';
+                
+                // Update status message
+                elements.connectionStatusMessage.className = 'status-message success';
+                elements.connectionStatusMessage.textContent = `Connected to ${stats.active} peer${stats.active > 1 ? 's' : ''}`;
+                
+                // Update peer list
+                elements.connectedPeersList.innerHTML = stats.peers.map(peer => `
+                    <div class="peer-item">
+                        <span class="peer-name">${peer.name}</span>
+                        <span class="peer-status">${peer.state}</span>
+                    </div>
+                `).join('');
+            } else {
+                resetConnectionFlow();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to get connection stats:', error);
+    }
+}
+
+function showStatus(message, type = 'info') {
+    const statusEl = document.createElement('div');
+    statusEl.className = `status-message ${type}`;
+    statusEl.textContent = message;
+    
+    // Find a good place to show the status
+    const container = elements.connectionFlow || elements.stunSettings;
+    container.insertBefore(statusEl, container.firstChild);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => statusEl.remove(), 5000);
+}
+
+function showTemporaryButtonFeedback(button, message) {
+    const originalText = button.textContent;
+    button.textContent = message;
+    setTimeout(() => {
+        button.textContent = originalText;
+    }, 2000);
 }
