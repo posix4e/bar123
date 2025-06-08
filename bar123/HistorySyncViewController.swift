@@ -147,16 +147,32 @@ class HistorySyncViewController: UIViewController {
             return
         }
         
-        historySyncManager.connect(
-            roomId: currentConfig.roomId,
-            sharedSecret: currentConfig.sharedSecret,
-            signalingServerURL: serverURL
-        )
+        Task {
+            do {
+                try await historySyncManager.connect(
+                    roomId: currentConfig.roomId,
+                    sharedSecret: currentConfig.sharedSecret,
+                    signalingServerURL: serverURL
+                )
+                await MainActor.run {
+                    updateConnectionStatus(true)
+                }
+            } catch {
+                await MainActor.run {
+                    showAlert(title: "Connection Error", message: error.localizedDescription)
+                    updateConnectionStatus(false)
+                }
+            }
+        }
     }
     
     private func disconnect() {
-        historySyncManager.disconnect()
-        updateConnectionStatus(false)
+        Task {
+            await historySyncManager.disconnect()
+            await MainActor.run {
+                updateConnectionStatus(false)
+            }
+        }
     }
     
     private func updateConnectionStatus(_ connected: Bool) {
@@ -182,7 +198,7 @@ class HistorySyncViewController: UIViewController {
     }
     
     private func loadDevices() {
-        connectedDevices = historySyncManager.getAllKnownDevices()
+        connectedDevices = historySyncManager.getDevices()
         tableView.reloadData()
     }
     
@@ -503,6 +519,6 @@ struct HistorySyncConfig {
 extension HistorySyncManager {
     var isConnected: Bool {
         // Add this computed property to check connection status
-        return webRTCManager != nil
+        return false  // The main app uses a mock implementation
     }
 }

@@ -123,18 +123,25 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             return
         }
         
-        Self.historySyncManager.connect(
-            roomId: roomId,
-            sharedSecret: sharedSecret,
-            signalingServerURL: signalingURL
-        )
-        
-        sendSuccessResponse(["connected": true], context: context)
+        Task {
+            do {
+                try await Self.historySyncManager.connect(
+                    roomId: roomId,
+                    sharedSecret: sharedSecret,
+                    signalingServerURL: signalingURL
+                )
+                sendSuccessResponse(["connected": true], context: context)
+            } catch {
+                sendErrorResponse("Connection failed: \(error.localizedDescription)", context: context)
+            }
+        }
     }
     
     private func handleDisconnect(context: NSExtensionContext) {
-        Self.historySyncManager.disconnect()
-        sendSuccessResponse(["disconnected": true], context: context)
+        Task {
+            await Self.historySyncManager.disconnect()
+            sendSuccessResponse(["disconnected": true], context: context)
+        }
     }
     
     private func handleSearchHistory(_ message: [String: Any], context: NSExtensionContext) {

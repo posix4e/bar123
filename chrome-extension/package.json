@@ -4,10 +4,17 @@
   "description": "Chrome Extension for P2P history sync",
   "scripts": {
     "build": "npm run copy-deps",
-    "copy-deps": "cp node_modules/crypto-js/crypto-js.js ./crypto-js.min.js"
+    "copy-deps": "cp node_modules/crypto-js/crypto-js.js ./crypto-js.min.js",
+    "lint": "eslint *.js",
+    "lint:fix": "eslint *.js --fix",
+    "test": "npm run lint && npm run test:e2e",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "crypto-js": "^4.2.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "@playwright/test": "^1.48.0"
+  }
 }

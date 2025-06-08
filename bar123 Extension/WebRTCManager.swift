@@ -173,10 +173,11 @@ class WebRTCManager: NSObject {
         try await peerConnection.setLocalDescription(sdp)
         
         // Send offer via discovery
-        let offerData = try JSONEncoder().encode([
-            "type": sdp.type.rawValue,
+        let offerDict: [String: Any] = [
+            "type": sdp.type == .offer ? "offer" : "answer",
             "sdp": sdp.sdp
-        ])
+        ]
+        let offerData = try JSONSerialization.data(withJSONObject: offerDict)
         
         let message = SignalingMessage(type: .offer, data: offerData)
         try await activeDiscovery?.sendSignalingMessage(message, to: remotePeerId)
@@ -195,10 +196,11 @@ class WebRTCManager: NSObject {
         try await peerConnection.setLocalDescription(sdp)
         
         // Send answer via discovery
-        let answerData = try JSONEncoder().encode([
-            "type": sdp.type.rawValue,
+        let answerDict: [String: Any] = [
+            "type": sdp.type == .offer ? "offer" : "answer",
             "sdp": sdp.sdp
-        ])
+        ]
+        let answerData = try JSONSerialization.data(withJSONObject: answerDict)
         
         let message = SignalingMessage(type: .answer, data: answerData)
         try await activeDiscovery?.sendSignalingMessage(message, to: remotePeerId)
@@ -287,8 +289,7 @@ extension WebRTCManager: PeerDiscoveryDelegate {
     // MARK: - Signaling Message Handlers
     private func handleOffer(_ data: Data, from peerId: String) async throws {
         let offerDict = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        guard let sdp = offerDict?["sdp"] as? String,
-              let typeStr = offerDict?["type"] as? String else {
+        guard let sdp = offerDict?["sdp"] as? String else {
             throw WebRTCError.invalidSignalingMessage
         }
         
@@ -305,8 +306,7 @@ extension WebRTCManager: PeerDiscoveryDelegate {
     
     private func handleAnswer(_ data: Data, from peerId: String) async throws {
         let answerDict = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        guard let sdp = answerDict?["sdp"] as? String,
-              let typeStr = answerDict?["type"] as? String else {
+        guard let sdp = answerDict?["sdp"] as? String else {
             throw WebRTCError.invalidSignalingMessage
         }
         
@@ -382,11 +382,12 @@ extension WebRTCManager: RTCPeerConnectionDelegate {
         // Send ICE candidate via discovery
         Task {
             do {
-                let candidateData = try JSONEncoder().encode([
+                let candidateDict: [String: Any] = [
                     "candidate": candidate.sdp,
-                    "sdpMLineIndex": candidate.sdpMLineIndex,
+                    "sdpMLineIndex": Int(candidate.sdpMLineIndex),
                     "sdpMid": candidate.sdpMid ?? ""
-                ])
+                ]
+                let candidateData = try JSONSerialization.data(withJSONObject: candidateDict)
                 
                 let message = SignalingMessage(type: .iceCandidate, data: candidateData)
                 try await activeDiscovery?.sendSignalingMessage(message, to: peerId)

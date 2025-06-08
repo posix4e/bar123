@@ -63,21 +63,21 @@ class BasePeerDiscovery: PeerDiscovery {
     }
     
     // Helper methods for subclasses
-    protected func addPeer(_ peerId: String, info: PeerInfo) {
+    internal func addPeer(_ peerId: String, info: PeerInfo) {
         discoveredPeers[peerId] = info
         delegate?.peerDiscovery(self, didDiscoverPeer: peerId, info: info)
     }
     
-    protected func removePeer(_ peerId: String) {
+    internal func removePeer(_ peerId: String) {
         discoveredPeers.removeValue(forKey: peerId)
         delegate?.peerDiscovery(self, didLosePeer: peerId)
     }
     
-    protected func handleSignalingMessage(_ message: SignalingMessage, from peerId: String) {
+    internal func handleSignalingMessage(_ message: SignalingMessage, from peerId: String) {
         delegate?.peerDiscovery(self, didReceiveSignalingMessage: message, from: peerId)
     }
     
-    protected func handleError(_ error: Error) {
+    internal func handleError(_ error: Error) {
         delegate?.peerDiscovery(self, didEncounterError: error)
     }
 }
