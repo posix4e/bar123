@@ -1,18 +1,12 @@
 # bar123 - P2P WebRTC History Sync System
 
 ## Project Overview
-bar123 is a privacy-focused, peer-to-peer browsing history synchronization system that enables users to sync their browsing history across different devices and browsers without relying on centralized cloud storage. The system uses WebRTC for direct peer-to-peer connections and a minimal signaling server for connection establishment.
+bar123 is a privacy-focused, peer-to-peer browsing history synchronization system that enables users to sync their browsing history across different devices and browsers without relying on centralized cloud storage. The system uses WebRTC for direct peer-to-peer connections and Cloudflare DNS for peer discovery.
 
 ## Architecture
 
 ### Components
-1. **Signaling Server** (`signaling-server/`)
-   - Node.js WebSocket server for WebRTC connection orchestration
-   - HMAC-SHA256 authentication for all messages
-   - Room-based peer management
-   - No history data passes through the server
-
-2. **Chrome Extension** (`chrome-extension/`)
+1. **Chrome Extension** (`chrome-extension/`)
    - Browser extension for Chrome/Chromium browsers
    - Tracks browsing history via Chrome History API
    - WebRTC implementation using browser APIs
@@ -32,20 +26,18 @@ bar123 is a privacy-focused, peer-to-peer browsing history synchronization syste
 
 ### Technology Stack
 - **WebRTC**: Peer-to-peer data channels
-- **WebSocket**: Signaling server communication
-- **HMAC-SHA256**: Message authentication
+- **Cloudflare DNS**: Peer discovery via TXT records
 - **Swift/UIKit**: iOS development
 - **JavaScript**: Chrome extension and Safari web extension
-- **Node.js**: Signaling server
 - **STUN**: NAT traversal (Google's public STUN servers)
 
 ## Key Features
 
 ### Security & Privacy
 - End-to-end encryption via WebRTC DTLS
-- Pre-shared secret authentication
+- Room ID based peer discovery
 - No cloud storage - data stays on user devices
-- HMAC verification on all signaling messages
+- Cloudflare API token for DNS updates
 - Peer-to-peer architecture
 
 ### Synchronization
@@ -64,10 +56,10 @@ bar123 is a privacy-focused, peer-to-peer browsing history synchronization syste
 ## Data Flow
 
 ### Connection Establishment
-1. Devices authenticate with pre-shared secret
-2. Join room on signaling server
-3. Exchange WebRTC offers/answers
-4. Share ICE candidates for NAT traversal
+1. Devices publish their peer info to Cloudflare DNS TXT records
+2. Discover peers via DNS queries for room-specific records
+3. Exchange WebRTC offers/answers via DNS TXT records
+4. Share ICE candidates via DNS updates
 5. Establish direct P2P connection
 
 ### Sync Protocol
@@ -80,26 +72,19 @@ Message types exchanged over WebRTC data channels:
 ## Development Guidelines
 
 ### Code Organization
-- Shared WebRTC logic between Safari Extension and iOS app
-- Protocol definitions in respective platform code
+- Shared WebRTC logic in Bar123Core Swift package
+- Shared Cloudflare DNS discovery logic
 - UI code separated by platform
-- Signaling server kept minimal and stateless
+- Minimal JavaScript for browser extensions
 
 ### Testing
 - Test WebRTC connections across platforms
-- Verify HMAC authentication
+- Verify Cloudflare DNS discovery
 - Check sync conflict resolution
 - Test offline/online transitions
 - Validate history data integrity
 
 ### Building & Running
-
-#### Signaling Server
-```bash
-cd signaling-server
-npm install
-npm start
-```
 
 #### Chrome Extension
 ```bash
@@ -114,8 +99,8 @@ npm install
 - Safari Extension requires developer settings enabled
 
 ### Configuration
-- Set `SIGNALING_SERVER_URL` in each component
-- Configure `PRE_SHARED_SECRET` consistently
+- Set Cloudflare API credentials (API Token, Zone ID, Domain)
+- Configure Room ID for peer grouping
 - Adjust STUN server list if needed
 
 ## Important Considerations
@@ -145,7 +130,7 @@ npm install
 
 ### Common Issues
 1. **Connection failures**: Check firewall/NAT settings
-2. **Auth errors**: Verify pre-shared secret matches
+2. **DNS errors**: Verify Cloudflare API token and permissions
 3. **Sync conflicts**: Check device time synchronization
 4. **Missing history**: Ensure proper permissions granted
 
@@ -153,14 +138,14 @@ npm install
 - Chrome DevTools for extension debugging
 - Safari Web Inspector for Safari Extension
 - Xcode debugger for iOS app
-- Server logs for signaling issues
+- Swift CLI for testing sync and discovery
 
 ## Security Notes
-- Never commit pre-shared secrets
-- Use secure WebSocket (wss://) in production
+- Never commit Cloudflare API tokens
+- Use DNS over HTTPS when possible
 - Regularly update WebRTC dependencies
 - Consider additional encryption for sensitive data
-- Implement rate limiting on signaling server
+- Monitor DNS record usage for abuse
 
 ## Maintenance
 - Keep WebRTC framework updated

@@ -17,8 +17,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Create window
         window = UIWindow(windowScene: windowScene)
         
-        // Set the root view controller to our new MainViewController
-        window?.rootViewController = MainViewController()
+        // Set the root view controller to our simplified view controller
+        let simpleViewController = SimpleViewController()
+        let navigationController = UINavigationController(rootViewController: simpleViewController)
+        navigationController.navigationBar.prefersLargeTitles = true
+        
+        window?.rootViewController = navigationController
         window?.makeKeyAndVisible()
     }
 
