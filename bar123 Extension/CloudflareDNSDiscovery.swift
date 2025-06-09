@@ -16,7 +16,7 @@ class CloudflareDNSDiscovery: BasePeerDiscovery {
     private let roomId: String
     private let ttl: Int
     
-    private var pollTimer: Timer?
+    private var pollTask: Task<Void, Never>?
     private let pollInterval: TimeInterval = 5.0
     private var ownRecords = Set<String>()
     
@@ -44,11 +44,10 @@ class CloudflareDNSDiscovery: BasePeerDiscovery {
         try await announcePresence()
         
         // Start polling for peers
-        await MainActor.run {
-            pollTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { _ in
-                Task {
-                    try? await self.discoverPeers()
-                }
+        pollTask = Task {
+            while !Task.isCancelled {
+                try? await self.discoverPeers()
+                try? await Task.sleep(nanoseconds: UInt64(pollInterval * 1_000_000_000))
             }
         }
         
@@ -57,10 +56,8 @@ class CloudflareDNSDiscovery: BasePeerDiscovery {
     }
     
     override func stop() async {
-        await MainActor.run {
-            pollTimer?.invalidate()
-            pollTimer = nil
-        }
+        pollTask?.cancel()
+        pollTask = nil
         
         // Clean up our DNS records
         await cleanupRecords()
@@ -128,7 +125,7 @@ class CloudflareDNSDiscovery: BasePeerDiscovery {
                 
                 // Add or update peer
                 if discoveredPeers[peerInfo.id] == nil {
-                    let info = PeerInfo(id: peerInfo.id, name: peerInfo.name, type: peerInfo.type)
+                    let info = PeerInfo(id: peerInfo.id, name: peerInfo.name, type: peerInfo.type, timestamp: Date(timeIntervalSince1970: peerInfo.timestamp))
                     addPeer(peerInfo.id, info: info)
                 }
             } catch {

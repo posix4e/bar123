@@ -352,7 +352,7 @@ class STUNOnlyDiscovery: BasePeerDiscovery {
         addPeer(peerId, info: info)
         
         // Process any pending messages for this peer
-        if let pendingData = pendingConnections[peerId] {
+        if pendingConnections[peerId] != nil {
             pendingConnections.removeValue(forKey: peerId)
             // In real implementation, this would establish the connection
             print("Processing pending connection for peer: \(peerId)")
@@ -472,6 +472,10 @@ enum DiscoveryError: LocalizedError {
     case notInitialized
     case webRTCNotInitialized
     case manualExchangeRequired(peerId: String)
+    case invalidMessage
+    case authenticationFailed
+    case networkError
+    case invalidConfiguration
     
     var errorDescription: String? {
         switch self {
@@ -485,6 +489,14 @@ enum DiscoveryError: LocalizedError {
             return "WebRTC not initialized"
         case .manualExchangeRequired(let peerId):
             return "Manual connection exchange required for peer: \(peerId)"
+        case .invalidMessage:
+            return "Invalid message format"
+        case .authenticationFailed:
+            return "Authentication failed"
+        case .networkError:
+            return "Network error occurred"
+        case .invalidConfiguration:
+            return "Invalid configuration"
         }
     }
 }

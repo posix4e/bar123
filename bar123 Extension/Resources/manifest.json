@@ -15,19 +15,22 @@
     },
 
     "background": {
-        "scripts": [ "background.js" ],
+        "scripts": [ "background-minimal.js" ],
         "type": "module"
     },
 
     "content_scripts": [{
-        "js": [ "content.js" ],
-        "matches": [ "*://example.com/*" ]
+        "js": [ "content-minimal.js" ],
+        "matches": [ "<all_urls>" ]
     }],
 
     "action": {
-        "default_popup": "popup.html",
+        "default_popup": "popup-minimal.html",
         "default_icon": "images/toolbar-icon.svg"
     },
 
-    "permissions": [ ]
+    "permissions": [
+        "tabs",
+        "storage"
+    ]
 }
