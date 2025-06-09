@@ -17,13 +17,13 @@ document.addEventListener('DOMContentLoaded', initialize);
 async function initialize() {
     // Get DOM elements
     setupElements();
-    
+
     // Load current configuration
     await loadConfig();
-    
+
     // Setup event listeners
     setupEventListeners();
-    
+
     // Load initial data
     await refreshData();
 }
@@ -35,22 +35,22 @@ function setupElements() {
     elements = {
         // Status
         connectionStatus: document.getElementById('connectionStatus'),
-        
+
         // Search
         searchInput: document.getElementById('searchInput'),
         searchButton: document.getElementById('searchButton'),
-        
+
         // Tabs
         tabButtons: document.querySelectorAll('.tab-button'),
         tabPanes: document.querySelectorAll('.tab-pane'),
-        
+
         // History
         deviceFilter: document.getElementById('deviceFilter'),
         historyList: document.getElementById('historyList'),
-        
+
         // Devices
         devicesList: document.getElementById('devicesList'),
-        
+
         // Settings
         discoveryMethod: document.getElementById('discoveryMethod'),
         websocketSettings: document.getElementById('websocketSettings'),
@@ -77,7 +77,7 @@ function setupElements() {
         newConnection: document.getElementById('newConnection'),
         saveSettings: document.getElementById('saveSettings'),
         disconnectButton: document.getElementById('disconnectButton'),
-        
+
         // Cloudflare elements
         cloudflareSettings: document.getElementById('cloudflareSettings'),
         cloudflareDomain: document.getElementById('cloudflareDomain'),
@@ -107,25 +107,25 @@ async function loadConfig() {
 function updateConfigUI() {
     // Set discovery method
     elements.discoveryMethod.value = currentConfig.discoveryMethod || 'websocket';
-    
+
     // WebSocket settings
     elements.serverUrl.value = currentConfig.signalingServerUrl || '';
     elements.roomId.value = currentConfig.roomId || '';
     elements.sharedSecret.value = currentConfig.sharedSecret || '';
-    
+
     // STUN servers
     const stunServers = currentConfig.stunServers || [
         'stun:stun.l.google.com:19302',
         'stun:stun1.l.google.com:19302'
     ];
     elements.stunServers.value = stunServers.join('\n');
-    
+
     // Cloudflare settings
     elements.cloudflareDomain.value = currentConfig.cloudflareDomain || '';
     elements.cloudflareZoneId.value = currentConfig.cloudflareZoneId || '';
     elements.cloudflareApiToken.value = currentConfig.cloudflareApiToken || '';
     elements.cloudflareRoomId.value = currentConfig.cloudflareRoomId || '';
-    
+
     // Show/hide appropriate settings
     updateDiscoveryUI();
 }
@@ -133,7 +133,7 @@ function updateConfigUI() {
 // Update connection status
 function updateConnectionStatus() {
     const statusText = elements.connectionStatus.querySelector('.status-text');
-    
+
     if (currentConfig.isConnected) {
         elements.connectionStatus.classList.add('connected');
         statusText.textContent = 'Connected';
@@ -146,17 +146,17 @@ function updateConnectionStatus() {
 // Update discovery UI based on selected method
 function updateDiscoveryUI() {
     const method = elements.discoveryMethod.value;
-    
+
     // Hide all settings first
     elements.websocketSettings.style.display = 'none';
     elements.stunSettings.style.display = 'none';
     elements.cloudflareSettings.style.display = 'none';
-    
+
     if (method === 'websocket') {
         elements.websocketSettings.style.display = 'block';
     } else if (method === 'stun-only') {
         elements.stunSettings.style.display = 'block';
-        
+
         // Show connection flow if connected
         if (currentConfig.isConnected) {
             elements.connectionFlow.style.display = 'block';
@@ -171,26 +171,28 @@ function updateDiscoveryUI() {
 function setupEventListeners() {
     // Discovery method change
     elements.discoveryMethod.addEventListener('change', updateDiscoveryUI);
-    
+
     // Tab switching
     elements.tabButtons.forEach(button => {
         button.addEventListener('click', () => switchTab(button.dataset.tab));
     });
-    
+
     // Search
     elements.searchButton.addEventListener('click', performSearch);
     elements.searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') performSearch();
+        if (e.key === 'Enter') {
+            performSearch();
+        }
     });
-    
+
     // Device filter
     elements.deviceFilter.addEventListener('change', filterHistory);
-    
+
     // Settings
     elements.generateSecret.addEventListener('click', generateSecret);
     elements.saveSettings.addEventListener('click', saveSettings);
     elements.disconnectButton.addEventListener('click', disconnect);
-    
+
     // STUN-only features
     elements.createOffer.addEventListener('click', createConnectionOffer);
     elements.shareViaChat.addEventListener('click', shareViaChat);
@@ -198,15 +200,15 @@ function setupEventListeners() {
     elements.copyOfferCode.addEventListener('click', copyOfferCode);
     elements.processConnection.addEventListener('click', processConnection);
     elements.newConnection.addEventListener('click', resetConnectionFlow);
-    
+
     // Cloudflare share
     elements.generateCloudflareShare.addEventListener('click', generateCloudflareShare);
-    
+
     // Auto-detect connection data in input
     elements.connectionInput.addEventListener('paste', (e) => {
         setTimeout(() => {
             const input = elements.connectionInput.value.trim();
-            if (input.includes('🔗 History Sync Connection') || 
+            if (input.includes('🔗 History Sync Connection') ||
                 input.includes('✅ History Sync Connection')) {
                 // Extract just the code from the formatted message
                 const match = input.match(/\n\n([A-Za-z0-9\-_]+)\n\n/);
@@ -221,17 +223,17 @@ function setupEventListeners() {
 // Switch tabs
 function switchTab(tabName) {
     currentTab = tabName;
-    
+
     // Update tab buttons
     elements.tabButtons.forEach(button => {
         button.classList.toggle('active', button.dataset.tab === tabName);
     });
-    
+
     // Update tab panes
     elements.tabPanes.forEach(pane => {
         pane.classList.toggle('active', pane.id === `${tabName}Tab`);
     });
-    
+
     // Refresh data for the current tab
     refreshTabData();
 }
@@ -239,12 +241,12 @@ function switchTab(tabName) {
 // Refresh data based on current tab
 async function refreshTabData() {
     switch (currentTab) {
-        case 'history':
-            await loadHistory();
-            break;
-        case 'devices':
-            await loadDevices();
-            break;
+    case 'history':
+        await loadHistory();
+        break;
+    case 'devices':
+        await loadDevices();
+        break;
     }
 }
 
@@ -263,13 +265,13 @@ async function performSearch() {
         await loadHistory();
         return;
     }
-    
+
     try {
         const response = await chrome.runtime.sendMessage({
             type: 'search',
             query: query
         });
-        
+
         if (response.success) {
             searchResults = response.results;
             displayHistory(searchResults);
@@ -285,7 +287,7 @@ async function loadHistory() {
         const response = await chrome.runtime.sendMessage({
             type: 'get_history'
         });
-        
+
         if (response.success) {
             historyEntries = response.history;
             displayHistory(historyEntries);
@@ -302,12 +304,12 @@ function displayHistory(entries) {
         elements.historyList.innerHTML = '<p class="empty-state">No history entries found</p>';
         return;
     }
-    
+
     const html = entries.map(entry => {
         const date = new Date(entry.visitDate);
         const timeString = date.toLocaleTimeString();
         const dateString = date.toLocaleDateString();
-        
+
         return `
             <div class="history-item" data-url="${entry.url}">
                 <div class="history-title">${entry.title || 'Untitled'}</div>
@@ -316,9 +318,9 @@ function displayHistory(entries) {
             </div>
         `;
     }).join('');
-    
+
     elements.historyList.innerHTML = html;
-    
+
     // Add click handlers to open URLs
     document.querySelectorAll('.history-item').forEach(item => {
         item.addEventListener('click', () => {
@@ -331,15 +333,15 @@ function displayHistory(entries) {
 function updateDeviceFilter() {
     const deviceIds = new Set(historyEntries.map(entry => entry.deviceId));
     const currentValue = elements.deviceFilter.value;
-    
+
     let optionsHtml = '<option value="">All Devices</option>';
-    
+
     deviceIds.forEach(deviceId => {
         const device = devices.find(d => d.id === deviceId);
         const deviceName = device ? device.name : deviceId;
         optionsHtml += `<option value="${deviceId}">${deviceName}</option>`;
     });
-    
+
     elements.deviceFilter.innerHTML = optionsHtml;
     elements.deviceFilter.value = currentValue;
 }
@@ -347,7 +349,7 @@ function updateDeviceFilter() {
 // Filter history by device
 function filterHistory() {
     const deviceId = elements.deviceFilter.value;
-    
+
     if (!deviceId) {
         displayHistory(historyEntries);
     } else {
@@ -362,7 +364,7 @@ async function loadDevices() {
         const response = await chrome.runtime.sendMessage({
             type: 'get_devices'
         });
-        
+
         if (response.success) {
             devices = response.devices;
             displayDevices(devices);
@@ -378,11 +380,11 @@ function displayDevices(deviceList) {
         elements.devicesList.innerHTML = '<p class="empty-state">No devices found</p>';
         return;
     }
-    
+
     const html = deviceList.map(device => {
         const statusClass = device.isConnected ? 'connected' : '';
         const statusText = device.isConnected ? 'Connected' : 'Last seen ' + new Date(device.lastSeen).toLocaleDateString();
-        
+
         return `
             <div class="device-item">
                 <div class="device-name">${device.name}</div>
@@ -391,7 +393,7 @@ function displayDevices(deviceList) {
             </div>
         `;
     }).join('');
-    
+
     elements.devicesList.innerHTML = html;
 }
 
@@ -399,11 +401,11 @@ function displayDevices(deviceList) {
 function generateSecret() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let secret = '';
-    
+
     for (let i = 0; i < 32; i++) {
         secret += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    
+
     elements.sharedSecret.value = secret;
 }
 
@@ -413,12 +415,12 @@ async function saveSettings() {
     const config = {
         discoveryMethod: discoveryMethod
     };
-    
+
     if (discoveryMethod === 'websocket') {
         config.signalingServerUrl = elements.serverUrl.value.trim();
         config.roomId = elements.roomId.value.trim();
         config.sharedSecret = elements.sharedSecret.value.trim();
-        
+
         if (!config.signalingServerUrl || !config.roomId || !config.sharedSecret) {
             alert('Please fill in all WebSocket fields');
             return;
@@ -426,7 +428,7 @@ async function saveSettings() {
     } else if (discoveryMethod === 'stun-only') {
         const stunServersText = elements.stunServers.value.trim();
         config.stunServers = stunServersText.split('\n').filter(s => s.trim());
-        
+
         if (config.stunServers.length === 0) {
             alert('Please provide at least one STUN server');
             return;
@@ -436,26 +438,26 @@ async function saveSettings() {
         config.cloudflareZoneId = elements.cloudflareZoneId.value.trim();
         config.cloudflareApiToken = elements.cloudflareApiToken.value.trim();
         config.cloudflareRoomId = elements.cloudflareRoomId.value.trim();
-        
-        if (!config.cloudflareDomain || !config.cloudflareZoneId || 
+
+        if (!config.cloudflareDomain || !config.cloudflareZoneId ||
             !config.cloudflareApiToken || !config.cloudflareRoomId) {
             alert('Please fill in all Cloudflare fields');
             return;
         }
     }
-    
+
     try {
         // Update config
         await chrome.runtime.sendMessage({
             type: 'update_config',
             config: config
         });
-        
+
         // Connect
         const response = await chrome.runtime.sendMessage({
             type: 'connect'
         });
-        
+
         if (response.success) {
             currentConfig = { ...currentConfig, ...config };
             currentConfig.isConnected = true;
@@ -477,7 +479,7 @@ async function disconnect() {
         await chrome.runtime.sendMessage({
             type: 'disconnect'
         });
-        
+
         currentConfig.isConnected = false;
         updateConnectionStatus();
         updateDiscoveryUI();
@@ -501,7 +503,7 @@ function resetConnectionFlow() {
         clearInterval(connectionTimer);
         connectionTimer = null;
     }
-    
+
     elements.createOfferStep.style.display = 'block';
     elements.shareOfferStep.style.display = 'none';
     elements.processStep.style.display = 'block';
@@ -514,15 +516,15 @@ async function createConnectionOffer() {
         const response = await chrome.runtime.sendMessage({
             type: 'create_connection_offer'
         });
-        
+
         if (response.success) {
             currentConnectionOffer = response;
-            
+
             // Update UI
             elements.createOfferStep.style.display = 'none';
             elements.shareOfferStep.style.display = 'block';
             elements.connectionOffer.value = response.shareText;
-            
+
             // Start expiry timer
             let timeLeft = 300; // 5 minutes
             connectionTimer = setInterval(() => {
@@ -534,11 +536,11 @@ async function createConnectionOffer() {
                 } else {
                     const minutes = Math.floor(timeLeft / 60);
                     const seconds = timeLeft % 60;
-                    document.querySelector('.help-text').textContent = 
+                    document.querySelector('.help-text').textContent =
                         `Waiting for response... (expires in ${minutes}:${seconds.toString().padStart(2, '0')})`;
                 }
             }, 1000);
-            
+
             // Auto-select the text for easy copying
             elements.connectionOffer.select();
         } else {
@@ -551,8 +553,10 @@ async function createConnectionOffer() {
 }
 
 async function shareViaChat() {
-    if (!currentConnectionOffer) return;
-    
+    if (!currentConnectionOffer) {
+        return;
+    }
+
     try {
         // Use Web Share API if available
         if (navigator.share) {
@@ -571,8 +575,10 @@ async function shareViaChat() {
 }
 
 async function copyOfferLink() {
-    if (!currentConnectionOffer) return;
-    
+    if (!currentConnectionOffer) {
+        return;
+    }
+
     try {
         await navigator.clipboard.writeText(currentConnectionOffer.link);
         showTemporaryButtonFeedback(elements.copyOfferLink, 'Copied!');
@@ -583,8 +589,10 @@ async function copyOfferLink() {
 }
 
 async function copyOfferCode() {
-    if (!currentConnectionOffer) return;
-    
+    if (!currentConnectionOffer) {
+        return;
+    }
+
     try {
         await navigator.clipboard.writeText(currentConnectionOffer.encoded);
         showTemporaryButtonFeedback(elements.copyOfferCode, 'Copied!');
@@ -596,29 +604,29 @@ async function copyOfferCode() {
 
 async function processConnection() {
     const input = elements.connectionInput.value.trim();
-    
+
     if (!input) {
         showStatus('Please paste connection code', 'error');
         return;
     }
-    
+
     try {
         // Disable button during processing
         elements.processConnection.disabled = true;
         elements.processConnection.textContent = 'Connecting...';
-        
+
         const response = await chrome.runtime.sendMessage({
             type: 'process_connection',
             data: input
         });
-        
+
         if (response.success) {
             if (response.isOffer) {
                 // We received an offer and created a response
                 showStatus('Connection established! Send the response back:', 'success');
                 elements.connectionInput.value = response.shareText;
                 elements.connectionInput.select();
-                
+
                 // Update button to copy response
                 elements.processConnection.textContent = 'Copy Response';
                 elements.processConnection.onclick = async () => {
@@ -629,7 +637,7 @@ async function processConnection() {
                 // We received a response and completed the connection
                 showStatus(`Connected to ${response.peerName}!`, 'success');
                 elements.connectionInput.value = '';
-                
+
                 // Update connection status
                 setTimeout(() => {
                     updateConnectionStatus();
@@ -651,25 +659,25 @@ async function processConnection() {
     }
 }
 
-async function updateConnectionStatus() {
+async function updateConnectionStats() {
     try {
         const response = await chrome.runtime.sendMessage({
             type: 'get_connection_stats'
         });
-        
+
         if (response.success && response.stats) {
             const stats = response.stats;
-            
+
             if (stats.active > 0) {
                 elements.createOfferStep.style.display = 'none';
                 elements.shareOfferStep.style.display = 'none';
                 elements.processStep.style.display = 'none';
                 elements.connectionStatusStep.style.display = 'block';
-                
+
                 // Update status message
                 elements.connectionStatusMessage.className = 'status-message success';
                 elements.connectionStatusMessage.textContent = `Connected to ${stats.active} peer${stats.active > 1 ? 's' : ''}`;
-                
+
                 // Update peer list
                 elements.connectedPeersList.innerHTML = stats.peers.map(peer => `
                     <div class="peer-item">
@@ -690,11 +698,11 @@ function showStatus(message, type = 'info') {
     const statusEl = document.createElement('div');
     statusEl.className = `status-message ${type}`;
     statusEl.textContent = message;
-    
+
     // Find a good place to show the status
     const container = elements.connectionFlow || elements.stunSettings;
     container.insertBefore(statusEl, container.firstChild);
-    
+
     // Auto-remove after 5 seconds
     setTimeout(() => statusEl.remove(), 5000);
 }
@@ -716,12 +724,12 @@ async function generateCloudflareShare() {
         apiToken: elements.cloudflareApiToken.value.trim(),
         roomId: elements.cloudflareRoomId.value.trim()
     };
-    
+
     if (!config.domain || !config.zoneId || !config.apiToken || !config.roomId) {
         showStatus('Please fill in all Cloudflare fields first', 'error');
         return;
     }
-    
+
     // Create shareable config
     const shareData = {
         type: 'cloudflare-dns-config',
@@ -737,10 +745,10 @@ async function generateCloudflareShare() {
         createdAt: new Date().toISOString(),
         deviceName: 'Chrome Extension'
     };
-    
+
     // Encode as base64
     const encoded = btoa(JSON.stringify(shareData));
-    
+
     // Format for sharing
     const shareText = `🔐 History Sync Cloudflare Config
 
@@ -757,12 +765,12 @@ To use on iOS:
 4. Paste this code
 
 Expires: Never (revoke API token to disable)`;
-    
+
     // Show the share code
     elements.cloudflareShareCode.value = shareText;
     elements.cloudflareShareCode.style.display = 'block';
     elements.cloudflareShareCode.select();
-    
+
     // Copy to clipboard
     try {
         await navigator.clipboard.writeText(shareText);

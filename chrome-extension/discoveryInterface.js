@@ -1,3 +1,12 @@
+// Import Cloudflare discovery if available
+let CloudflareDNSDiscovery;
+try {
+    // eslint-disable-next-line no-undef
+    CloudflareDNSDiscovery = require('./cloudflareDiscovery.js').CloudflareDNSDiscovery;
+} catch (e) {
+    // CloudflareDNSDiscovery not available in this context
+}
+
 // Base interface for peer discovery mechanisms
 class PeerDiscovery {
     constructor(config) {
@@ -89,10 +98,10 @@ class WebSocketDiscovery extends PeerDiscovery {
 
     async connect() {
         const { signalingServerUrl, roomId, sharedSecret, deviceInfo } = this.config;
-        
+
         return new Promise((resolve, reject) => {
             this.ws = new WebSocket(signalingServerUrl);
-            
+
             this.ws.onopen = () => {
                 console.log('Connected to signaling server');
                 this.sendAuthenticatedMessage({
@@ -103,28 +112,28 @@ class WebSocketDiscovery extends PeerDiscovery {
                 this.startHeartbeat();
                 resolve();
             };
-            
+
             this.ws.onmessage = (event) => {
                 const message = JSON.parse(event.data);
                 if (!this.verifyHMAC(message, sharedSecret)) {
                     console.error('Invalid HMAC signature');
                     return;
                 }
-                
+
                 this.handleServerMessage(message);
             };
-            
+
             this.ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
                 this.handleError(error);
             };
-            
+
             this.ws.onclose = () => {
                 console.log('Disconnected from signaling server');
                 this.peers.clear();
                 this.scheduleReconnect();
             };
-            
+
             // Set a timeout for initial connection
             setTimeout(() => {
                 if (this.ws.readyState !== WebSocket.OPEN) {
@@ -139,7 +148,7 @@ class WebSocketDiscovery extends PeerDiscovery {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
             throw new Error('Not connected to signaling server');
         }
-        
+
         this.sendAuthenticatedMessage({
             type: 'signal',
             to: peerId,
@@ -152,7 +161,7 @@ class WebSocketDiscovery extends PeerDiscovery {
         const timestamp = Date.now();
         const payload = JSON.stringify({ ...data, timestamp });
         const hmac = this.generateHMAC(payload, sharedSecret);
-        
+
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({ payload, hmac }));
         }
@@ -160,30 +169,30 @@ class WebSocketDiscovery extends PeerDiscovery {
 
     handleServerMessage(message) {
         const data = JSON.parse(message.payload);
-        
+
         switch (data.type) {
-            case 'peers':
-                // Initial peer list when joining room
-                data.peers.forEach(peer => {
-                    this.addPeer(peer.id, peer.deviceInfo);
-                });
-                break;
-                
-            case 'peer_joined':
-                this.addPeer(data.peerId, data.deviceInfo);
-                break;
-                
-            case 'peer_left':
-                this.removePeer(data.peerId);
-                break;
-                
-            case 'signal':
-                this.handleSignalingMessage(data.from, data.signal);
-                break;
-                
-            case 'error':
-                this.handleError(new Error(data.message));
-                break;
+        case 'peers':
+            // Initial peer list when joining room
+            data.peers.forEach(peer => {
+                this.addPeer(peer.id, peer.deviceInfo);
+            });
+            break;
+
+        case 'peer_joined':
+            this.addPeer(data.peerId, data.deviceInfo);
+            break;
+
+        case 'peer_left':
+            this.removePeer(data.peerId);
+            break;
+
+        case 'signal':
+            this.handleSignalingMessage(data.from, data.signal);
+            break;
+
+        case 'error':
+            this.handleError(new Error(data.message));
+            break;
         }
     }
 
@@ -249,13 +258,13 @@ class STUNOnlyDiscovery extends PeerDiscovery {
     async start() {
         try {
             console.log('STUN-only discovery started. Manual peer exchange required.');
-            
+
             // Listen for connection links in the URL
             if (typeof window !== 'undefined') {
                 window.addEventListener('hashchange', () => this.handleConnectionLink());
                 this.handleConnectionLink(); // Check current URL
             }
-            
+
         } catch (error) {
             this.handleError(error);
             throw error;
@@ -290,23 +299,23 @@ class STUNOnlyDiscovery extends PeerDiscovery {
             deviceName: this.config.deviceInfo.name,
             stunServers: this.stunServers
         };
-        
+
         try {
             const offerData = await ConnectionShare.createOffer(localInfo);
             const offerId = offerData.id;
-            
+
             // Store the offer
             this.connectionOffers.set(offerId, {
                 data: offerData,
                 created: Date.now(),
                 localInfo
             });
-            
+
             // Clean up old offers after 5 minutes
             setTimeout(() => {
                 this.connectionOffers.delete(offerId);
             }, 5 * 60 * 1000);
-            
+
             return {
                 offer: offerData,
                 shareText: ConnectionShare.format(offerData, true),
@@ -323,48 +332,48 @@ class STUNOnlyDiscovery extends PeerDiscovery {
     async processConnectionOffer(encodedOffer) {
         try {
             const offerData = ConnectionShare.decode(encodedOffer);
-            
+
             if (!ConnectionShare.validateConnectionData(offerData)) {
                 throw new Error('Invalid connection offer');
             }
-            
+
             // Check if offer is expired (older than 5 minutes)
             if (Date.now() - offerData.ts > 5 * 60 * 1000) {
                 throw new Error('Connection offer has expired');
             }
-            
+
             const localInfo = {
                 deviceId: this.config.deviceInfo.id,
                 deviceName: this.config.deviceInfo.name,
                 stunServers: this.stunServers
             };
-            
+
             // Create response
             const responseData = await ConnectionShare.createResponse(offerData, localInfo);
-            
+
             // Establish connection with the response
             const { pc, remoteId, remoteName } = await this.completeResponseConnection(responseData, offerData);
-            
+
             // Add peer
             const peerInfo = {
                 id: remoteId,
                 name: remoteName,
                 type: 'manual'
             };
-            
+
             this.activeConnections.set(remoteId, { pc, info: peerInfo });
             this.addPeer(remoteId, peerInfo);
-            
+
             // Set up data channel handlers
             this.setupDataChannel(pc, remoteId);
-            
+
             return {
                 response: responseData,
                 shareText: ConnectionShare.format(responseData, false),
                 encoded: ConnectionShare.encode(responseData),
                 peerId: remoteId
             };
-            
+
         } catch (error) {
             this.handleError(error);
             throw error;
@@ -375,43 +384,43 @@ class STUNOnlyDiscovery extends PeerDiscovery {
     async processConnectionResponse(encodedResponse) {
         try {
             const responseData = ConnectionShare.decode(encodedResponse);
-            
+
             if (!ConnectionShare.validateConnectionData(responseData)) {
                 throw new Error('Invalid connection response');
             }
-            
+
             // Complete the connection
             const { pc, remoteId, remoteName } = await ConnectionShare.completeConnection(responseData);
-            
+
             // Add peer
             const peerInfo = {
                 id: remoteId,
                 name: remoteName,
                 type: 'manual'
             };
-            
+
             this.activeConnections.set(remoteId, { pc, info: peerInfo });
             this.addPeer(remoteId, peerInfo);
-            
+
             // Set up data channel handlers
             this.setupDataChannel(pc, remoteId);
-            
+
             // Process any pending messages
             if (this.pendingConnections.has(remoteId)) {
                 const messages = this.pendingConnections.get(remoteId);
                 this.pendingConnections.delete(remoteId);
-                
+
                 for (const message of messages) {
                     this.handleSignalingMessage(message, remoteId);
                 }
             }
-            
+
             return {
                 success: true,
                 peerId: remoteId,
                 peerName: remoteName
             };
-            
+
         } catch (error) {
             this.handleError(error);
             throw error;
@@ -422,7 +431,7 @@ class STUNOnlyDiscovery extends PeerDiscovery {
     async completeResponseConnection(responseData, offerData) {
         return new Promise((resolve, reject) => {
             const pc = ConnectionShare.pendingConnection.pc;
-            
+
             pc.ondatachannel = (event) => {
                 const channel = event.channel;
                 channel.onopen = () => {
@@ -433,7 +442,7 @@ class STUNOnlyDiscovery extends PeerDiscovery {
                     });
                 };
             };
-            
+
             // Timeout after 30 seconds
             setTimeout(() => {
                 reject(new Error('Connection timeout'));
@@ -446,7 +455,7 @@ class STUNOnlyDiscovery extends PeerDiscovery {
         // Handle incoming data channels
         pc.ondatachannel = (event) => {
             const channel = event.channel;
-            
+
             channel.onmessage = (event) => {
                 try {
                     const message = JSON.parse(event.data);
@@ -455,17 +464,17 @@ class STUNOnlyDiscovery extends PeerDiscovery {
                     console.error('Failed to parse data channel message:', error);
                 }
             };
-            
+
             channel.onerror = (error) => {
                 console.error('Data channel error:', error);
             };
-            
+
             channel.onclose = () => {
                 this.removePeer(remoteId);
                 this.activeConnections.delete(remoteId);
             };
         };
-        
+
         // Handle connection state changes
         pc.onconnectionstatechange = () => {
             if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
@@ -477,13 +486,15 @@ class STUNOnlyDiscovery extends PeerDiscovery {
 
     // Handle connection links from URL
     handleConnectionLink() {
-        if (typeof window === 'undefined') return;
-        
+        if (typeof window === 'undefined') {
+            return;
+        }
+
         const connectionData = ConnectionShare.parseLink(window.location.href);
         if (connectionData) {
             // Clear the hash to prevent reprocessing
             window.location.hash = '';
-            
+
             // Notify about the connection offer
             if (this.onConnectionOffer) {
                 this.onConnectionOffer(ConnectionShare.encode(connectionData));
@@ -499,7 +510,7 @@ class STUNOnlyDiscovery extends PeerDiscovery {
             offers: this.connectionOffers.size,
             peers: []
         };
-        
+
         for (const [peerId, connection] of this.activeConnections) {
             stats.peers.push({
                 id: peerId,
@@ -507,7 +518,7 @@ class STUNOnlyDiscovery extends PeerDiscovery {
                 state: connection.pc.connectionState
             });
         }
-        
+
         return stats;
     }
 }
@@ -527,31 +538,31 @@ class DiscoveryManager {
 
         // Create the appropriate discovery instance
         switch (method) {
-            case 'websocket':
-                this.activeDiscovery = new WebSocketDiscovery(config);
-                break;
-            case 'stun-only':
-                this.activeDiscovery = new STUNOnlyDiscovery(config);
-                break;
-            case 'cloudflare-dns':
-                this.activeDiscovery = new CloudflareDNSDiscovery(config);
-                break;
-            default:
-                throw new Error(`Unknown discovery method: ${method}`);
+        case 'websocket':
+            this.activeDiscovery = new WebSocketDiscovery(config);
+            break;
+        case 'stun-only':
+            this.activeDiscovery = new STUNOnlyDiscovery(config);
+            break;
+        case 'cloudflare-dns':
+            this.activeDiscovery = new CloudflareDNSDiscovery(config);
+            break;
+        default:
+            throw new Error(`Unknown discovery method: ${method}`);
         }
 
         // Set up fallback chain if configured
         if (config.fallbackMethods) {
             this.fallbackDiscoveries = config.fallbackMethods.map(fallback => {
                 switch (fallback.method) {
-                    case 'websocket':
-                        return new WebSocketDiscovery(fallback.config);
-                    case 'stun-only':
-                        return new STUNOnlyDiscovery(fallback.config);
-                    case 'cloudflare-dns':
-                        return new CloudflareDNSDiscovery(fallback.config);
-                    default:
-                        return null;
+                case 'websocket':
+                    return new WebSocketDiscovery(fallback.config);
+                case 'stun-only':
+                    return new STUNOnlyDiscovery(fallback.config);
+                case 'cloudflare-dns':
+                    return new CloudflareDNSDiscovery(fallback.config);
+                default:
+                    return null;
                 }
             }).filter(d => d !== null);
         }
@@ -579,7 +590,7 @@ class DiscoveryManager {
                     console.error('Fallback discovery failed:', fallbackError);
                 }
             }
-            
+
             if (!this.activeDiscovery) {
                 throw error;
             }
@@ -592,6 +603,8 @@ class DiscoveryManager {
 }
 
 // Export for use in background.js
+// eslint-disable-next-line no-undef
 if (typeof module !== 'undefined' && module.exports) {
+    // eslint-disable-next-line no-undef
     module.exports = { PeerDiscovery, WebSocketDiscovery, STUNOnlyDiscovery, DiscoveryManager };
 }

@@ -54,34 +54,44 @@ const connectedDevices = new Map();
 async function initialize() {
     // Generate or load device ID
     const stored = await chrome.storage.local.get([
-        'deviceId', 
+        'deviceId',
         'discoveryMethod',
-        'signalingServerUrl', 
-        'roomId', 
+        'signalingServerUrl',
+        'roomId',
         'sharedSecret',
         'stunServers'
     ]);
-    
+
     if (stored.deviceId) {
         config.deviceId = stored.deviceId;
     } else {
         config.deviceId = generateDeviceId();
         await chrome.storage.local.set({ deviceId: config.deviceId });
     }
-    
+
     // Load saved config
-    if (stored.discoveryMethod) config.discoveryMethod = stored.discoveryMethod;
-    if (stored.signalingServerUrl) config.signalingServerUrl = stored.signalingServerUrl;
-    if (stored.roomId) config.roomId = stored.roomId;
-    if (stored.sharedSecret) config.sharedSecret = stored.sharedSecret;
-    if (stored.stunServers) config.stunServers = stored.stunServers;
-    
+    if (stored.discoveryMethod) {
+        config.discoveryMethod = stored.discoveryMethod;
+    }
+    if (stored.signalingServerUrl) {
+        config.signalingServerUrl = stored.signalingServerUrl;
+    }
+    if (stored.roomId) {
+        config.roomId = stored.roomId;
+    }
+    if (stored.sharedSecret) {
+        config.sharedSecret = stored.sharedSecret;
+    }
+    if (stored.stunServers) {
+        config.stunServers = stored.stunServers;
+    }
+
     // Update WebRTC config with loaded STUN servers
     webRTCConfig.iceServers = config.stunServers.map(url => ({ urls: url }));
-    
+
     // Setup history listener
     chrome.history.onVisited.addListener(handleHistoryVisit);
-    
+
     // Auto-connect if configured
     if (config.sharedSecret || config.discoveryMethod === 'stun-only') {
         await connect();
@@ -114,7 +124,7 @@ async function connect() {
             stunServers: config.stunServers,
             fallbackMethods: config.fallbackMethods
         };
-        
+
         // Add HMAC generation for WebSocket discovery
         if (config.discoveryMethod === 'websocket') {
             discoveryConfig.generateHMAC = generateHMAC;
@@ -130,21 +140,21 @@ async function connect() {
             discoveryConfig.roomId = config.cloudflareRoomId || config.roomId;
             discoveryConfig.recordPrefix = '_p2psync';
         }
-        
+
         activeDiscovery = await discoveryManager.initialize(config.discoveryMethod, discoveryConfig);
-        
+
         // Set up discovery event handlers
         activeDiscovery.onPeerDiscovered = handlePeerDiscovered;
         activeDiscovery.onPeerLost = handlePeerLost;
         activeDiscovery.onSignalingMessage = handleSignalingMessage;
         activeDiscovery.onError = handleDiscoveryError;
-        
+
         // Start discovery
         await discoveryManager.start();
-        
+
         config.isConnected = true;
         updateBadge(true);
-        
+
         console.log(`Connected using ${config.discoveryMethod} discovery`);
     } catch (error) {
         console.error('Connection failed:', error);
@@ -160,13 +170,13 @@ async function disconnect() {
         await activeDiscovery.stop();
         activeDiscovery = null;
     }
-    
+
     // Clean up peer connections
     peerConnections.forEach(pc => pc.close());
     peerConnections.clear();
     dataChannels.clear();
     connectedDevices.clear();
-    
+
     config.isConnected = false;
     updateBadge(false);
 }
@@ -174,14 +184,14 @@ async function disconnect() {
 // Handle peer discovered
 async function handlePeerDiscovered(peerId, peerInfo) {
     console.log(`Peer discovered: ${peerId}`, peerInfo);
-    
+
     // Create peer connection and offer
     const pc = createPeerConnection(peerId);
-    
+
     try {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
-        
+
         await activeDiscovery.sendSignalingMessage(peerId, {
             type: 'offer',
             offer: {
@@ -197,7 +207,7 @@ async function handlePeerDiscovered(peerId, peerInfo) {
 // Handle peer lost
 function handlePeerLost(peerId, peerInfo) {
     console.log(`Peer lost: ${peerId}`);
-    
+
     const pc = peerConnections.get(peerId);
     if (pc) {
         pc.close();
@@ -210,15 +220,15 @@ function handlePeerLost(peerId, peerInfo) {
 // Handle signaling message from discovery
 async function handleSignalingMessage(fromPeerId, message) {
     switch (message.type) {
-        case 'offer':
-            await handleOffer(fromPeerId, message.offer);
-            break;
-        case 'answer':
-            await handleAnswer(fromPeerId, message.answer);
-            break;
-        case 'ice-candidate':
-            await handleIceCandidate(fromPeerId, message.candidate);
-            break;
+    case 'offer':
+        await handleOffer(fromPeerId, message.offer);
+        break;
+    case 'answer':
+        await handleAnswer(fromPeerId, message.answer);
+        break;
+    case 'ice-candidate':
+        await handleIceCandidate(fromPeerId, message.candidate);
+        break;
     }
 }
 
@@ -232,7 +242,7 @@ function handleDiscoveryError(error) {
 // Create peer connection
 function createPeerConnection(remotePeerId) {
     const pc = new RTCPeerConnection(webRTCConfig);
-    
+
     // Handle ICE candidates
     pc.onicecandidate = (event) => {
         if (event.candidate && activeDiscovery) {
@@ -248,26 +258,26 @@ function createPeerConnection(remotePeerId) {
             });
         }
     };
-    
+
     // Handle connection state
     pc.onconnectionstatechange = () => {
         console.log(`Connection state with ${remotePeerId}: ${pc.connectionState}`);
-        
+
         if (pc.connectionState === 'connected') {
             // Peer connected, send device info
             sendDeviceInfo(remotePeerId);
         }
     };
-    
+
     // Create data channel
     const dataChannel = pc.createDataChannel('history-sync', {
         ordered: true
     });
-    
+
     dataChannel.onopen = () => {
         console.log(`Data channel opened with ${remotePeerId}`);
         dataChannels.set(remotePeerId, dataChannel);
-        
+
         // Request full sync
         sendSyncMessage({
             type: 'sync_request',
@@ -275,34 +285,34 @@ function createPeerConnection(remotePeerId) {
             deviceId: config.deviceId
         }, remotePeerId);
     };
-    
+
     dataChannel.onmessage = (event) => {
         handleDataChannelMessage(event.data, remotePeerId);
     };
-    
+
     dataChannel.onclose = () => {
         console.log(`Data channel closed with ${remotePeerId}`);
         dataChannels.delete(remotePeerId);
     };
-    
+
     // Handle incoming data channel
     pc.ondatachannel = (event) => {
         const channel = event.channel;
-        
+
         channel.onopen = () => {
             console.log(`Incoming data channel opened from ${remotePeerId}`);
             dataChannels.set(remotePeerId, channel);
         };
-        
+
         channel.onmessage = (event) => {
             handleDataChannelMessage(event.data, remotePeerId);
         };
-        
+
         channel.onclose = () => {
             dataChannels.delete(remotePeerId);
         };
     };
-    
+
     peerConnections.set(remotePeerId, pc);
     return pc;
 }
@@ -310,17 +320,17 @@ function createPeerConnection(remotePeerId) {
 // Handle offer
 async function handleOffer(remotePeerId, offer) {
     let pc = peerConnections.get(remotePeerId);
-    
+
     if (!pc) {
         pc = createPeerConnection(remotePeerId);
     }
-    
+
     try {
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        
+
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        
+
         await activeDiscovery.sendSignalingMessage(remotePeerId, {
             type: 'answer',
             answer: {
@@ -361,20 +371,20 @@ async function handleIceCandidate(remotePeerId, candidate) {
 function handleDataChannelMessage(data, remotePeerId) {
     try {
         const message = JSON.parse(data);
-        
+
         switch (message.type) {
-            case 'device_info':
-                handleDeviceInfo(message, remotePeerId);
-                break;
-            case 'full_sync':
-                handleFullSync(message);
-                break;
-            case 'incremental_update':
-                handleIncrementalUpdate(message);
-                break;
-            case 'sync_request':
-                handleSyncRequest(remotePeerId);
-                break;
+        case 'device_info':
+            handleDeviceInfo(message, remotePeerId);
+            break;
+        case 'full_sync':
+            handleFullSync(message);
+            break;
+        case 'incremental_update':
+            handleIncrementalUpdate(message);
+            break;
+        case 'sync_request':
+            handleSyncRequest(remotePeerId);
+            break;
         }
     } catch (error) {
         console.error('Error handling data channel message:', error);
@@ -390,7 +400,7 @@ function sendDeviceInfo(remotePeerId) {
         lastSeen: new Date().toISOString(),
         isConnected: true
     };
-    
+
     sendSyncMessage({
         type: 'device_info',
         timestamp: new Date().toISOString(),
@@ -407,7 +417,7 @@ function handleDeviceInfo(message, remotePeerId) {
 // Send sync message
 function sendSyncMessage(message, remotePeerId = null) {
     const messageString = JSON.stringify(message);
-    
+
     if (remotePeerId) {
         const channel = dataChannels.get(remotePeerId);
         if (channel && channel.readyState === 'open') {
@@ -428,7 +438,7 @@ async function handleHistoryVisit(historyItem) {
     // Get page details
     const visits = await chrome.history.getVisits({ url: historyItem.url });
     const lastVisit = visits[visits.length - 1];
-    
+
     const entry = {
         id: crypto.randomUUID(),
         url: historyItem.url,
@@ -437,10 +447,10 @@ async function handleHistoryVisit(historyItem) {
         deviceId: config.deviceId,
         deviceName: config.deviceName
     };
-    
+
     // Cache locally
     historyCache.set(entry.id, entry);
-    
+
     // Send to peers
     sendSyncMessage({
         type: 'incremental_update',
@@ -454,13 +464,13 @@ async function handleHistoryVisit(historyItem) {
 async function handleSyncRequest(remotePeerId) {
     // Get all history from the last 30 days
     const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-    
+
     const historyItems = await chrome.history.search({
         text: '',
         startTime: thirtyDaysAgo,
         maxResults: 1000
     });
-    
+
     const entries = historyItems.map(item => ({
         id: crypto.randomUUID(),
         url: item.url,
@@ -469,7 +479,7 @@ async function handleSyncRequest(remotePeerId) {
         deviceId: config.deviceId,
         deviceName: config.deviceName
     }));
-    
+
     sendSyncMessage({
         type: 'full_sync',
         timestamp: new Date().toISOString(),
@@ -481,18 +491,18 @@ async function handleSyncRequest(remotePeerId) {
 // Handle full sync
 function handleFullSync(message) {
     const entries = message.data || [];
-    
+
     entries.forEach(entry => {
         historyCache.set(entry.id, entry);
     });
-    
+
     console.log(`Received ${entries.length} history entries from ${message.deviceId}`);
 }
 
 // Handle incremental update
 function handleIncrementalUpdate(message) {
     const entries = message.data || [];
-    
+
     entries.forEach(entry => {
         historyCache.set(entry.id, entry);
     });
@@ -502,33 +512,33 @@ function handleIncrementalUpdate(message) {
 async function searchHistory(query) {
     const results = [];
     const lowercaseQuery = query.toLowerCase();
-    
+
     historyCache.forEach(entry => {
         if (entry.url.toLowerCase().includes(lowercaseQuery) ||
             (entry.title && entry.title.toLowerCase().includes(lowercaseQuery))) {
             results.push(entry);
         }
     });
-    
+
     // Sort by date
     results.sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
-    
+
     return results;
 }
 
 // Get all history
 async function getAllHistory(deviceId = null) {
     const results = [];
-    
+
     historyCache.forEach(entry => {
         if (!deviceId || entry.deviceId === deviceId) {
             results.push(entry);
         }
     });
-    
+
     // Sort by date
     results.sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
-    
+
     return results;
 }
 
@@ -550,117 +560,117 @@ function updateBadge(connected) {
 // Message handler
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     switch (request.type) {
-        case 'connect':
-            connect().then(() => {
-                sendResponse({ success: true });
-            }).catch(error => {
-                sendResponse({ success: false, error: error.message });
-            });
+    case 'connect':
+        connect().then(() => {
+            sendResponse({ success: true });
+        }).catch(error => {
+            sendResponse({ success: false, error: error.message });
+        });
+        return true;
+
+    case 'disconnect':
+        disconnect().then(() => {
+            sendResponse({ success: true });
+        });
+        return true;
+
+    case 'search':
+        searchHistory(request.query).then(results => {
+            sendResponse({ success: true, results });
+        });
+        return true;
+
+    case 'get_history':
+        getAllHistory(request.deviceId).then(history => {
+            sendResponse({ success: true, history });
+        });
+        return true;
+
+    case 'get_devices':
+        sendResponse({ success: true, devices: getConnectedDevices() });
+        break;
+
+    case 'get_config':
+        sendResponse({
+            success: true,
+            config: {
+                ...config,
+                sharedSecret: config.sharedSecret ? '***' : null
+            }
+        });
+        break;
+
+    case 'update_config':
+        Object.assign(config, request.config);
+        chrome.storage.local.set(request.config).then(() => {
+            sendResponse({ success: true });
+        });
+        return true;
+
+    case 'create_connection_offer':
+        // Create a connection offer for STUN-only mode
+        if (activeDiscovery && activeDiscovery.createConnectionOffer) {
+            activeDiscovery.createConnectionOffer()
+                .then(result => {
+                    sendResponse({ success: true, ...result });
+                })
+                .catch(error => {
+                    sendResponse({ success: false, error: error.message });
+                });
             return true;
-            
-        case 'disconnect':
-            disconnect().then(() => {
-                sendResponse({ success: true });
-            });
-            return true;
-            
-        case 'search':
-            searchHistory(request.query).then(results => {
-                sendResponse({ success: true, results });
-            });
-            return true;
-            
-        case 'get_history':
-            getAllHistory(request.deviceId).then(history => {
-                sendResponse({ success: true, history });
-            });
-            return true;
-            
-        case 'get_devices':
-            sendResponse({ success: true, devices: getConnectedDevices() });
-            break;
-            
-        case 'get_config':
-            sendResponse({
-                success: true,
-                config: {
-                    ...config,
-                    sharedSecret: config.sharedSecret ? '***' : null
+        } else {
+            sendResponse({ success: false, error: 'Not in STUN-only mode' });
+        }
+        break;
+
+    case 'process_connection':
+        // Process a connection offer or response
+        if (activeDiscovery && activeDiscovery.processConnectionOffer) {
+            const data = request.data.trim();
+
+            // Detect if it's an offer or response
+            try {
+                const decoded = JSON.parse(atob(data.replace(/-/g, '+').replace(/_/g, '/')));
+                const isOffer = !!decoded.offer;
+
+                if (isOffer) {
+                    activeDiscovery.processConnectionOffer(data)
+                        .then(result => {
+                            sendResponse({ success: true, isOffer: true, ...result });
+                        })
+                        .catch(error => {
+                            sendResponse({ success: false, error: error.message });
+                        });
+                } else {
+                    activeDiscovery.processConnectionResponse(data)
+                        .then(result => {
+                            sendResponse({ success: true, isOffer: false, ...result });
+                        })
+                        .catch(error => {
+                            sendResponse({ success: false, error: error.message });
+                        });
                 }
-            });
-            break;
-            
-        case 'update_config':
-            Object.assign(config, request.config);
-            chrome.storage.local.set(request.config).then(() => {
-                sendResponse({ success: true });
-            });
+            } catch (error) {
+                sendResponse({ success: false, error: 'Invalid connection data' });
+            }
             return true;
-            
-        case 'create_connection_offer':
-            // Create a connection offer for STUN-only mode
-            if (activeDiscovery && activeDiscovery.createConnectionOffer) {
-                activeDiscovery.createConnectionOffer()
-                    .then(result => {
-                        sendResponse({ success: true, ...result });
-                    })
-                    .catch(error => {
-                        sendResponse({ success: false, error: error.message });
-                    });
-                return true;
-            } else {
-                sendResponse({ success: false, error: 'Not in STUN-only mode' });
-            }
-            break;
-            
-        case 'process_connection':
-            // Process a connection offer or response
-            if (activeDiscovery && activeDiscovery.processConnectionOffer) {
-                const data = request.data.trim();
-                
-                // Detect if it's an offer or response
-                try {
-                    const decoded = JSON.parse(atob(data.replace(/-/g, '+').replace(/_/g, '/')));
-                    const isOffer = !!decoded.offer;
-                    
-                    if (isOffer) {
-                        activeDiscovery.processConnectionOffer(data)
-                            .then(result => {
-                                sendResponse({ success: true, isOffer: true, ...result });
-                            })
-                            .catch(error => {
-                                sendResponse({ success: false, error: error.message });
-                            });
-                    } else {
-                        activeDiscovery.processConnectionResponse(data)
-                            .then(result => {
-                                sendResponse({ success: true, isOffer: false, ...result });
-                            })
-                            .catch(error => {
-                                sendResponse({ success: false, error: error.message });
-                            });
-                    }
-                } catch (error) {
-                    sendResponse({ success: false, error: 'Invalid connection data' });
-                }
-                return true;
-            } else {
-                sendResponse({ success: false, error: 'Not in STUN-only mode' });
-            }
-            break;
-            
-        case 'get_connection_stats':
-            // Get connection statistics for STUN-only mode
-            if (activeDiscovery && activeDiscovery.getConnectionStats) {
-                const stats = activeDiscovery.getConnectionStats();
-                sendResponse({ success: true, stats });
-            } else {
-                sendResponse({ success: false, error: 'Not in STUN-only mode' });
-            }
-            break;
-            
-        default:
-            sendResponse({ success: false, error: 'Unknown request type' });
+        } else {
+            sendResponse({ success: false, error: 'Not in STUN-only mode' });
+        }
+        break;
+
+    case 'get_connection_stats':
+        // Get connection statistics for STUN-only mode
+        if (activeDiscovery && activeDiscovery.getConnectionStats) {
+            const stats = activeDiscovery.getConnectionStats();
+            sendResponse({ success: true, stats });
+        } else {
+            sendResponse({ success: false, error: 'Not in STUN-only mode' });
+        }
+        break;
+
+    default:
+        sendResponse({ success: false, error: 'Unknown request type' });
     }
 });
 

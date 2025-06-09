@@ -1,4 +1,6 @@
 // @ts-check
+/* eslint-env node */
+/* eslint-disable no-undef */
 const { defineConfig, devices } = require('@playwright/test');
 
 /**
