@@ -37,16 +37,27 @@ class CloudflareDNSDiscovery: BasePeerDiscovery {
     }
     
     override func start() async throws {
+        print("[CloudflareDNS] Starting discovery for room: \(roomId)")
+        
         // Verify API access
+        print("[CloudflareDNS] Verifying API access...")
         try await verifyAccess()
+        print("[CloudflareDNS] API access verified ✅")
         
         // Announce our presence
+        print("[CloudflareDNS] Announcing presence...")
         try await announcePresence()
+        print("[CloudflareDNS] Presence announced ✅")
         
         // Start polling for peers
+        print("[CloudflareDNS] Starting peer discovery polling...")
         pollTask = Task {
             while !Task.isCancelled {
-                try? await self.discoverPeers()
+                do {
+                    try await self.discoverPeers()
+                } catch {
+                    print("[CloudflareDNS] Discovery error: \(error)")
+                }
                 try? await Task.sleep(nanoseconds: UInt64(pollInterval * 1_000_000_000))
             }
         }
@@ -88,9 +99,14 @@ class CloudflareDNSDiscovery: BasePeerDiscovery {
     // MARK: - Private Methods
     
     private func announcePresence() async throws {
-        guard let deviceInfo = discoveredPeers.values.first else { return }
+        guard let deviceInfo = discoveredPeers.values.first else { 
+            print("[CloudflareDNS] No device info to announce")
+            return 
+        }
         
         let recordName = createRecordName(type: "peer", id: deviceInfo.id)
+        print("[CloudflareDNS] Creating presence record: \(recordName)")
+        
         let presenceData = PresenceData(
             id: deviceInfo.id,
             name: deviceInfo.name,
@@ -99,12 +115,18 @@ class CloudflareDNSDiscovery: BasePeerDiscovery {
         )
         
         let recordData = try encodeMessage(presenceData)
+        print("[CloudflareDNS] Encoded data length: \(recordData.count) chars")
+        
         try await upsertDNSRecord(name: recordName, content: recordData)
         ownRecords.insert(recordName)
+        print("[CloudflareDNS] Presence record created successfully")
     }
     
     private func discoverPeers() async throws {
+        print("[CloudflareDNS] Discovering peers...")
         let records = try await listDNSRecords()
+        print("[CloudflareDNS] Found \(records.count) total DNS records")
+        
         let now = Date().timeIntervalSince1970
         let maxAge: TimeInterval = 60.0 // 1 minute
         
@@ -113,6 +135,7 @@ class CloudflareDNSDiscovery: BasePeerDiscovery {
             record.name.contains("\(recordPrefix)-\(roomId)-peer-") &&
             !record.name.contains("-peer-\(discoveredPeers.values.first?.id ?? "")")
         }
+        print("[CloudflareDNS] Found \(peerRecords.count) peer records for room \(roomId)")
         
         for record in peerRecords {
             do {
@@ -125,6 +148,7 @@ class CloudflareDNSDiscovery: BasePeerDiscovery {
                 
                 // Add or update peer
                 if discoveredPeers[peerInfo.id] == nil {
+                    print("[CloudflareDNS] Discovered new peer: \(peerInfo.name) (\(peerInfo.id))")
                     let info = PeerInfo(id: peerInfo.id, name: peerInfo.name, type: peerInfo.type, timestamp: Date(timeIntervalSince1970: peerInfo.timestamp))
                     addPeer(peerInfo.id, info: info)
                 }
@@ -194,11 +218,14 @@ class CloudflareDNSDiscovery: BasePeerDiscovery {
     }
     
     private func decodeMessage<T: Decodable>(_ content: String) throws -> T {
-        guard !content.hasSuffix("...") else {
+        // Remove quotes if present (Cloudflare adds them to TXT records)
+        let unquotedContent = content.trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+        
+        guard !unquotedContent.hasSuffix("...") else {
             throw DiscoveryError.invalidMessage
         }
         
-        guard let data = Data(base64Encoded: content),
+        guard let data = Data(base64Encoded: unquotedContent),
               let decompressed = String(data: data, encoding: .utf8) else {
             throw DiscoveryError.invalidMessage
         }
@@ -257,7 +284,10 @@ class CloudflareDNSDiscovery: BasePeerDiscovery {
     }
     
     private func listDNSRecords() async throws -> [DNSRecord] {
-        let url = URL(string: "\(baseURL)/zones/\(zoneId)/dns_records?type=TXT&name=\(recordPrefix)-\(roomId)")!
+        // Note: Cloudflare's name filter requires exact match or we need to list all and filter
+        // For now, we'll list all TXT records and filter client-side
+        let url = URL(string: "\(baseURL)/zones/\(zoneId)/dns_records?type=TXT&per_page=100")!
+        print("[CloudflareDNS] Listing all TXT records to filter for room: \(roomId)")
         var request = URLRequest(url: url)
         request.setValue("Bearer \(apiToken)", forHTTPHeaderField: "Authorization")
         
@@ -278,10 +308,13 @@ class CloudflareDNSDiscovery: BasePeerDiscovery {
         request.setValue("Bearer \(apiToken)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
+        // Ensure content is properly quoted for TXT records
+        let quotedContent = content.hasPrefix("\"") && content.hasSuffix("\"") ? content : "\"\(content)\""
+        
         let body = [
             "type": "TXT",
             "name": name,
-            "content": content,
+            "content": quotedContent,
             "ttl": ttl
         ] as [String: Any]
         
@@ -310,7 +343,10 @@ class CloudflareDNSDiscovery: BasePeerDiscovery {
         request.setValue("Bearer \(apiToken)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        let body = ["content": content]
+        // Ensure content is properly quoted for TXT records
+        let quotedContent = content.hasPrefix("\"") && content.hasSuffix("\"") ? content : "\"\(content)\""
+        
+        let body = ["content": quotedContent]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
         let (_, response) = try await URLSession.shared.data(for: request)

@@ -152,7 +152,8 @@ class HistorySyncUITests: XCTestCase {
         XCTAssertEqual(searchBar.value as? String, "github")
         
         // Test clear search
-        if let clearButton = searchBar.buttons["Clear text"].firstMatch {
+        let clearButton = searchBar.buttons["Clear text"].firstMatch
+        if clearButton.exists {
             clearButton.tap()
             XCTAssertEqual(searchBar.value as? String, "Search text")
         }
@@ -213,21 +214,7 @@ class HistorySyncUITests: XCTestCase {
 }
 
 // MARK: - Helper Extensions
-
-extension XCUIElement {
-    func clearAndTypeText(_ text: String) {
-        guard let stringValue = self.value as? String else {
-            self.tap()
-            self.typeText(text)
-            return
-        }
-        
-        self.tap()
-        let deleteString = String(repeating: XCUIKeyboardKey.delete.rawValue, count: stringValue.count)
-        self.typeText(deleteString)
-        self.typeText(text)
-    }
-}
+// Note: clearAndTypeText is defined in CloudflareDNSTests.swift
 
 // MARK: - P2P Test Scenarios
 // Note: True P2P testing between two app instances requires:

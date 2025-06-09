@@ -7,6 +7,7 @@
 
 import Foundation
 import WebRTC
+import CryptoKit
 
 // MARK: - Peer Discovery Protocol
 
@@ -186,15 +187,29 @@ class WebSocketDiscovery: BasePeerDiscovery {
     }
     
     private func generateHMAC(for data: Data) -> String {
-        // Implementation would use CommonCrypto or CryptoKit
-        // Placeholder for now
-        return "hmac_placeholder"
+        guard let keyData = sharedSecret.data(using: .utf8) else {
+            return ""
+        }
+        
+        let key = SymmetricKey(data: keyData)
+        let hmac = HMAC<SHA256>.authenticationCode(for: data, using: key)
+        
+        return Data(hmac).map { String(format: "%02hhx", $0) }.joined()
     }
     
     private func verifyHMAC(_ message: [String: Any]) -> Bool {
-        // Implementation would verify HMAC
-        // Placeholder for now
-        return true
+        guard let hmacString = message["hmac"] as? String,
+              let payloadString = message["payload"] as? String,
+              let payloadData = payloadString.data(using: .utf8),
+              let keyData = sharedSecret.data(using: .utf8) else {
+            return false
+        }
+        
+        let key = SymmetricKey(data: keyData)
+        let computedHMAC = HMAC<SHA256>.authenticationCode(for: payloadData, using: key)
+        let computedHMACString = Data(computedHMAC).map { String(format: "%02hhx", $0) }.joined()
+        
+        return hmacString == computedHMACString
     }
     
     private func receiveMessages() async {

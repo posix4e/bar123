@@ -390,14 +390,14 @@ extension HistorySyncViewController: UISearchBarDelegate {
 
 // MARK: - HistorySyncManagerDelegate
 extension HistorySyncViewController: HistorySyncManagerDelegate {
-    func historySyncManager(_ manager: HistorySyncManager, didUpdateHistory entries: [HistoryEntry]) {
+    func historySyncManager(_ manager: Any, didUpdateHistory entries: [HistoryEntry]) {
         DispatchQueue.main.async {
             self.loadHistory()
             self.updateConnectionStatus(true)
         }
     }
     
-    func historySyncManager(_ manager: HistorySyncManager, didUpdateDevices devices: [DeviceInfo]) {
+    func historySyncManager(_ manager: Any, didUpdateDevices devices: [DeviceInfo]) {
         DispatchQueue.main.async {
             self.connectedDevices = devices
             if self.segmentControl.selectedSegmentIndex == 1 {
@@ -407,7 +407,7 @@ extension HistorySyncViewController: HistorySyncManagerDelegate {
         }
     }
     
-    func historySyncManager(_ manager: HistorySyncManager, didEncounterError error: Error) {
+    func historySyncManager(_ manager: Any, didEncounterError error: Error) {
         DispatchQueue.main.async {
             self.showAlert(title: "Sync Error", message: error.localizedDescription)
             self.updateConnectionStatus(false)

@@ -1,0 +1,26 @@
+[
+  {
+    "deviceId" : "test-device-1",
+    "deviceName" : "Test Browser",
+    "id" : "17A4CCD8-1EBA-43B5-9D45-8BCF3557F10F",
+    "title" : "Claude Repository - GitHub",
+    "url" : "https:\/\/github.com\/anthropics\/claude",
+    "visitDate" : 771170864
+  },
+  {
+    "deviceId" : "test-device-1",
+    "deviceName" : "Test Browser",
+    "id" : "EE61FB8C-8362-48A2-9F0F-060B9D684635",
+    "title" : "Swift Questions - Stack Overflow",
+    "url" : "https:\/\/stackoverflow.com\/questions\/swift",
+    "visitDate" : 771170564
+  },
+  {
+    "deviceId" : "test-device-2",
+    "deviceName" : "Mobile Browser",
+    "id" : "370B04C5-0E0B-4B28-85CB-D6EA33652CFA",
+    "title" : "Hacker News",
+    "url" : "https:\/\/news.ycombinator.com",
+    "visitDate" : 771170264
+  }
+]

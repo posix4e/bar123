@@ -283,6 +283,9 @@ class CloudflareDNSDiscovery extends PeerDiscovery {
     }
 
     async createDNSRecord(name, content) {
+        // Ensure content is properly quoted for TXT records
+        const quotedContent = content.startsWith('"') && content.endsWith('"') ? content : `"${content}"`;
+        
         const response = await fetch(
             `https://api.cloudflare.com/client/v4/zones/${this.zoneId}/dns_records`,
             {
@@ -294,7 +297,7 @@ class CloudflareDNSDiscovery extends PeerDiscovery {
                 body: JSON.stringify({
                     type: 'TXT',
                     name: name,
-                    content: content,
+                    content: quotedContent,
                     ttl: this.ttl
                 })
             }
@@ -320,6 +323,9 @@ class CloudflareDNSDiscovery extends PeerDiscovery {
     }
 
     async updateDNSRecord(recordId, content) {
+        // Ensure content is properly quoted for TXT records
+        const quotedContent = content.startsWith('"') && content.endsWith('"') ? content : `"${content}"`;
+        
         const response = await fetch(
             `https://api.cloudflare.com/client/v4/zones/${this.zoneId}/dns_records/${recordId}`,
             {
@@ -329,7 +335,7 @@ class CloudflareDNSDiscovery extends PeerDiscovery {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    content: content
+                    content: quotedContent
                 })
             }
         );
