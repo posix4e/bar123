@@ -1,6 +1,7 @@
 import Foundation
 import CryptoKit
 import SafariServices
+import Compression
 
 class HistoryManager {
     private let encryptionKey: SymmetricKey
@@ -96,19 +97,51 @@ class HistoryManager {
         }
     }
     
+    private func compress(_ data: Data) throws -> Data {
+        return try (data as NSData).compressed(using: .zlib) as Data
+    }
+    
+    private func decompress(_ data: Data) throws -> Data {
+        return try (data as NSData).decompressed(using: .zlib) as Data
+    }
+    
+    private func compactHistory(_ entries: [HistoryEntry]) -> [HistoryEntry] {
+        // Group by URL and keep only the most recent visit
+        var urlToEntry: [String: HistoryEntry] = [:]
+        
+        for entry in entries {
+            if let existing = urlToEntry[entry.url] {
+                // Keep the more recent one
+                if entry.timestamp > existing.timestamp {
+                    urlToEntry[entry.url] = entry
+                }
+            } else {
+                urlToEntry[entry.url] = entry
+            }
+        }
+        
+        // Return sorted by timestamp descending
+        return Array(urlToEntry.values).sorted { $0.timestamp > $1.timestamp }
+    }
+    
     private func encrypt(_ data: Data) throws -> Data {
-        let sealed = try AES.GCM.seal(data, using: encryptionKey)
+        let compressed = try compress(data)
+        let sealed = try AES.GCM.seal(compressed, using: encryptionKey)
         return sealed.combined!
     }
     
     private func decrypt(_ data: Data) throws -> Data {
         let sealed = try AES.GCM.SealedBox(combined: data)
-        return try AES.GCM.open(sealed, using: encryptionKey)
+        let decrypted = try AES.GCM.open(sealed, using: encryptionKey)
+        return try decompress(decrypted)
     }
     
     func syncToPantry() async {
-        let entries = await loadLocalHistory()
+        var entries = await loadLocalHistory()
         guard !entries.isEmpty else { return }
+        
+        // Compact entries - keep only the most recent visit per URL
+        entries = compactHistory(entries)
         
         do {
             let data = try JSONEncoder().encode(entries)
