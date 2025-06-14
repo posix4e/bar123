@@ -30,15 +30,9 @@
         </div>
         
         <div class="settings-section">
-            <div class="setting-item">
-                <label for="pantry-id">Pantry ID:</label>
-                <input type="text" id="pantry-id" placeholder="Enter your Pantry ID" />
-                <small class="help-text">Get your free Pantry ID at <a href="https://getpantry.cloud" target="_blank">getpantry.cloud</a></small>
-            </div>
-            
-            <div class="setting-item">
-                <label for="basket-name">Basket Name:</label>
-                <input type="text" id="basket-name" placeholder="browser-history" value="browser-history" />
+            <div class="setting-notice">
+                <p>📱 Pantry configuration has moved to iOS Settings</p>
+                <small>Go to Settings → bar123 to configure your Pantry ID and basket name</small>
             </div>
             
             <div class="setting-item">
@@ -63,20 +57,11 @@
                 <span class="spinner" style="display: none;"></span>
             </button>
             
-            <button id="view-history" class="secondary-button">
-                View History
-            </button>
         </div>
         
-        <div id="history-section" class="history-section" style="display: none;">
-            <h2>Recent History</h2>
-            <div id="history-list" class="history-list">
-                <!-- Last 10 history items will be shown here -->
-            </div>
-            <button id="open-full-history" class="secondary-button" style="width: 100%; margin-top: 12px;">
+            <button id="open-full-history" class="secondary-button">
                 Open Full History
             </button>
-        </div>
         
         <div id="error-message" class="error-message" style="display: none;"></div>
     </div>

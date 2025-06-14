@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>StringsTable</key>
+    <string>Root</string>
+    <key>PreferenceSpecifiers</key>
+    <array>
+        <dict>
+            <key>Type</key>
+            <string>PSGroupSpecifier</string>
+            <key>Title</key>
+            <string>Pantry Configuration</string>
+        </dict>
+        <dict>
+            <key>Type</key>
+            <string>PSTextFieldSpecifier</string>
+            <key>Title</key>
+            <string>Pantry ID</string>
+            <key>Key</key>
+            <string>pantryID</string>
+            <key>DefaultValue</key>
+            <string></string>
+            <key>IsSecure</key>
+            <false/>
+            <key>KeyboardType</key>
+            <string>Alphabet</string>
+            <key>AutocapitalizationType</key>
+            <string>None</string>
+            <key>AutocorrectionType</key>
+            <string>No</string>
+        </dict>
+        <dict>
+            <key>Type</key>
+            <string>PSTextFieldSpecifier</string>
+            <key>Title</key>
+            <string>Basket Name</string>
+            <key>Key</key>
+            <string>basketName</string>
+            <key>DefaultValue</key>
+            <string>browser-history</string>
+            <key>IsSecure</key>
+            <false/>
+            <key>KeyboardType</key>
+            <string>Alphabet</string>
+            <key>AutocapitalizationType</key>
+            <string>None</string>
+            <key>AutocorrectionType</key>
+            <string>No</string>
+        </dict>
+        <dict>
+            <key>Type</key>
+            <string>PSGroupSpecifier</string>
+            <key>FooterText</key>
+            <string>Enter your Pantry ID and basket name to enable cloud sync. You can get a free Pantry ID at getpantry.cloud</string>
+        </dict>
+    </array>
+</dict>
+</plist>

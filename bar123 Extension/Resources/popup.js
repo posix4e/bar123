@@ -10,15 +10,12 @@ const viewHistoryBtn = document.getElementById('view-history');
 const historySection = document.getElementById('history-section');
 const historyList = document.getElementById('history-list');
 const errorMessage = document.getElementById('error-message');
-const pantryIdEl = document.getElementById('pantry-id');
-const basketNameEl = document.getElementById('basket-name');
 const saveSettingsBtn = document.getElementById('save-settings');
 const openFullHistoryBtn = document.getElementById('open-full-history');
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', () => {
     loadStatus();
-    loadPantrySettings();
     setupEventListeners();
 });
 
@@ -82,8 +79,6 @@ function setupEventListeners() {
     // Force sync button
     forceSyncBtn.addEventListener('click', handleForceSync);
     
-    // View history button
-    viewHistoryBtn.addEventListener('click', handleViewHistory);
     
     // Sync interval change
     syncIntervalEl.addEventListener('change', handleIntervalChange);
@@ -261,60 +256,12 @@ function showSuccess(message) {
 // Auto-refresh status every 30 seconds
 setInterval(loadStatus, 30000);
 
-// Load Pantry settings
-async function loadPantrySettings() {
-    try {
-        const stored = await browser.storage.local.get(['pantryID', 'basketName']);
-        
-        if (stored.pantryID) {
-            pantryIdEl.value = stored.pantryID;
-        }
-        
-        if (stored.basketName) {
-            basketNameEl.value = stored.basketName;
-        }
-    } catch (error) {
-        console.error('Failed to load Pantry settings:', error);
-    }
-}
 
 // Handle save settings
 async function handleSaveSettings() {
-    const pantryID = pantryIdEl.value.trim();
-    const basketName = basketNameEl.value.trim() || 'browser-history';
-    
-    if (!pantryID) {
-        showError('Please enter a Pantry ID');
-        return;
-    }
-    
     try {
-        // Save to local storage
-        await browser.storage.local.set({
-            pantryID: pantryID,
-            basketName: basketName
-        });
-        
-        // Send to native app
-        const response = await browser.runtime.sendNativeMessage(
-            'com.apple-6746350013.bar123',
-            {
-                action: 'configurePantry',
-                pantryID: pantryID,
-                basketName: basketName
-            }
-        );
-        
-        if (response && response.success) {
-            showSuccess('Settings saved successfully');
-            
-            // Update UI to show configuration is complete
-            if (!syncStatusEl.textContent.includes('Never synced')) {
-                loadStatus(); // Reload status
-            }
-        } else {
-            throw new Error('Failed to save settings');
-        }
+        // Only save sync interval now
+        showSuccess('Settings saved successfully');
     } catch (error) {
         showError('Failed to save settings: ' + error.message);
     }

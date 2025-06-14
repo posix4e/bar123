@@ -10,13 +10,17 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     private let logger = Logger(subsystem: "com.apple-6746350013.bar123", category: "WebExtension")
     // CoreDataManager will be accessed through dependency injection or shared instance
     
-    // User-configurable Pantry settings
+    // User-configurable Pantry settings from iOS Settings app
     private var pantryID: String {
-        UserDefaults.standard.string(forKey: "pantryID") ?? ""
+        // Read from shared app group to access settings
+        let sharedDefaults = UserDefaults(suiteName: "group.com.apple-6746350013.bar123")
+        return sharedDefaults?.string(forKey: "pantryID") ?? ""
     }
     
     private var basketName: String {
-        UserDefaults.standard.string(forKey: "basketName") ?? "browser-history"
+        // Read from shared app group to access settings
+        let sharedDefaults = UserDefaults(suiteName: "group.com.apple-6746350013.bar123")
+        return sharedDefaults?.string(forKey: "basketName") ?? "browser-history"
     }
     
     private var pantryBaseURL: String {
@@ -54,8 +58,6 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         case "cleanupHistory":
             handleCleanupHistory(message: message, context: context)
             
-        case "configurePantry":
-            handleConfigurePantry(message: message, context: context)
             
         case "openHistoryView":
             handleOpenHistoryView(context: context)
@@ -229,26 +231,6 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         context.completeRequest(returningItems: [response], completionHandler: nil)
     }
     
-    // MARK: - Configure Pantry Handler
-    private func handleConfigurePantry(message: [String: Any], context: NSExtensionContext) {
-        if let pantryID = message["pantryID"] as? String {
-            UserDefaults.standard.set(pantryID, forKey: "pantryID")
-        }
-        
-        if let basketName = message["basketName"] as? String {
-            UserDefaults.standard.set(basketName, forKey: "basketName")
-        }
-        
-        let response = NSExtensionItem()
-        response.userInfo = [
-            SFExtensionMessageKey: [
-                "success": true,
-                "pantryID": self.pantryID,
-                "basketName": self.basketName
-            ]
-        ]
-        context.completeRequest(returningItems: [response], completionHandler: nil)
-    }
     
     // MARK: - Open History View Handler
     private func handleOpenHistoryView(context: NSExtensionContext) {
