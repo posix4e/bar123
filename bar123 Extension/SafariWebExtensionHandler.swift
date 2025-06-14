@@ -67,11 +67,21 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                let id = item["id"] as? String {
                 
                 let date = Date(timeIntervalSince1970: visitTime / 1000)
+                
+                // Extract device info if available
+                let deviceInfo = item["deviceInfo"] as? [String: Any]
+                let deviceBrowser = deviceInfo?["browser"] as? String
+                let devicePlatform = deviceInfo?["platform"] as? String
+                let deviceType = deviceInfo?["deviceType"] as? String
+                
                 historyDataManager.addHistoryItem(
                     url: url,
                     title: title,
                     visitTime: date,
-                    id: id
+                    id: id,
+                    deviceBrowser: deviceBrowser,
+                    devicePlatform: devicePlatform,
+                    deviceType: deviceType
                 )
             }
         }

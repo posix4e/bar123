@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>bar123 History Sync</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <h1>bar123 History Sync</h1>
+        
+        <!-- Status Section -->
+        <div class="status-section">
+            <div class="sync-status">
+                <span class="status-label">Sync Status:</span>
+                <span id="syncStatus" class="status-value">Checking...</span>
+            </div>
+            <div class="last-sync">
+                <span class="status-label">Last Sync:</span>
+                <span id="lastSync" class="status-value">Never</span>
+            </div>
+            <div class="pending-items">
+                <span class="status-label">Pending Items:</span>
+                <span id="pendingCount" class="status-value">0</span>
+            </div>
+            <div class="device-info">
+                <span class="status-label">Device:</span>
+                <span class="status-value">Chrome Browser</span>
+            </div>
+        </div>
+        
+        <!-- Settings Section -->
+        <div class="settings-section">
+            <h2>Settings</h2>
+            
+            <div class="setting-item">
+                <label for="enableSync">Enable Sync</label>
+                <input type="checkbox" id="enableSync">
+            </div>
+            
+            <div class="setting-item">
+                <label for="pantryId">Pantry ID</label>
+                <input type="text" id="pantryId" placeholder="Enter your Pantry ID">
+            </div>
+            
+            <div class="setting-item">
+                <label for="basketName">Basket Name</label>
+                <input type="text" id="basketName" placeholder="browserHistory">
+            </div>
+            
+            <div class="setting-item">
+                <label for="syncInterval">Sync Interval</label>
+                <select id="syncInterval">
+                    <option value="300">5 minutes</option>
+                    <option value="900">15 minutes</option>
+                    <option value="1800">30 minutes</option>
+                    <option value="3600">1 hour</option>
+                    <option value="7200">2 hours</option>
+                    <option value="21600">6 hours</option>
+                    <option value="43200">12 hours</option>
+                    <option value="86400">24 hours</option>
+                </select>
+            </div>
+            
+            <button id="saveSettings" class="button primary">Save Settings</button>
+        </div>
+        
+        <!-- Search Section -->
+        <div class="search-section">
+            <h2>Search History</h2>
+            
+            <div class="search-controls">
+                <input type="text" id="searchQuery" placeholder="Search your synced history...">
+                <select id="searchType">
+                    <option value="all">All</option>
+                    <option value="title">Title</option>
+                    <option value="url">URL</option>
+                </select>
+                <button id="searchButton" class="button">Search</button>
+            </div>
+            
+            <div id="searchResults" class="search-results"></div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button id="syncNow" class="button primary">Sync Now</button>
+            <button id="viewLocalHistory" class="button">View Local History</button>
+        </div>
+        
+        <!-- Status Messages -->
+        <div id="statusMessage" class="status-message"></div>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>

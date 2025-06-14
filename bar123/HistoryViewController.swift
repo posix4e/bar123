@@ -137,7 +137,13 @@ extension HistoryViewController: UITableViewDataSource {
         
         let item = historyItems[indexPath.row]
         cell.textLabel?.text = item.title ?? "Untitled"
-        cell.detailTextLabel?.text = item.url
+        
+        // Build subtitle with URL and device info
+        var subtitle = item.url ?? ""
+        if let deviceType = item.deviceType {
+            subtitle += " • \(deviceType)"
+        }
+        cell.detailTextLabel?.text = subtitle
         
         // Show sync status
         if item.isSynced {

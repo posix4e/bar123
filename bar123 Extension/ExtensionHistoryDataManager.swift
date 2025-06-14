@@ -34,7 +34,8 @@ class ExtensionHistoryDataManager {
     // MARK: - Public Methods
     
     /// Add a new history item
-    func addHistoryItem(url: String, title: String, visitTime: Date, id: String? = nil) {
+    func addHistoryItem(url: String, title: String, visitTime: Date, id: String? = nil, 
+                       deviceBrowser: String? = nil, devicePlatform: String? = nil, deviceType: String? = nil) {
         let historyItem = HistoryItem(context: context)
         
         historyItem.url = url
@@ -43,6 +44,9 @@ class ExtensionHistoryDataManager {
         historyItem.id = id ?? UUID().uuidString
         historyItem.isSynced = false
         historyItem.syncedAt = nil
+        historyItem.deviceBrowser = deviceBrowser
+        historyItem.devicePlatform = devicePlatform
+        historyItem.deviceType = deviceType
         
         saveContext()
         

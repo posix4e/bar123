@@ -11,9 +11,22 @@ browser.runtime.onInstalled.addListener(async () => {
     console.log('Extension installed, initializing...');
 });
 
+// Get device info
+function getDeviceInfo() {
+    return {
+        browser: 'Safari',
+        platform: navigator.platform || 'Unknown',
+        userAgent: navigator.userAgent,
+        deviceType: 'Safari Browser'
+    };
+}
+
 // Listen for history visits and send to Swift immediately
 browser.history.onVisited.addListener(async (historyItem) => {
     console.log('New history item:', historyItem);
+    
+    // Add device info to history item
+    const deviceInfo = getDeviceInfo();
     
     // Send to native app for storage and sync handling
     try {
@@ -25,7 +38,8 @@ browser.history.onVisited.addListener(async (historyItem) => {
                     url: historyItem.url,
                     title: historyItem.title || '',
                     visitTime: historyItem.lastVisitTime,
-                    id: historyItem.id
+                    id: historyItem.id,
+                    deviceInfo: deviceInfo
                 }]
             }
         );

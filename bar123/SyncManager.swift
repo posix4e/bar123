@@ -70,12 +70,23 @@ class SyncManager {
             
             // Convert to dictionary array for JSON serialization
             let historyData: [[String: Any]] = unsyncedItems.map { item in
-                [
+                var data: [String: Any] = [
                     "url": item.url as Any,
                     "title": item.title as Any,
                     "visitTime": item.visitTime?.timeIntervalSince1970 as Any,
                     "id": item.id ?? UUID().uuidString
                 ]
+                
+                // Add device info if available
+                if let deviceType = item.deviceType {
+                    data["deviceInfo"] = [
+                        "browser": item.deviceBrowser ?? "Unknown",
+                        "platform": item.devicePlatform ?? "Unknown",
+                        "deviceType": deviceType
+                    ]
+                }
+                
+                return data
             }
             
             // Encrypt and upload

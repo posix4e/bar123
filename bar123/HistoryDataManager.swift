@@ -56,7 +56,8 @@ class HistoryDataManager {
     // MARK: - Public Methods
     
     /// Save a new history item from the browser extension
-    func saveHistoryItem(url: String, title: String, visitTime: Date, id: String? = nil) {
+    func saveHistoryItem(url: String, title: String, visitTime: Date, id: String? = nil,
+                        deviceBrowser: String? = nil, devicePlatform: String? = nil, deviceType: String? = nil) {
         let historyItem = NSEntityDescription.insertNewObject(forEntityName: "HistoryItem", into: context) as! HistoryItem
         
         historyItem.url = url
@@ -65,6 +66,9 @@ class HistoryDataManager {
         historyItem.id = id ?? UUID().uuidString
         historyItem.isSynced = false
         historyItem.syncedAt = nil
+        historyItem.deviceBrowser = deviceBrowser
+        historyItem.devicePlatform = devicePlatform
+        historyItem.deviceType = deviceType
         
         saveContext()
         
@@ -73,8 +77,10 @@ class HistoryDataManager {
     }
     
     /// Add a new history item (alias for saveHistoryItem)
-    func addHistoryItem(url: String, title: String, visitTime: Date, id: String? = nil) {
-        saveHistoryItem(url: url, title: title, visitTime: visitTime, id: id)
+    func addHistoryItem(url: String, title: String, visitTime: Date, id: String? = nil,
+                       deviceBrowser: String? = nil, devicePlatform: String? = nil, deviceType: String? = nil) {
+        saveHistoryItem(url: url, title: title, visitTime: visitTime, id: id,
+                       deviceBrowser: deviceBrowser, devicePlatform: devicePlatform, deviceType: deviceType)
     }
     
     /// Get all unsynced history items

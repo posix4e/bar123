@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="21754" systemVersion="22A400" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="HistoryItem" representedClassName="HistoryItem" syncable="YES" codeGenerationType="class">
+        <attribute name="deviceBrowser" optional="YES" attributeType="String"/>
+        <attribute name="devicePlatform" optional="YES" attributeType="String"/>
+        <attribute name="deviceType" optional="YES" attributeType="String"/>
         <attribute name="id" optional="YES" attributeType="String"/>
         <attribute name="isSynced" optional="YES" attributeType="Boolean" usesScalarValueType="YES" defaultValueString="NO"/>
         <attribute name="syncedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
