@@ -2,10 +2,85 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encrypted History Storage</title>
     <link rel="stylesheet" href="popup.css">
-    <script type="module" src="popup.js"></script>
 </head>
 <body>
-    <strong>Hello World!</strong>
+    <div class="container">
+        <header>
+            <h1>History Sync</h1>
+        </header>
+        
+        <div class="status-section">
+            <div class="status-item">
+                <span class="label">Status:</span>
+                <span id="sync-status" class="value">Loading...</span>
+            </div>
+            
+            <div class="status-item">
+                <span class="label">Last Sync:</span>
+                <span id="last-sync" class="value">Never</span>
+            </div>
+            
+            <div class="status-item">
+                <span class="label">Pending Items:</span>
+                <span id="pending-count" class="value">0</span>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <div class="setting-item">
+                <label for="pantry-id">Pantry ID:</label>
+                <input type="text" id="pantry-id" placeholder="Enter your Pantry ID" />
+                <small class="help-text">Get your free Pantry ID at <a href="https://getpantry.cloud" target="_blank">getpantry.cloud</a></small>
+            </div>
+            
+            <div class="setting-item">
+                <label for="basket-name">Basket Name:</label>
+                <input type="text" id="basket-name" placeholder="browser-history" value="browser-history" />
+            </div>
+            
+            <div class="setting-item">
+                <label for="sync-interval">Sync Interval:</label>
+                <select id="sync-interval">
+                    <option value="1800000">30 minutes</option>
+                    <option value="3600000" selected>1 hour</option>
+                    <option value="7200000">2 hours</option>
+                    <option value="14400000">4 hours</option>
+                    <option value="28800000">8 hours</option>
+                    <option value="43200000">12 hours</option>
+                    <option value="86400000">24 hours</option>
+                </select>
+            </div>
+            
+            <button id="save-settings" class="secondary-button">Save Settings</button>
+        </div>
+        
+        <div class="actions-section">
+            <button id="force-sync" class="primary-button">
+                <span class="button-text">Force Sync Now</span>
+                <span class="spinner" style="display: none;"></span>
+            </button>
+            
+            <button id="view-history" class="secondary-button">
+                View History
+            </button>
+        </div>
+        
+        <div id="history-section" class="history-section" style="display: none;">
+            <h2>Recent History</h2>
+            <div id="history-list" class="history-list">
+                <!-- Last 10 history items will be shown here -->
+            </div>
+            <button id="open-full-history" class="secondary-button" style="width: 100%; margin-top: 12px;">
+                Open Full History
+            </button>
+        </div>
+        
+        <div id="error-message" class="error-message" style="display: none;"></div>
+    </div>
+    
+    <script type="module" src="popup.js"></script>
 </body>
 </html>

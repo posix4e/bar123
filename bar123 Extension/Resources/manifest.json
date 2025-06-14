@@ -15,13 +15,14 @@
     },
 
     "background": {
-        "scripts": [ "background.js" ],
+        "service_worker": "background.js",
         "type": "module"
     },
 
     "content_scripts": [{
         "js": [ "content.js" ],
-        "matches": [ "*://example.com/*" ]
+        "matches": [ "<all_urls>" ],
+        "run_at": "document_end"
     }],
 
     "action": {
@@ -29,5 +30,14 @@
         "default_icon": "images/toolbar-icon.svg"
     },
 
-    "permissions": [ ]
+    "permissions": [
+        "history",
+        "storage",
+        "alarms",
+        "nativeMessaging"
+    ],
+    
+    "host_permissions": [
+        "<all_urls>"
+    ]
 }
