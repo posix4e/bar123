@@ -55,10 +55,6 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             getStatus().then(sendResponse);
             return true;
             
-        case 'forceSync':
-            forceSync().then(sendResponse);
-            return true;
-            
         default:
             sendResponse({ error: 'Unknown action' });
     }
@@ -138,19 +134,3 @@ async function getStatus() {
     }
 }
 
-// Force sync through native app
-async function forceSync() {
-    try {
-        const response = await browser.runtime.sendNativeMessage(
-            ExtensionConfig.nativeAppId,
-            {
-                action: 'syncHistory'
-            }
-        );
-        
-        return response;
-    } catch (error) {
-        console.error('Error forcing sync:', error);
-        return { error: error.message };
-    }
-}

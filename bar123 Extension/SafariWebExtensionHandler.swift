@@ -83,23 +83,10 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         context.completeRequest(returningItems: [response], completionHandler: nil)
     }
     
-    // MARK: - Sync History Handler
+    // MARK: - Sync History Handler (Deprecated)
     private func handleSyncHistory(context: NSExtensionContext) {
-        // Sync is now handled by the main app's SyncManager
-        // This handler just triggers a sync notification
-        NotificationCenter.default.post(
-            name: NSNotification.Name("TriggerSync"),
-            object: nil
-        )
-        
-        let response = NSExtensionItem()
-        response.userInfo = [
-            SFExtensionMessageKey: [
-                "success": true,
-                "message": "Sync triggered in main app"
-            ]
-        ]
-        context.completeRequest(returningItems: [response], completionHandler: nil)
+        // Sync should only be triggered from the main app, not the extension
+        respondWithError(context: context, error: "Sync must be triggered from the main app")
     }
     
     // MARK: - Get History Handler
