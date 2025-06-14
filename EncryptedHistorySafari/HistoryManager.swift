@@ -105,25 +105,6 @@ class HistoryManager {
         return try (data as NSData).decompressed(using: .zlib) as Data
     }
     
-    private func compactHistory(_ entries: [HistoryEntry]) -> [HistoryEntry] {
-        // Group by URL and keep only the most recent visit
-        var urlToEntry: [String: HistoryEntry] = [:]
-        
-        for entry in entries {
-            if let existing = urlToEntry[entry.url] {
-                // Keep the more recent one
-                if entry.timestamp > existing.timestamp {
-                    urlToEntry[entry.url] = entry
-                }
-            } else {
-                urlToEntry[entry.url] = entry
-            }
-        }
-        
-        // Return sorted by timestamp descending
-        return Array(urlToEntry.values).sorted { $0.timestamp > $1.timestamp }
-    }
-    
     private func encrypt(_ data: Data) throws -> Data {
         let compressed = try compress(data)
         let sealed = try AES.GCM.seal(compressed, using: encryptionKey)
@@ -137,14 +118,14 @@ class HistoryManager {
     }
     
     func syncToPantry() async {
-        var entries = await loadLocalHistory()
+        let entries = await loadLocalHistory()
         guard !entries.isEmpty else { return }
         
-        // Compact entries - keep only the most recent visit per URL
-        entries = compactHistory(entries)
-        
         do {
-            let data = try JSONEncoder().encode(entries)
+            // Group entries by day for more efficient storage
+            let groupedEntries = groupEntriesByDay(entries)
+            
+            let data = try JSONEncoder().encode(groupedEntries)
             let encrypted = try encrypt(data)
             
             // Upload to Pantry
@@ -155,7 +136,8 @@ class HistoryManager {
             
             let payload = ["encryptedHistory": encrypted.base64EncodedString(),
                           "timestamp": ISO8601DateFormatter().string(from: Date()),
-                          "deviceID": getDeviceID()]
+                          "deviceID": getDeviceID(),
+                          "version": "2.0"] // Version to handle different data formats
             
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)
             
@@ -170,6 +152,19 @@ class HistoryManager {
         }
     }
     
+    private func groupEntriesByDay(_ entries: [HistoryEntry]) -> [String: [HistoryEntry]] {
+        var grouped: [String: [HistoryEntry]] = [:]
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        
+        for entry in entries {
+            let dayKey = formatter.string(from: entry.timestamp)
+            grouped[dayKey, default: []].append(entry)
+        }
+        
+        return grouped
+    }
+    
     func fetchFromPantry() async -> [HistoryEntry] {
         do {
             let url = URL(string: "https://getpantry.cloud/apiv1/pantry/\(pantryID)/basket/\(pantryBasket)")!
@@ -182,7 +177,19 @@ class HistoryManager {
             }
             
             let decrypted = try decrypt(encryptedData)
-            var entries = try JSONDecoder().decode([HistoryEntry].self, from: decrypted)
+            var entries: [HistoryEntry] = []
+            
+            // Check version to handle different data formats
+            let version = json?["version"] as? String ?? "1.0"
+            
+            if version == "2.0" {
+                // New grouped format
+                let grouped = try JSONDecoder().decode([String: [HistoryEntry]].self, from: decrypted)
+                entries = grouped.values.flatMap { $0 }
+            } else {
+                // Old flat array format
+                entries = try JSONDecoder().decode([HistoryEntry].self, from: decrypted)
+            }
             
             // Remove expired entries (older than 30 days)
             let cutoffDate = Calendar.current.date(byAdding: .day, value: -expirationDays, to: Date())!

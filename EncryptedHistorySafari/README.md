@@ -9,7 +9,6 @@ A Safari extension that stores browsing history encrypted using a secret and syn
 - Encrypts history using AES-GCM with a user-defined secret
 - Configurable sync interval (0.5 to 24 hours)
 - Automatic 30-day expiration for old history entries
-- Bulk compaction: deduplicates entries by URL, keeping only most recent visit
 - Syncs to Pantry cloud storage at your configured interval or when 100+ entries accumulate
 - Background sync handled by native Swift code
 - Popup UI to view synced history
