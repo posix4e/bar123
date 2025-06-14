@@ -1,0 +1,4 @@
+Target dependency graph (2 targets)
+Target 'bar123' in project 'bar123'
+➜ Explicit dependency on target 'bar123 Extension' in project 'bar123'
+Target 'bar123 Extension' in project 'bar123' (no dependencies)
