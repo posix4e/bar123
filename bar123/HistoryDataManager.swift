@@ -132,6 +132,15 @@ class HistoryDataManager {
         }
     }
     
+    /// Delete a history item
+    func deleteHistoryItem(_ item: HistoryItem) {
+        context.delete(item)
+        saveContext()
+        
+        // Post notification for UI updates
+        NotificationCenter.default.post(name: NSNotification.Name("HistoryUpdated"), object: nil)
+    }
+    
     // MARK: - Private Methods
     private func saveContext() {
         if context.hasChanges {
