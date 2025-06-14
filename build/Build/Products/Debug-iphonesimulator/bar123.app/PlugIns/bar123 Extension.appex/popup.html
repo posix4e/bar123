@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encrypted History Storage</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>History Sync</h1>
+        </header>
+        
+        <div class="status-section">
+            <div class="status-item">
+                <span class="label">Status:</span>
+                <span id="sync-status" class="value">Loading...</span>
+            </div>
+            
+            <div class="status-item">
+                <span class="label">Last Sync:</span>
+                <span id="last-sync" class="value">Never</span>
+            </div>
+            
+            <div class="status-item">
+                <span class="label">Pending Items:</span>
+                <span id="pending-count" class="value">0</span>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <div class="setting-notice">
+                <p>📱 All sync settings are in iOS Settings</p>
+                <small>Go to Settings → bar123 to configure Pantry ID, basket name, and sync interval</small>
+            </div>
+        </div>
+        
+        <div class="actions-section">
+            <button id="open-full-history" class="primary-button">
+                Open bar123 App
+            </button>
+        </div>
+        
+        <div id="error-message" class="error-message" style="display: none;"></div>
+    </div>
+    
+    <script type="module" src="popup.js"></script>
+</body>
+</html>

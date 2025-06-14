@@ -24,9 +24,19 @@ class HistoryDataManager {
         let container = NSPersistentContainer(name: "HistoryDataModel")
         
         // Use shared app group for Core Data store
-        let storeURL = FileManager.default
-            .containerURL(forSecurityApplicationGroupIdentifier: AppConfiguration.appGroupIdentifier)!
-            .appendingPathComponent("HistoryData.sqlite")
+        guard let groupURL = FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: AppConfiguration.appGroupIdentifier) else {
+            print("Warning: App group \(AppConfiguration.appGroupIdentifier) not available. Using default store location.")
+            // Fall back to default location if app group is not configured
+            container.loadPersistentStores { _, error in
+                if let error = error {
+                    fatalError("Failed to load Core Data stack: \(error)")
+                }
+            }
+            return container
+        }
+        
+        let storeURL = groupURL.appendingPathComponent("HistoryData.sqlite")
         
         let storeDescription = NSPersistentStoreDescription(url: storeURL)
         container.persistentStoreDescriptions = [storeDescription]

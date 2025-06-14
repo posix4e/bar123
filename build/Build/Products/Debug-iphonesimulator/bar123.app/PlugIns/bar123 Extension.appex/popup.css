@@ -1,0 +1,133 @@
+/* Minimal Popup Styles */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    width: 350px;
+    padding: 16px;
+    background: white;
+    color: #333;
+}
+
+h1 {
+    font-size: 20px;
+    margin-bottom: 16px;
+}
+
+h2 {
+    font-size: 16px;
+    margin: 16px 0 8px;
+}
+
+.section {
+    margin-bottom: 16px;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+}
+
+.label {
+    font-weight: 500;
+}
+
+.value {
+    color: #666;
+}
+
+.setting-notice {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+
+.primary-button {
+    background: #007aff;
+    color: white;
+}
+
+.primary-button:hover {
+    background: #0066d9;
+}
+
+.secondary-button {
+    background: #e5e5e5;
+    color: #333;
+}
+
+.secondary-button:hover {
+    background: #d0d0d0;
+}
+
+.history-item {
+    padding: 8px;
+    margin-bottom: 8px;
+    background: #f9f9f9;
+    border-radius: 4px;
+}
+
+.history-title {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-url {
+    font-size: 12px;
+    color: #666;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-time {
+    font-size: 11px;
+    color: #999;
+}
+
+.error-message {
+    background: #fee;
+    color: #c00;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.loading {
+    opacity: 0.6;
+}
+
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid white;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

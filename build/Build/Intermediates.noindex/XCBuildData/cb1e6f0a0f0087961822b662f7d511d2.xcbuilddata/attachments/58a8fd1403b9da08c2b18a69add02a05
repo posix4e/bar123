@@ -1,0 +1,128 @@
+{
+  "" : {
+    "diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/bar123-master.dia",
+    "emit-module-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/bar123-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/bar123-master-emit-module.dia",
+    "swift-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/bar123-master.swiftdeps"
+  },
+  "/Users/alexnewman/bar123/bar123/AppConfiguration.swift" : {
+    "const-values" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppConfiguration.swiftconstvalues",
+    "dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppConfiguration.d",
+    "diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppConfiguration.dia",
+    "index-unit-output-path" : "/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppConfiguration.o",
+    "llvm-bc" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppConfiguration.bc",
+    "object" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppConfiguration.o",
+    "swift-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppConfiguration.swiftdeps",
+    "swiftmodule" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppConfiguration~partial.swiftmodule"
+  },
+  "/Users/alexnewman/bar123/bar123/AppDelegate.swift" : {
+    "const-values" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppDelegate.swiftconstvalues",
+    "dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppDelegate.d",
+    "diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppDelegate.dia",
+    "index-unit-output-path" : "/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppDelegate.o",
+    "llvm-bc" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppDelegate.bc",
+    "object" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppDelegate.o",
+    "swift-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppDelegate.swiftdeps",
+    "swiftmodule" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/AppDelegate~partial.swiftmodule"
+  },
+  "/Users/alexnewman/bar123/bar123/CoreDataManager.swift" : {
+    "const-values" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/CoreDataManager.swiftconstvalues",
+    "dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/CoreDataManager.d",
+    "diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/CoreDataManager.dia",
+    "index-unit-output-path" : "/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/CoreDataManager.o",
+    "llvm-bc" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/CoreDataManager.bc",
+    "object" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/CoreDataManager.o",
+    "swift-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/CoreDataManager.swiftdeps",
+    "swiftmodule" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/CoreDataManager~partial.swiftmodule"
+  },
+  "/Users/alexnewman/bar123/bar123/HistoryDataManager.swift" : {
+    "const-values" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataManager.swiftconstvalues",
+    "dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataManager.d",
+    "diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataManager.dia",
+    "index-unit-output-path" : "/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataManager.o",
+    "llvm-bc" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataManager.bc",
+    "object" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataManager.o",
+    "swift-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataManager.swiftdeps",
+    "swiftmodule" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataManager~partial.swiftmodule"
+  },
+  "/Users/alexnewman/bar123/bar123/HistoryViewController.swift" : {
+    "const-values" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryViewController.swiftconstvalues",
+    "dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryViewController.d",
+    "diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryViewController.dia",
+    "index-unit-output-path" : "/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryViewController.o",
+    "llvm-bc" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryViewController.bc",
+    "object" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryViewController.o",
+    "swift-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryViewController.swiftdeps",
+    "swiftmodule" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryViewController~partial.swiftmodule"
+  },
+  "/Users/alexnewman/bar123/bar123/SceneDelegate.swift" : {
+    "const-values" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SceneDelegate.swiftconstvalues",
+    "dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SceneDelegate.d",
+    "diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SceneDelegate.dia",
+    "index-unit-output-path" : "/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SceneDelegate.o",
+    "llvm-bc" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SceneDelegate.bc",
+    "object" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SceneDelegate.o",
+    "swift-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SceneDelegate.swiftdeps",
+    "swiftmodule" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SceneDelegate~partial.swiftmodule"
+  },
+  "/Users/alexnewman/bar123/bar123/SyncManager.swift" : {
+    "const-values" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SyncManager.swiftconstvalues",
+    "dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SyncManager.d",
+    "diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SyncManager.dia",
+    "index-unit-output-path" : "/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SyncManager.o",
+    "llvm-bc" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SyncManager.bc",
+    "object" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SyncManager.o",
+    "swift-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SyncManager.swiftdeps",
+    "swiftmodule" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/SyncManager~partial.swiftmodule"
+  },
+  "/Users/alexnewman/bar123/bar123/ViewController.swift" : {
+    "const-values" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/ViewController.swiftconstvalues",
+    "dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/ViewController.d",
+    "diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/ViewController.dia",
+    "index-unit-output-path" : "/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/ViewController.o",
+    "llvm-bc" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/ViewController.bc",
+    "object" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/ViewController.o",
+    "swift-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/ViewController.swiftdeps",
+    "swiftmodule" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/ViewController~partial.swiftmodule"
+  },
+  "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/DerivedSources/CoreDataGenerated/HistoryDataModel/HistoryDataModel+CoreDataModel.swift" : {
+    "const-values" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataModel+CoreDataModel.swiftconstvalues",
+    "dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataModel+CoreDataModel.d",
+    "diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataModel+CoreDataModel.dia",
+    "index-unit-output-path" : "/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataModel+CoreDataModel.o",
+    "llvm-bc" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataModel+CoreDataModel.bc",
+    "object" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataModel+CoreDataModel.o",
+    "swift-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataModel+CoreDataModel.swiftdeps",
+    "swiftmodule" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryDataModel+CoreDataModel~partial.swiftmodule"
+  },
+  "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/DerivedSources/CoreDataGenerated/HistoryDataModel/HistoryItem+CoreDataClass.swift" : {
+    "const-values" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataClass.swiftconstvalues",
+    "dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataClass.d",
+    "diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataClass.dia",
+    "index-unit-output-path" : "/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataClass.o",
+    "llvm-bc" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataClass.bc",
+    "object" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataClass.o",
+    "swift-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataClass.swiftdeps",
+    "swiftmodule" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataClass~partial.swiftmodule"
+  },
+  "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/DerivedSources/CoreDataGenerated/HistoryDataModel/HistoryItem+CoreDataProperties.swift" : {
+    "const-values" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataProperties.swiftconstvalues",
+    "dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataProperties.d",
+    "diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataProperties.dia",
+    "index-unit-output-path" : "/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataProperties.o",
+    "llvm-bc" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataProperties.bc",
+    "object" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataProperties.o",
+    "swift-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataProperties.swiftdeps",
+    "swiftmodule" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/HistoryItem+CoreDataProperties~partial.swiftmodule"
+  },
+  "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/alexnewman/bar123/build/Build/Intermediates.noindex/bar123.build/Debug-iphonesimulator/bar123.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  }
+}

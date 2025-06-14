@@ -4,7 +4,7 @@ import Foundation
 struct AppConfiguration {
     static let teamID = "6746350013"
     static let bundleIDPrefix = "com.apple-\(teamID)"
-    static let appGroupIdentifier = "group.\(bundleIDPrefix).bar123"
+    static let appGroupIdentifier = "group.xyz.foo.bar123"
     static let extensionBundleID = "\(bundleIDPrefix).bar123.Extension"
     static let nativeMessageAppID = "\(bundleIDPrefix).bar123"
     
