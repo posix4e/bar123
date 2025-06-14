@@ -89,7 +89,7 @@ class HistoryViewController: UIViewController {
     
     @objc private func updateSyncStatus() {
         let pendingCount = historyDataManager.getPendingCount()
-        let lastSyncTime = UserDefaults(suiteName: "group.com.apple-6746350013.bar123")?.object(forKey: "lastSyncTime") as? Date
+        let lastSyncTime = UserDefaults(suiteName: AppConfiguration.appGroupIdentifier)?.object(forKey: "lastSyncTime") as? Date
         
         // Update pending count
         pendingCountLabel.text = "Pending: \(pendingCount) items"
@@ -113,7 +113,7 @@ class HistoryViewController: UIViewController {
         }
         
         // Check if Pantry is configured
-        let sharedDefaults = UserDefaults(suiteName: "group.com.apple-6746350013.bar123")
+        let sharedDefaults = UserDefaults(suiteName: AppConfiguration.appGroupIdentifier)
         let pantryID = sharedDefaults?.string(forKey: "pantryID") ?? ""
         
         if pantryID.isEmpty {

@@ -1,16 +1,19 @@
 // Popup JavaScript
 
+// Configuration
+const ExtensionConfig = {
+    nativeAppId: 'com.apple-6746350013.bar123'
+};
+
 // DOM elements
 const syncStatusEl = document.getElementById('sync-status');
 const lastSyncEl = document.getElementById('last-sync');
 const pendingCountEl = document.getElementById('pending-count');
-const syncIntervalEl = document.getElementById('sync-interval');
 const forceSyncBtn = document.getElementById('force-sync');
 const viewHistoryBtn = document.getElementById('view-history');
 const historySection = document.getElementById('history-section');
 const historyList = document.getElementById('history-list');
 const errorMessage = document.getElementById('error-message');
-const saveSettingsBtn = document.getElementById('save-settings');
 const openFullHistoryBtn = document.getElementById('open-full-history');
 
 // Initialize popup
@@ -26,8 +29,6 @@ async function loadStatus() {
         
         updateStatusDisplay(status);
         
-        // Set current sync interval in dropdown
-        syncIntervalEl.value = status.syncInterval;
     } catch (error) {
         showError('Failed to load status');
     }
@@ -80,11 +81,6 @@ function setupEventListeners() {
     forceSyncBtn.addEventListener('click', handleForceSync);
     
     
-    // Sync interval change
-    syncIntervalEl.addEventListener('change', handleIntervalChange);
-    
-    // Save settings button
-    saveSettingsBtn.addEventListener('click', handleSaveSettings);
     
     // Open full history button
     if (openFullHistoryBtn) {
@@ -207,28 +203,6 @@ function createHistoryItem(item) {
     return div;
 }
 
-// Handle interval change
-async function handleIntervalChange() {
-    const newInterval = parseInt(syncIntervalEl.value);
-    
-    try {
-        const response = await browser.runtime.sendMessage({
-            action: 'updateSyncInterval',
-            interval: newInterval
-        });
-        
-        if (!response.success) {
-            throw new Error(response.error || 'Failed to update interval');
-        }
-        
-        // Show success feedback
-        showSuccess('Sync interval updated');
-    } catch (error) {
-        showError('Failed to update interval: ' + error.message);
-        // Revert to previous value
-        loadStatus();
-    }
-}
 
 // Show error message
 function showError(message) {
@@ -257,21 +231,12 @@ function showSuccess(message) {
 setInterval(loadStatus, 30000);
 
 
-// Handle save settings
-async function handleSaveSettings() {
-    try {
-        // Only save sync interval now
-        showSuccess('Settings saved successfully');
-    } catch (error) {
-        showError('Failed to save settings: ' + error.message);
-    }
-}
 
 // Handle open full history
 function handleOpenFullHistory() {
     // Send message to open the native app's history view
     browser.runtime.sendNativeMessage(
-        'com.apple-6746350013.bar123',
+        ExtensionConfig.nativeAppId,
         {
             action: 'openHistoryView'
         }

@@ -1,31 +1,11 @@
 import SafariServices
 import os.log
-import CryptoKit
 import Foundation
 
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     
     // MARK: - Properties
-    private let encryptionKey = SymmetricKey(size: .bits256)
-    private let logger = Logger(subsystem: "com.apple-6746350013.bar123", category: "WebExtension")
-    // CoreDataManager will be accessed through dependency injection or shared instance
-    
-    // User-configurable Pantry settings from iOS Settings app
-    private var pantryID: String {
-        // Read from shared app group to access settings
-        let sharedDefaults = UserDefaults(suiteName: "group.com.apple-6746350013.bar123")
-        return sharedDefaults?.string(forKey: "pantryID") ?? ""
-    }
-    
-    private var basketName: String {
-        // Read from shared app group to access settings
-        let sharedDefaults = UserDefaults(suiteName: "group.com.apple-6746350013.bar123")
-        return sharedDefaults?.string(forKey: "basketName") ?? "browser-history"
-    }
-    
-    private var pantryBaseURL: String {
-        "https://getpantry.cloud/apiv1/pantry"
-    }
+    private let logger = Logger(subsystem: AppConfiguration.logSubsystem, category: "WebExtension")
     
     // MARK: - NSExtensionRequestHandling
     func beginRequest(with context: NSExtensionContext) {
@@ -77,7 +57,9 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             return
         }
         
-        // Store each history item in Core Data
+        // Store each history item using ExtensionHistoryDataManager
+        let historyDataManager = ExtensionHistoryDataManager.shared
+        
         for item in data {
             if let url = item["url"] as? String,
                let title = item["title"] as? String,
@@ -85,8 +67,12 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                let id = item["id"] as? String {
                 
                 let date = Date(timeIntervalSince1970: visitTime / 1000)
-                // TODO: Implement data persistence
-                // Need to add storage solution for history items
+                historyDataManager.addHistoryItem(
+                    url: url,
+                    title: title,
+                    visitTime: date,
+                    id: id
+                )
             }
         }
         
@@ -95,73 +81,44 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             SFExtensionMessageKey: ["success": true]
         ]
         context.completeRequest(returningItems: [response], completionHandler: nil)
-        
-        // Schedule sync if needed
-        scheduleSyncIfNeeded()
     }
     
     // MARK: - Sync History Handler
     private func handleSyncHistory(context: NSExtensionContext) {
-        guard !pantryID.isEmpty else {
-            respondWithError(context: context, error: "Pantry ID not configured")
-            return
-        }
+        // Sync is now handled by the main app's SyncManager
+        // This handler just triggers a sync notification
+        NotificationCenter.default.post(
+            name: NSNotification.Name("TriggerSync"),
+            object: nil
+        )
         
-        Task {
-            do {
-                // Get unsynced items from Core Data
-                // TODO: Get unsynced items from storage
-                let unsyncedItems: [[String: Any]] = []
-                
-                if unsyncedItems.isEmpty {
-                    let response = NSExtensionItem()
-                    response.userInfo = [
-                        SFExtensionMessageKey: [
-                            "success": true,
-                            "syncedCount": 0
-                        ]
-                    ]
-                    context.completeRequest(returningItems: [response], completionHandler: nil)
-                    return
-                }
-                
-                // Convert to dictionary array
-                let historyData = unsyncedItems
-                
-                // Encrypt and upload
-                let encryptedData = try encryptHistoryData(historyData)
-                let success = await uploadToPantry(encryptedData: encryptedData)
-                
-                if success {
-                    // Mark items as synced
-                    // TODO: Mark items as synced in storage
-                    UserDefaults.standard.set(Date(), forKey: "lastSyncTime")
-                    
-                    let response = NSExtensionItem()
-                    response.userInfo = [
-                        SFExtensionMessageKey: [
-                            "success": true,
-                            "syncedCount": unsyncedItems.count
-                        ]
-                    ]
-                    context.completeRequest(returningItems: [response], completionHandler: nil)
-                } else {
-                    respondWithError(context: context, error: "Failed to upload to Pantry")
-                }
-            } catch {
-                logger.error("Sync failed: \(error.localizedDescription)")
-                respondWithError(context: context, error: error.localizedDescription)
-            }
-        }
+        let response = NSExtensionItem()
+        response.userInfo = [
+            SFExtensionMessageKey: [
+                "success": true,
+                "message": "Sync triggered in main app"
+            ]
+        ]
+        context.completeRequest(returningItems: [response], completionHandler: nil)
     }
     
     // MARK: - Get History Handler
     private func handleGetHistory(message: [String: Any], context: NSExtensionContext) {
         let limit = message["limit"] as? Int ?? 100
         
-        // Get history from local database
-        // TODO: Get history from storage
-        let historyData: [[String: Any]] = []
+        // Get history from ExtensionHistoryDataManager
+        let historyItems = ExtensionHistoryDataManager.shared.getRecentHistory(limit: limit)
+        
+        // Convert to dictionary array for JSON response
+        let historyData: [[String: Any]] = historyItems.map { item in
+            [
+                "url": item.url as Any,
+                "title": item.title as Any,
+                "visitTime": item.visitTime?.timeIntervalSince1970 as Any,
+                "id": item.id ?? "",
+                "isSynced": item.isSynced
+            ]
+        }
         
         let response = NSExtensionItem()
         response.userInfo = [
@@ -178,9 +135,26 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         let limit = message["limit"] as? Int ?? 50
         let hoursAgo = message["hoursAgo"] as? Int ?? 24
         
-        // Get recent history from local database
-        // TODO: Get recent history from storage  
-        let historyData: [[String: Any]] = []
+        // Calculate cutoff date
+        let cutoffDate = Date().addingTimeInterval(-Double(hoursAgo) * 3600)
+        
+        // Get recent history from HistoryDataManager
+        let allHistory = ExtensionHistoryDataManager.shared.getRecentHistory(limit: limit)
+        let recentHistory = allHistory.filter { item in
+            guard let visitTime = item.visitTime else { return false }
+            return visitTime >= cutoffDate
+        }
+        
+        // Convert to dictionary array
+        let historyData: [[String: Any]] = recentHistory.map { item in
+            [
+                "url": item.url as Any,
+                "title": item.title as Any,
+                "visitTime": item.visitTime?.timeIntervalSince1970 as Any,
+                "id": item.id ?? "",
+                "isSynced": item.isSynced
+            ]
+        }
         
         let response = NSExtensionItem()
         response.userInfo = [
@@ -192,34 +166,10 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         context.completeRequest(returningItems: [response], completionHandler: nil)
     }
     
-    // MARK: - Search History Handler
-    private func handleSearchHistory(message: [String: Any], context: NSExtensionContext) {
-        guard let query = message["query"] as? String, !query.isEmpty else {
-            respondWithError(context: context, error: "Search query is required")
-            return
-        }
-        
-        let searchType = message["searchType"] as? String ?? "all"
-        let limit = message["limit"] as? Int ?? 100
-        
-        // Search in local database
-        // TODO: Search history in storage
-        let resultsData: [[String: Any]] = []
-        
-        let response = NSExtensionItem()
-        response.userInfo = [
-            SFExtensionMessageKey: [
-                "success": true,
-                "results": resultsData,
-                "query": query
-            ]
-        ]
-        context.completeRequest(returningItems: [response], completionHandler: nil)
-    }
     
     // MARK: - Cleanup History Handler
     private func handleCleanupHistory(message: [String: Any], context: NSExtensionContext) {
-        let expirationDays = message["expirationDays"] as? Int ?? 30
+        let _ = message["expirationDays"] as? Int ?? 30
         
         // Delete old history from local database
         // TODO: Delete old history from storage
@@ -256,103 +206,68 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     
     // MARK: - Get Status Handler
     private func handleGetStatus(context: NSExtensionContext) {
-        // TODO: Get unsynced count from storage
-        let unsyncedCount = 0
+        let pendingCount = ExtensionHistoryDataManager.shared.getPendingCount()
+        let lastSyncTime = UserDefaults(suiteName: AppConfiguration.appGroupIdentifier)?.object(forKey: "lastSyncTime") as? Date
         
         let response = NSExtensionItem()
         response.userInfo = [
             SFExtensionMessageKey: [
                 "success": true,
-                "pendingCount": unsyncedCount
+                "pendingCount": pendingCount,
+                "lastSyncTime": lastSyncTime?.timeIntervalSince1970 ?? 0
             ]
         ]
         context.completeRequest(returningItems: [response], completionHandler: nil)
     }
     
-    // MARK: - Sync Scheduling
-    private func scheduleSyncIfNeeded() {
-        // Check if we have enough unsynced items or if it's been too long since last sync
-        // TODO: Get unsynced count from storage
-        let unsyncedCount = 0
-        let lastSyncTime = UserDefaults.standard.object(forKey: "lastSyncTime") as? Date ?? Date.distantPast
-        let timeSinceLastSync = Date().timeIntervalSince(lastSyncTime)
+    // MARK: - Search History Handler
+    private func handleSearchHistory(message: [String: Any], context: NSExtensionContext) {
+        guard let query = message["query"] as? String, !query.isEmpty else {
+            respondWithError(context: context, error: "Search query is required")
+            return
+        }
         
-        if unsyncedCount > 50 || timeSinceLastSync > 3600 { // 50 items or 1 hour
-            Task {
-                await performBackgroundSync()
+        let searchType = message["searchType"] as? String ?? "all"
+        let limit = message["limit"] as? Int ?? 100
+        
+        // Search in HistoryDataManager
+        let historyDataManager = ExtensionHistoryDataManager.shared
+        let allHistory = historyDataManager.getRecentHistory(limit: 1000) // Get more items to search through
+        
+        // Filter based on search type and query
+        let results = allHistory.filter { item in
+            let queryLower = query.lowercased()
+            switch searchType {
+            case "url":
+                return item.url?.lowercased().contains(queryLower) ?? false
+            case "title":
+                return item.title?.lowercased().contains(queryLower) ?? false
+            default: // "all"
+                return (item.url?.lowercased().contains(queryLower) ?? false) ||
+                       (item.title?.lowercased().contains(queryLower) ?? false)
             }
-        }
-    }
-    
-    private func performBackgroundSync() async {
-        guard !pantryID.isEmpty else { return }
+        }.prefix(limit)
         
-        do {
-            // TODO: Get unsynced items from storage
-            let unsyncedItems: [[String: Any]] = []
-            if !unsyncedItems.isEmpty {
-                let historyData = unsyncedItems
-                let encryptedData = try encryptHistoryData(historyData)
-                
-                if await uploadToPantry(encryptedData: encryptedData) {
-                    // TODO: Mark items as synced in storage
-                    UserDefaults.standard.set(Date(), forKey: "lastSyncTime")
-                }
-            }
-        } catch {
-            logger.error("Background sync failed: \(error)")
-        }
-    }
-    
-    // MARK: - Encryption Methods
-    private func encryptHistoryData(_ data: [[String: Any]]) throws -> Data {
-        let jsonData = try JSONSerialization.data(withJSONObject: data)
-        let nonce = AES.GCM.Nonce()
-        let sealedBox = try AES.GCM.seal(jsonData, using: encryptionKey, nonce: nonce)
-        
-        var encryptedData = Data()
-        encryptedData.append(nonce.withUnsafeBytes { Data($0) })
-        encryptedData.append(sealedBox.ciphertext)
-        encryptedData.append(sealedBox.tag)
-        
-        return encryptedData
-    }
-    
-    // MARK: - Pantry Integration
-    private func uploadToPantry(encryptedData: Data) async -> Bool {
-        guard let url = URL(string: "\(pantryBaseURL)/\(pantryID)/basket/\(basketName)") else { 
-            logger.error("Invalid Pantry URL")
-            return false 
+        // Convert to dictionary array
+        let resultsData: [[String: Any]] = Array(results).map { item in
+            [
+                "url": item.url as Any,
+                "title": item.title as Any,
+                "visitTime": item.visitTime?.timeIntervalSince1970 as Any,
+                "id": item.id ?? "",
+                "isSynced": item.isSynced
+            ]
         }
         
-        let payload: [String: Any] = [
-            "encryptedData": encryptedData.base64EncodedString(),
-            "timestamp": Date().timeIntervalSince1970,
-            "version": "1.0"
+        let response = NSExtensionItem()
+        response.userInfo = [
+            SFExtensionMessageKey: [
+                "success": true,
+                "results": resultsData,
+                "query": query
+            ]
         ]
-        
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
-            logger.error("Failed to create JSON payload")
-            return false
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = jsonData
-        
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                logger.info("Pantry upload response: \(httpResponse.statusCode)")
-                return httpResponse.statusCode == 200
-            }
-        } catch {
-            logger.error("Pantry upload failed: \(error.localizedDescription)")
-        }
-        
-        return false
+        context.completeRequest(returningItems: [response], completionHandler: nil)
     }
     
     
@@ -367,11 +282,4 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         ]
         context.completeRequest(returningItems: [response], completionHandler: nil)
     }
-}
-
-// MARK: - Custom Errors
-enum EncryptionError: Error {
-    case invalidData
-    case encryptionFailed
-    case decryptionFailed
 }

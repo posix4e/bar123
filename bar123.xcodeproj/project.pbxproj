@@ -56,6 +56,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		666533022DFDBF6300B10455 /* Exceptions for "bar123" folder in "bar123 Extension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				HistoryDataModel.xcdatamodeld,
+			);
+			target = CE03C42B2DDF94E1008CC9F2 /* bar123 Extension */;
+		};
 		CE03C4462DDF94E1008CC9F2 /* Exceptions for "bar123" folder in "bar123" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -77,6 +84,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				CE03C4462DDF94E1008CC9F2 /* Exceptions for "bar123" folder in "bar123" target */,
+				666533022DFDBF6300B10455 /* Exceptions for "bar123" folder in "bar123 Extension" target */,
 			);
 			path = bar123;
 			sourceTree = "<group>";

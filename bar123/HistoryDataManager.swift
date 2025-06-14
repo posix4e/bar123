@@ -4,9 +4,33 @@ import CoreData
 class HistoryDataManager {
     static let shared = HistoryDataManager()
     
+    private init() {
+        // Listen for history updates from extension
+        CFNotificationCenterAddObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            nil,
+            { _, _, name, _, _ in
+                // Post notification for UI updates
+                NotificationCenter.default.post(name: NSNotification.Name("HistoryUpdated"), object: nil)
+            },
+            AppConfiguration.historyUpdatedNotification as CFString,
+            nil,
+            .deliverImmediately
+        )
+    }
+    
     // MARK: - Core Data stack
     lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "HistoryDataModel")
+        
+        // Use shared app group for Core Data store
+        let storeURL = FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: AppConfiguration.appGroupIdentifier)!
+            .appendingPathComponent("HistoryData.sqlite")
+        
+        let storeDescription = NSPersistentStoreDescription(url: storeURL)
+        container.persistentStoreDescriptions = [storeDescription]
+        
         container.loadPersistentStores { _, error in
             if let error = error {
                 fatalError("Failed to load Core Data stack: \(error)")
@@ -36,6 +60,11 @@ class HistoryDataManager {
         
         // Post notification for UI updates
         NotificationCenter.default.post(name: NSNotification.Name("HistoryUpdated"), object: nil)
+    }
+    
+    /// Add a new history item (alias for saveHistoryItem)
+    func addHistoryItem(url: String, title: String, visitTime: Date, id: String? = nil) {
+        saveHistoryItem(url: url, title: title, visitTime: visitTime, id: id)
     }
     
     /// Get all unsynced history items
@@ -92,6 +121,20 @@ class HistoryDataManager {
         let cutoffDate = Date().addingTimeInterval(-Double(hoursAgo * 3600))
         
         request.predicate = NSPredicate(format: "visitTime >= %@", cutoffDate as NSDate)
+        request.sortDescriptors = [NSSortDescriptor(key: "visitTime", ascending: false)]
+        request.fetchLimit = limit
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("Error fetching recent history: \(error)")
+            return []
+        }
+    }
+    
+    /// Get recent history with limit only
+    func getRecentHistory(limit: Int) -> [HistoryItem] {
+        let request: NSFetchRequest<HistoryItem> = HistoryItem.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(key: "visitTime", ascending: false)]
         request.fetchLimit = limit
         

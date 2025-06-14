@@ -1,5 +1,11 @@
 // Background script for capturing browser history
 
+// Configuration
+const ExtensionConfig = {
+    // This should match AppConfiguration.nativeMessageAppID
+    nativeAppId: 'com.apple-6746350013.bar123'
+};
+
 // Initialize extension
 browser.runtime.onInstalled.addListener(async () => {
     console.log('Extension installed, initializing...');
@@ -9,10 +15,10 @@ browser.runtime.onInstalled.addListener(async () => {
 browser.history.onVisited.addListener(async (historyItem) => {
     console.log('New history item:', historyItem);
     
-    // Send to native app for storage
+    // Send to native app for storage and sync handling
     try {
         await browser.runtime.sendNativeMessage(
-            'com.apple-6746350013.bar123',
+            ExtensionConfig.nativeAppId,
             {
                 action: 'addHistoryItem',
                 data: [{
@@ -45,6 +51,14 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             searchHistory(message.query, message.searchType, message.limit).then(sendResponse);
             return true;
             
+        case 'getStatus':
+            getStatus().then(sendResponse);
+            return true;
+            
+        case 'forceSync':
+            forceSync().then(sendResponse);
+            return true;
+            
         default:
             sendResponse({ error: 'Unknown action' });
     }
@@ -54,7 +68,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function getStoredHistory(limit = 100) {
     try {
         const response = await browser.runtime.sendNativeMessage(
-            'com.apple-6746350013.bar123',
+            ExtensionConfig.nativeAppId,
             {
                 action: 'getHistory',
                 limit: limit
@@ -72,7 +86,7 @@ async function getStoredHistory(limit = 100) {
 async function getRecentHistory(hoursAgo = 24, limit = 50) {
     try {
         const response = await browser.runtime.sendNativeMessage(
-            'com.apple-6746350013.bar123',
+            ExtensionConfig.nativeAppId,
             {
                 action: 'getRecentHistory',
                 hoursAgo: hoursAgo,
@@ -91,7 +105,7 @@ async function getRecentHistory(hoursAgo = 24, limit = 50) {
 async function searchHistory(query, searchType = 'all', limit = 100) {
     try {
         const response = await browser.runtime.sendNativeMessage(
-            'com.apple-6746350013.bar123',
+            ExtensionConfig.nativeAppId,
             {
                 action: 'searchHistory',
                 query: query,
@@ -103,6 +117,40 @@ async function searchHistory(query, searchType = 'all', limit = 100) {
         return response;
     } catch (error) {
         console.error('Error searching history:', error);
+        return { error: error.message };
+    }
+}
+
+// Get sync status from native app
+async function getStatus() {
+    try {
+        const response = await browser.runtime.sendNativeMessage(
+            ExtensionConfig.nativeAppId,
+            {
+                action: 'getStatus'
+            }
+        );
+        
+        return response;
+    } catch (error) {
+        console.error('Error getting status:', error);
+        return { error: error.message };
+    }
+}
+
+// Force sync through native app
+async function forceSync() {
+    try {
+        const response = await browser.runtime.sendNativeMessage(
+            ExtensionConfig.nativeAppId,
+            {
+                action: 'syncHistory'
+            }
+        );
+        
+        return response;
+    } catch (error) {
+        console.error('Error forcing sync:', error);
         return { error: error.message };
     }
 }

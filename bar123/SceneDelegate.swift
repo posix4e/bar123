@@ -23,6 +23,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.rootViewController = navController
         window?.makeKeyAndVisible()
         
+        // Start sync manager
+        SyncManager.shared.startSync()
+        
         // Listen for history view notifications
         NotificationCenter.default.addObserver(
             self,
