@@ -158,11 +158,15 @@ class SyncManager {
             return false
         }
         
+        let deviceId = await MainActor.run {
+            UIDevice.current.identifierForVendor?.uuidString ?? "unknown"
+        }
+        
         let payload: [String: Any] = [
             "encryptedData": encryptedData.base64EncodedString(),
             "timestamp": Date().timeIntervalSince1970,
             "version": "1.0",
-            "deviceId": UIDevice.current.identifierForVendor?.uuidString ?? "unknown"
+            "deviceId": deviceId
         ]
         
         guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
