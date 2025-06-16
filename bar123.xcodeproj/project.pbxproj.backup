@@ -3,42 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		CE03C42D2DDF94E1008CC9F2 /* bar123 Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CE03C42C2DDF94E1008CC9F2 /* bar123 Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		CE03C4622DDF94E1008CC9F2 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE03C4572DDF94E1008CC9F2 /* AppDelegate.swift */; };
-		CE03C4632DDF94E1008CC9F2 /* AppConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE03C4582DDF94E1008CC9F2 /* AppConfiguration.swift */; };
-		CE03C4642DDF94E1008CC9F2 /* CoreDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE03C4592DDF94E1008CC9F2 /* CoreDataManager.swift */; };
-		CE03C4652DDF94E1008CC9F2 /* HistoryDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE03C45A2DDF94E1008CC9F2 /* HistoryDataManager.swift */; };
-		CE03C4662DDF94E1008CC9F2 /* HistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE03C45B2DDF94E1008CC9F2 /* HistoryViewController.swift */; };
-		CE03C4672DDF94E1008CC9F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE03C45C2DDF94E1008CC9F2 /* SceneDelegate.swift */; };
-		CE03C4682DDF94E1008CC9F2 /* SyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE03C45D2DDF94E1008CC9F2 /* SyncManager.swift */; };
-		CE03C4692DDF94E1008CC9F2 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE03C45E2DDF94E1008CC9F2 /* ViewController.swift */; };
-		CE03C46A2DDF94E1008CC9F2 /* AppConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE03C45F2DDF94E1008CC9F2 /* AppConfiguration.swift */; };
-		CE03C46B2DDF94E1008CC9F2 /* ExtensionHistoryDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE03C4602DDF94E1008CC9F2 /* ExtensionHistoryDataManager.swift */; };
-		CE03C46C2DDF94E1008CC9F2 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE03C4612DDF94E1008CC9F2 /* SafariWebExtensionHandler.swift */; };
-		CE03C4812DDF94E1008CC9F2 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CE03C46E2DDF94E1008CC9F2 /* LaunchScreen.storyboard */; };
-		CE03C4822DDF94E1008CC9F2 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CE03C46F2DDF94E1008CC9F2 /* Main.storyboard */; };
-		CE03C4832DDF94E1008CC9F2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE03C4702DDF94E1008CC9F2 /* Assets.xcassets */; };
-		CE03C4842DDF94E1008CC9F2 /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = CE03C4712DDF94E1008CC9F2 /* Settings.bundle */; };
-		CE03C4852DDF94E1008CC9F2 /* HistoryDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = CE03C4722DDF94E1008CC9F2 /* HistoryDataModel.xcdatamodeld */; };
-		CE03C4862DDF94E1008CC9F2 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = CE03C4732DDF94E1008CC9F2 /* manifest.json */; };
-		CE03C4872DDF94E1008CC9F2 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = CE03C4742DDF94E1008CC9F2 /* popup.html */; };
-		CE03C4882DDF94E1008CC9F2 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = CE03C4752DDF94E1008CC9F2 /* popup.js */; };
-		CE03C4892DDF94E1008CC9F2 /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = CE03C4762DDF94E1008CC9F2 /* popup.css */; };
-		CE03C48A2DDF94E1008CC9F2 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = CE03C4772DDF94E1008CC9F2 /* background.js */; };
-		CE03C48B2DDF94E1008CC9F2 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = CE03C4782DDF94E1008CC9F2 /* content.js */; };
-		CE03C48C2DDF94E1008CC9F2 /* icon-48.png in Resources */ = {isa = PBXBuildFile; fileRef = CE03C4792DDF94E1008CC9F2 /* icon-48.png */; };
-		CE03C48D2DDF94E1008CC9F2 /* icon-64.png in Resources */ = {isa = PBXBuildFile; fileRef = CE03C47A2DDF94E1008CC9F2 /* icon-64.png */; };
-		CE03C48E2DDF94E1008CC9F2 /* icon-96.png in Resources */ = {isa = PBXBuildFile; fileRef = CE03C47B2DDF94E1008CC9F2 /* icon-96.png */; };
-		CE03C48F2DDF94E1008CC9F2 /* icon-128.png in Resources */ = {isa = PBXBuildFile; fileRef = CE03C47C2DDF94E1008CC9F2 /* icon-128.png */; };
-		CE03C4902DDF94E1008CC9F2 /* icon-256.png in Resources */ = {isa = PBXBuildFile; fileRef = CE03C47D2DDF94E1008CC9F2 /* icon-256.png */; };
-		CE03C4912DDF94E1008CC9F2 /* icon-512.png in Resources */ = {isa = PBXBuildFile; fileRef = CE03C47E2DDF94E1008CC9F2 /* icon-512.png */; };
-		CE03C4922DDF94E1008CC9F2 /* toolbar-icon.svg in Resources */ = {isa = PBXBuildFile; fileRef = CE03C47F2DDF94E1008CC9F2 /* toolbar-icon.svg */; };
-		CE03C4932DDF94E1008CC9F2 /* messages.json in Resources */ = {isa = PBXBuildFile; fileRef = CE03C4802DDF94E1008CC9F2 /* messages.json */; };
-		CE03C4992DDF94E1008CC9F2 /* HistoryDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = CE03C4722DDF94E1008CC9F2 /* HistoryDataModel.xcdatamodeld */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,132 +53,65 @@
 		CE03C4162DDF94E1008CC9F2 /* bar123Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = bar123Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE03C4202DDF94E1008CC9F2 /* bar123UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = bar123UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE03C42C2DDF94E1008CC9F2 /* bar123 Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "bar123 Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
-		CE03C4572DDF94E1008CC9F2 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		CE03C4582DDF94E1008CC9F2 /* AppConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfiguration.swift; sourceTree = "<group>"; };
-		CE03C4592DDF94E1008CC9F2 /* CoreDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataManager.swift; sourceTree = "<group>"; };
-		CE03C45A2DDF94E1008CC9F2 /* HistoryDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryDataManager.swift; sourceTree = "<group>"; };
-		CE03C45B2DDF94E1008CC9F2 /* HistoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewController.swift; sourceTree = "<group>"; };
-		CE03C45C2DDF94E1008CC9F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		CE03C45D2DDF94E1008CC9F2 /* SyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncManager.swift; sourceTree = "<group>"; };
-		CE03C45E2DDF94E1008CC9F2 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		CE03C45F2DDF94E1008CC9F2 /* AppConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfiguration.swift; sourceTree = "<group>"; };
-		CE03C4602DDF94E1008CC9F2 /* ExtensionHistoryDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionHistoryDataManager.swift; sourceTree = "<group>"; };
-		CE03C4612DDF94E1008CC9F2 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
-		CE03C46D2DDF94E1008CC9F2 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		CE03C49A2DDF94E1008CC9F2 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
-		CE03C4702DDF94E1008CC9F2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		CE03C4712DDF94E1008CC9F2 /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
-		CE03C4722DDF94E1008CC9F2 /* HistoryDataModel.xcdatamodeld */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodeld; path = HistoryDataModel.xcdatamodeld; sourceTree = "<group>"; };
-		CE03C4982DDF94E1008CC9F2 /* HistoryDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = HistoryDataModel.xcdatamodel; sourceTree = "<group>"; };
-		CE03C4732DDF94E1008CC9F2 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
-		CE03C4742DDF94E1008CC9F2 /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = popup.html; sourceTree = "<group>"; };
-		CE03C4752DDF94E1008CC9F2 /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = popup.js; sourceTree = "<group>"; };
-		CE03C4762DDF94E1008CC9F2 /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = popup.css; sourceTree = "<group>"; };
-		CE03C4772DDF94E1008CC9F2 /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = background.js; sourceTree = "<group>"; };
-		CE03C4782DDF94E1008CC9F2 /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = content.js; sourceTree = "<group>"; };
-		CE03C4792DDF94E1008CC9F2 /* icon-48.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-48.png"; sourceTree = "<group>"; };
-		CE03C47A2DDF94E1008CC9F2 /* icon-64.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-64.png"; sourceTree = "<group>"; };
-		CE03C47B2DDF94E1008CC9F2 /* icon-96.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-96.png"; sourceTree = "<group>"; };
-		CE03C47C2DDF94E1008CC9F2 /* icon-128.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-128.png"; sourceTree = "<group>"; };
-		CE03C47D2DDF94E1008CC9F2 /* icon-256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-256.png"; sourceTree = "<group>"; };
-		CE03C47E2DDF94E1008CC9F2 /* icon-512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-512.png"; sourceTree = "<group>"; };
-		CE03C47F2DDF94E1008CC9F2 /* toolbar-icon.svg */ = {isa = PBXFileReference; lastKnownFileType = text; path = "toolbar-icon.svg"; sourceTree = "<group>"; };
-		CE03C4802DDF94E1008CC9F2 /* messages.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = messages.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		666533022DFDBF6300B10455 /* Exceptions for "bar123" folder in "bar123 Extension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				HistoryDataModel.xcdatamodeld,
+			);
+			target = CE03C42B2DDF94E1008CC9F2 /* bar123 Extension */;
+		};
+		CE03C4462DDF94E1008CC9F2 /* Exceptions for "bar123" folder in "bar123" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = CE03C3F82DDF94E0008CC9F2 /* bar123 */;
+		};
+		CE03C44A2DDF94E1008CC9F2 /* Exceptions for "bar123 Extension" folder in "bar123 Extension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = CE03C42B2DDF94E1008CC9F2 /* bar123 Extension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
-/* Begin PBXGroup section */
+/* Begin PBXFileSystemSynchronizedRootGroup section */
 		CE03C3FB2DDF94E0008CC9F2 /* bar123 */ = {
-			isa = PBXGroup;
-			children = (
-				CE03C4572DDF94E1008CC9F2 /* AppDelegate.swift */,
-				CE03C4582DDF94E1008CC9F2 /* AppConfiguration.swift */,
-				CE03C4592DDF94E1008CC9F2 /* CoreDataManager.swift */,
-				CE03C45A2DDF94E1008CC9F2 /* HistoryDataManager.swift */,
-				CE03C45B2DDF94E1008CC9F2 /* HistoryViewController.swift */,
-				CE03C45C2DDF94E1008CC9F2 /* SceneDelegate.swift */,
-				CE03C45D2DDF94E1008CC9F2 /* SyncManager.swift */,
-				CE03C45E2DDF94E1008CC9F2 /* ViewController.swift */,
-				CE03C46E2DDF94E1008CC9F2 /* LaunchScreen.storyboard */,
-				CE03C46F2DDF94E1008CC9F2 /* Main.storyboard */,
-				CE03C4702DDF94E1008CC9F2 /* Assets.xcassets */,
-				CE03C4712DDF94E1008CC9F2 /* Settings.bundle */,
-				CE03C4722DDF94E1008CC9F2 /* HistoryDataModel.xcdatamodeld */,
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CE03C4462DDF94E1008CC9F2 /* Exceptions for "bar123" folder in "bar123" target */,
+				666533022DFDBF6300B10455 /* Exceptions for "bar123" folder in "bar123 Extension" target */,
 			);
 			path = bar123;
 			sourceTree = "<group>";
 		};
 		CE03C4192DDF94E1008CC9F2 /* bar123Tests */ = {
-			isa = PBXGroup;
-			children = (
-			);
+			isa = PBXFileSystemSynchronizedRootGroup;
 			path = bar123Tests;
 			sourceTree = "<group>";
 		};
 		CE03C4232DDF94E1008CC9F2 /* bar123UITests */ = {
-			isa = PBXGroup;
-			children = (
-			);
+			isa = PBXFileSystemSynchronizedRootGroup;
 			path = bar123UITests;
 			sourceTree = "<group>";
 		};
 		CE03C4302DDF94E1008CC9F2 /* bar123 Extension */ = {
-			isa = PBXGroup;
-			children = (
-				CE03C45F2DDF94E1008CC9F2 /* AppConfiguration.swift */,
-				CE03C4602DDF94E1008CC9F2 /* ExtensionHistoryDataManager.swift */,
-				CE03C4612DDF94E1008CC9F2 /* SafariWebExtensionHandler.swift */,
-				CE03C4942DDF94E1008CC9F2 /* Resources */,
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CE03C44A2DDF94E1008CC9F2 /* Exceptions for "bar123 Extension" folder in "bar123 Extension" target */,
+			);
+			explicitFolders = (
+				Resources/_locales,
+				Resources/images,
 			);
 			path = "bar123 Extension";
 			sourceTree = "<group>";
 		};
-		CE03C4942DDF94E1008CC9F2 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				CE03C4732DDF94E1008CC9F2 /* manifest.json */,
-				CE03C4742DDF94E1008CC9F2 /* popup.html */,
-				CE03C4752DDF94E1008CC9F2 /* popup.js */,
-				CE03C4762DDF94E1008CC9F2 /* popup.css */,
-				CE03C4772DDF94E1008CC9F2 /* background.js */,
-				CE03C4782DDF94E1008CC9F2 /* content.js */,
-				CE03C4952DDF94E1008CC9F2 /* images */,
-				CE03C4962DDF94E1008CC9F2 /* _locales */,
-			);
-			path = Resources;
-			sourceTree = "<group>";
-		};
-		CE03C4952DDF94E1008CC9F2 /* images */ = {
-			isa = PBXGroup;
-			children = (
-				CE03C4792DDF94E1008CC9F2 /* icon-48.png */,
-				CE03C47A2DDF94E1008CC9F2 /* icon-64.png */,
-				CE03C47B2DDF94E1008CC9F2 /* icon-96.png */,
-				CE03C47C2DDF94E1008CC9F2 /* icon-128.png */,
-				CE03C47D2DDF94E1008CC9F2 /* icon-256.png */,
-				CE03C47E2DDF94E1008CC9F2 /* icon-512.png */,
-				CE03C47F2DDF94E1008CC9F2 /* toolbar-icon.svg */,
-			);
-			path = images;
-			sourceTree = "<group>";
-		};
-		CE03C4962DDF94E1008CC9F2 /* _locales */ = {
-			isa = PBXGroup;
-			children = (
-				CE03C4972DDF94E1008CC9F2 /* en */,
-			);
-			path = _locales;
-			sourceTree = "<group>";
-		};
-		CE03C4972DDF94E1008CC9F2 /* en */ = {
-			isa = PBXGroup;
-			children = (
-				CE03C4802DDF94E1008CC9F2 /* messages.json */,
-			);
-			path = en;
-			sourceTree = "<group>";
-		};
-/* End PBXGroup section */
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		CE03C3F62DDF94E0008CC9F2 /* Frameworks */ = {
@@ -282,6 +184,9 @@
 			dependencies = (
 				CE03C42F2DDF94E1008CC9F2 /* PBXTargetDependency */,
 			);
+			fileSystemSynchronizedGroups = (
+				CE03C3FB2DDF94E0008CC9F2 /* bar123 */,
+			);
 			name = bar123;
 			packageProductDependencies = (
 			);
@@ -301,6 +206,9 @@
 			);
 			dependencies = (
 				CE03C4182DDF94E1008CC9F2 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				CE03C4192DDF94E1008CC9F2 /* bar123Tests */,
 			);
 			name = bar123Tests;
 			packageProductDependencies = (
@@ -322,6 +230,9 @@
 			dependencies = (
 				CE03C4222DDF94E1008CC9F2 /* PBXTargetDependency */,
 			);
+			fileSystemSynchronizedGroups = (
+				CE03C4232DDF94E1008CC9F2 /* bar123UITests */,
+			);
 			name = bar123UITests;
 			packageProductDependencies = (
 			);
@@ -341,6 +252,9 @@
 			);
 			dependencies = (
 			);
+			fileSystemSynchronizedGroups = (
+				CE03C4302DDF94E1008CC9F2 /* bar123 Extension */,
+			);
 			name = "bar123 Extension";
 			packageProductDependencies = (
 			);
@@ -355,22 +269,22 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1520;
-				LastUpgradeCheck = 1520;
+				LastSwiftUpdateCheck = 1630;
+				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					CE03C3F82DDF94E0008CC9F2 = {
-						CreatedOnToolsVersion = 15.2;
+						CreatedOnToolsVersion = 16.3;
 					};
 					CE03C4152DDF94E1008CC9F2 = {
-						CreatedOnToolsVersion = 15.2;
+						CreatedOnToolsVersion = 16.3;
 						TestTargetID = CE03C3F82DDF94E0008CC9F2;
 					};
 					CE03C41F2DDF94E1008CC9F2 = {
-						CreatedOnToolsVersion = 15.2;
+						CreatedOnToolsVersion = 16.3;
 						TestTargetID = CE03C3F82DDF94E0008CC9F2;
 					};
 					CE03C42B2DDF94E1008CC9F2 = {
-						CreatedOnToolsVersion = 15.2;
+						CreatedOnToolsVersion = 16.3;
 					};
 				};
 			};
@@ -383,7 +297,7 @@
 			);
 			mainGroup = CE03C3F02DDF94E0008CC9F2;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 70;
+			preferredProjectObjectVersion = 77;
 			productRefGroup = CE03C3FA2DDF94E0008CC9F2 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -401,10 +315,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CE03C4812DDF94E1008CC9F2 /* LaunchScreen.storyboard in Resources */,
-				CE03C4822DDF94E1008CC9F2 /* Main.storyboard in Resources */,
-				CE03C4832DDF94E1008CC9F2 /* Assets.xcassets in Resources */,
-				CE03C4842DDF94E1008CC9F2 /* Settings.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -426,20 +336,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CE03C4862DDF94E1008CC9F2 /* manifest.json in Resources */,
-				CE03C4872DDF94E1008CC9F2 /* popup.html in Resources */,
-				CE03C4882DDF94E1008CC9F2 /* popup.js in Resources */,
-				CE03C4892DDF94E1008CC9F2 /* popup.css in Resources */,
-				CE03C48A2DDF94E1008CC9F2 /* background.js in Resources */,
-				CE03C48B2DDF94E1008CC9F2 /* content.js in Resources */,
-				CE03C48C2DDF94E1008CC9F2 /* icon-48.png in Resources */,
-				CE03C48D2DDF94E1008CC9F2 /* icon-64.png in Resources */,
-				CE03C48E2DDF94E1008CC9F2 /* icon-96.png in Resources */,
-				CE03C48F2DDF94E1008CC9F2 /* icon-128.png in Resources */,
-				CE03C4902DDF94E1008CC9F2 /* icon-256.png in Resources */,
-				CE03C4912DDF94E1008CC9F2 /* icon-512.png in Resources */,
-				CE03C4922DDF94E1008CC9F2 /* toolbar-icon.svg in Resources */,
-				CE03C4932DDF94E1008CC9F2 /* messages.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -450,15 +346,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CE03C4622DDF94E1008CC9F2 /* AppDelegate.swift in Sources */,
-				CE03C4632DDF94E1008CC9F2 /* AppConfiguration.swift in Sources */,
-				CE03C4642DDF94E1008CC9F2 /* CoreDataManager.swift in Sources */,
-				CE03C4652DDF94E1008CC9F2 /* HistoryDataManager.swift in Sources */,
-				CE03C4662DDF94E1008CC9F2 /* HistoryViewController.swift in Sources */,
-				CE03C4672DDF94E1008CC9F2 /* SceneDelegate.swift in Sources */,
-				CE03C4682DDF94E1008CC9F2 /* SyncManager.swift in Sources */,
-				CE03C4692DDF94E1008CC9F2 /* ViewController.swift in Sources */,
-				CE03C4852DDF94E1008CC9F2 /* HistoryDataModel.xcdatamodeld in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -480,10 +367,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CE03C46A2DDF94E1008CC9F2 /* AppConfiguration.swift in Sources */,
-				CE03C46B2DDF94E1008CC9F2 /* ExtensionHistoryDataManager.swift in Sources */,
-				CE03C46C2DDF94E1008CC9F2 /* SafariWebExtensionHandler.swift in Sources */,
-				CE03C4992DDF94E1008CC9F2 /* HistoryDataModel.xcdatamodeld in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -506,25 +389,6 @@
 			targetProxy = CE03C42E2DDF94E1008CC9F2 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
-
-/* Begin PBXVariantGroup section */
-		CE03C46E2DDF94E1008CC9F2 /* LaunchScreen.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				CE03C46D2DDF94E1008CC9F2 /* Base */,
-			);
-			name = LaunchScreen.storyboard;
-			sourceTree = "<group>";
-		};
-		CE03C46F2DDF94E1008CC9F2 /* Main.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				CE03C49A2DDF94E1008CC9F2 /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		CE03C4482DDF94E1008CC9F2 /* Debug */ = {
@@ -716,7 +580,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.3;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -774,7 +638,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.3;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -905,19 +769,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCVersionGroup section */
-		CE03C4722DDF94E1008CC9F2 /* HistoryDataModel.xcdatamodeld */ = {
-			isa = XCVersionGroup;
-			children = (
-				CE03C4982DDF94E1008CC9F2 /* HistoryDataModel.xcdatamodel */,
-			);
-			currentVersion = CE03C4982DDF94E1008CC9F2 /* HistoryDataModel.xcdatamodel */;
-			path = HistoryDataModel.xcdatamodeld;
-			sourceTree = "<group>";
-			versionGroupType = wrapper.xcdatamodel;
-		};
-/* End XCVersionGroup section */
 	};
 	rootObject = CE03C3F12DDF94E0008CC9F2 /* Project object */;
 }
