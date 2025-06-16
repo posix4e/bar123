@@ -1,15 +1,17 @@
 # bar123
 
-A Safari extension for iOS that tracks your browsing history and syncs it across devices using Pantry cloud storage.
+A cross-platform browsing history tracker that syncs across devices using Pantry cloud storage. Available as a Safari extension for iOS and a Chrome extension for desktop.
 
 ## Features
 
 - 📱 Native iOS app with integrated browsing history view
 - 🔄 Real-time sync across multiple devices
-- 🌐 Safari extension that automatically captures browsing data
+- 🌐 Safari extension for iOS devices
+- 🖥️ Chrome extension for desktop browsers
 - ☁️ Cloud storage via Pantry API
 - 🔒 Secure app group sharing between app and extension
 - 📊 Clean, modern UI showing recent browsing history
+- 🔗 Cross-platform sync between iOS and Chrome
 
 ## Requirements
 
@@ -36,6 +38,14 @@ A Safari extension for iOS that tracks your browsing history and syncs it across
    - Open Settings on your iOS device
    - Navigate to Safari > Extensions
    - Enable the bar123 extension
+
+### Chrome Extension Setup
+
+1. Open Chrome and go to `chrome://extensions/`
+2. Enable "Developer mode"
+3. Click "Load unpacked"
+4. Select the `chrome-extension` directory
+5. Click the extension icon and configure your Pantry settings
 
 ## Configuration
 
@@ -68,6 +78,12 @@ bar123/
 │       ├── background.js      # Background script
 │       ├── content.js         # Content script
 │       └── popup.html/css/js  # Extension popup UI
+├── chrome-extension/          # Chrome extension
+│   ├── manifest.json          # Chrome manifest V3
+│   ├── background.js          # Service worker
+│   ├── content.js             # Content script
+│   ├── popup.html/css/js      # Extension popup
+│   └── icons/                 # Extension icons
 └── bar123.xcodeproj/          # Xcode project file
 ```
 
