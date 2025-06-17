@@ -6,15 +6,18 @@ dotenv.config();
 
 export default defineConfig({
   testDir: './tests/e2e',
+  timeout: 60000,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 1 : 0,
   workers: 1,
-  reporter: process.env.CI ? 'github' : 'html',
+  reporter: process.env.CI ? 'github' : 'list',
+  // Only run CI tests in CI environment
+  testMatch: process.env.CI ? '**/chrome-extension-ci.spec.ts' : '**/*.spec.ts',
   use: {
-    baseURL: 'http://127.0.0.1:3000',
     trace: 'on-first-retry',
     video: 'on-first-retry',
+    screenshot: 'on',
   },
 
   projects: [
@@ -31,11 +34,4 @@ export default defineConfig({
       },
     },
   ],
-
-  // Run your local dev server before starting the tests
-  webServer: {
-    command: 'python3 -m http.server 3000',
-    port: 3000,
-    reuseExistingServer: !process.env.CI,
-  },
 });

@@ -87,6 +87,14 @@ jobs:
         path: playwright-report/
         retention-days: 30
         
+    - name: Upload screenshots
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-screenshots
+        path: test-results/*.png
+        retention-days: 7
+        
     - name: Upload test videos
       uses: actions/upload-artifact@v4
       if: failure()
