@@ -2,7 +2,7 @@ import { test, expect, chromium } from '@playwright/test';
 import path from 'path';
 
 test.describe('Chrome Extension Debug', () => {
-  test('check extension console logs', async () => {
+  test('debug why history events are not firing', async () => {
     const extensionPath = path.join(__dirname, '../../chrome-extension');
     
     const context = await chromium.launchPersistentContext('', {
@@ -14,104 +14,81 @@ test.describe('Chrome Extension Debug', () => {
     });
 
     // Wait for service worker
-    await context.waitForEvent('serviceworker');
-    const [sw] = context.serviceWorkers();
+    const sw = await context.waitForEvent('serviceworker', { timeout: 10000 });
+    console.log('Service worker:', sw.url());
     
-    // Listen to console logs from service worker
+    // Capture ALL service worker logs
     sw.on('console', msg => {
-      console.log('SW Console:', msg.type(), msg.text());
-    });
-    
-    // Get extension ID
-    const page = await context.newPage();
-    await page.goto('chrome://extensions/');
-    await page.waitForTimeout(2000);
-    
-    const extensionId = await page.evaluate(() => {
-      const extensions = document.querySelector('extensions-manager').shadowRoot
-        .querySelector('extensions-item-list').shadowRoot
-        .querySelectorAll('extensions-item');
-      
-      for (const ext of extensions) {
-        const name = ext.shadowRoot.querySelector('#name').textContent;
-        if (name.includes('bar123')) {
-          return ext.id;
-        }
+      const text = msg.text();
+      const type = msg.type();
+      if (type === 'error') {
+        console.error('[SW ERROR]', text);
+      } else {
+        console.log(`[SW ${type.toUpperCase()}]`, text);
       }
-      return null;
     });
-
-    console.log('Extension ID:', extensionId);
-
-    // Open popup
-    const popup = await context.newPage();
     
-    // Listen to popup console
+    const extensionId = sw.url().split('//')[1].split('/')[0];
+    
+    // Open popup to trigger extension initialization
+    const popup = await context.newPage();
     popup.on('console', msg => {
-      console.log('Popup Console:', msg.type(), msg.text());
+      console.log('[POPUP]', msg.type().toUpperCase(), msg.text());
     });
     
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
     await popup.waitForLoadState('networkidle');
     
-    // Check if chrome.storage is available in popup
-    const hasStorage = await popup.evaluate(() => {
-      return typeof chrome !== 'undefined' && chrome.storage !== undefined;
-    });
-    console.log('Popup has chrome.storage:', hasStorage);
+    // Wait to see initialization logs
+    console.log('\n=== Waiting for service worker initialization ===');
+    await popup.waitForTimeout(3000);
     
-    // Check if chrome.runtime is available
-    const hasRuntime = await popup.evaluate(() => {
-      return typeof chrome !== 'undefined' && chrome.runtime !== undefined;
+    // Browse a page
+    console.log('\n=== Browsing to example.com ===');
+    const page = await context.newPage();
+    page.on('console', msg => {
+      console.log('[PAGE]', msg.type().toUpperCase(), msg.text());
     });
-    console.log('Popup has chrome.runtime:', hasRuntime);
     
-    // Try to get stats directly
-    const stats = await popup.evaluate(() => {
+    await page.goto('https://example.com');
+    await page.waitForLoadState('networkidle');
+    
+    // Wait to see if events fire
+    console.log('\n=== Waiting for history events (10 seconds) ===');
+    await page.waitForTimeout(10000);
+    
+    // Check what's in storage
+    console.log('\n=== Checking storage ===');
+    const storage = await popup.evaluate(() => {
       return new Promise((resolve) => {
-        if (chrome && chrome.runtime && chrome.runtime.sendMessage) {
-          chrome.runtime.sendMessage({ action: 'getStats' }, (response) => {
-            resolve(response || { error: 'No response' });
-          });
-        } else {
-          resolve({ error: 'Chrome API not available' });
-        }
-      });
-    });
-    console.log('Stats from background:', stats);
-    
-    // Check storage directly
-    const storageData = await popup.evaluate(() => {
-      return new Promise((resolve) => {
-        if (chrome && chrome.storage && chrome.storage.local) {
-          chrome.storage.local.get(null, (data) => {
-            resolve(data);
-          });
-        } else {
-          resolve({ error: 'Storage not available' });
-        }
-      });
-    });
-    console.log('Storage data:', storageData);
-    
-    // Browse to a page
-    const testPage = await context.newPage();
-    await testPage.goto('https://example.com');
-    await testPage.waitForLoadState('networkidle');
-    await testPage.waitForTimeout(3000);
-    
-    // Check service worker again
-    console.log('Service worker URL:', sw.url());
-    
-    // Check storage again after browsing
-    const storageAfter = await popup.evaluate(() => {
-      return new Promise((resolve) => {
-        chrome.storage.local.get(['historyItems'], (data) => {
+        chrome.storage.local.get(null, (data) => {
           resolve(data);
         });
       });
     });
-    console.log('Storage after browsing:', storageAfter);
+    console.log('Storage contents:', JSON.stringify(storage, null, 2));
+    
+    // Try to manually trigger a history search
+    console.log('\n=== Manual history search ===');
+    const history = await popup.evaluate(() => {
+      return new Promise((resolve) => {
+        chrome.history.search({ text: '', maxResults: 10 }, (results) => {
+          resolve(results.map(r => ({ url: r.url, title: r.title })));
+        });
+      });
+    });
+    console.log('History results:', JSON.stringify(history, null, 2));
+    
+    // Check if service worker is still alive
+    console.log('\n=== Testing service worker communication ===');
+    const swTest = await popup.evaluate(() => {
+      return new Promise((resolve) => {
+        chrome.runtime.sendMessage({ action: 'test' }, (response) => {
+          resolve(response || { error: 'No response' });
+        });
+      });
+    });
+    console.log('Service worker response:', swTest);
     
     await context.close();
   });

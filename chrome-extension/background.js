@@ -1,71 +1,78 @@
 // Chrome Extension Background Service Worker
 // Handles history tracking and sync with Pantry
 
-console.log('bar123 background script loading...');
+console.log('bar123 background script loading at', new Date().toISOString());
 
 const PANTRY_BASE_URL = 'https://getpantry.cloud/apiv1/pantry';
 const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 // Log when service worker starts
-console.log('bar123 service worker started');
+console.log('bar123 service worker started at', new Date().toISOString());
+
+// Initialize default values immediately
+chrome.storage.local.get(['pantryId', 'basketName', 'historyItems'], (result) => {
+  if (!result.historyItems) {
+    chrome.storage.local.set({ historyItems: [] });
+  }
+  if (!result.pantryId) {
+    chrome.storage.local.set({
+      pantryId: '',
+      basketName: 'browser-history',
+      lastSync: null,
+      syncEnabled: false
+    });
+  }
+});
 
 // Initialize extension
 chrome.runtime.onInstalled.addListener(() => {
   console.log('bar123 Chrome Extension installed');
   
-  // Set default storage values
-  chrome.storage.local.get(['pantryId', 'basketName'], (result) => {
-    if (!result.pantryId) {
-      chrome.storage.local.set({
-        pantryId: '',
-        basketName: 'browser-history',
-        lastSync: null,
-        syncEnabled: false
-      });
-    }
-  });
-  
-  // Start monitoring history
-  startHistoryMonitoring();
-  
   // Schedule periodic sync
   chrome.alarms.create('syncHistory', { periodInMinutes: 5 });
 });
 
-// Monitor history changes
-function startHistoryMonitoring() {
-  // Listen for new history entries
-  chrome.history.onVisited.addListener((historyItem) => {
-    console.log('New history item:', historyItem);
-    saveHistoryItem(historyItem);
-  });
-  
-  // Listen for tab updates to capture title changes
-  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.status === 'complete' && tab.url) {
-      // Update title if we have it
-      chrome.history.search({ text: tab.url, maxResults: 1 }, (results) => {
-        if (results.length > 0) {
-          const item = results[0];
-          saveHistoryItem({
-            id: item.id,
-            url: tab.url,
-            title: tab.title || item.title,
-            lastVisitTime: item.lastVisitTime,
-            visitCount: item.visitCount
-          });
-        }
-      });
-    }
-  });
-}
+// Register event listeners at the top level (required for Manifest V3)
+// Listen for new history entries
+console.log('Registering history.onVisited listener...');
+chrome.history.onVisited.addListener((historyItem) => {
+  console.log('🔵 History visited event fired:', historyItem.url, 'at', new Date().toISOString());
+  saveHistoryItem(historyItem);
+});
+console.log('History listener registered');
+
+// Listen for tab updates to capture title changes
+console.log('Registering tabs.onUpdated listener...');
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  console.log('🟡 Tab update event:', tabId, changeInfo, tab?.url);
+  if (changeInfo.status === 'complete' && tab.url) {
+    console.log('🟢 Tab completed loading:', tab.url, 'at', new Date().toISOString());
+    // Update title if we have it
+    chrome.history.search({ text: tab.url, maxResults: 1 }, (results) => {
+      if (results.length > 0) {
+        const item = results[0];
+        console.log('Found history item for tab:', item);
+        saveHistoryItem({
+          id: item.id,
+          url: tab.url,
+          title: tab.title || item.title,
+          lastVisitTime: item.lastVisitTime,
+          visitCount: item.visitCount
+        });
+      }
+    });
+  }
+});
+console.log('Tab listener registered');
 
 // Save history item to local storage
 async function saveHistoryItem(historyItem) {
+  console.log('🔴 saveHistoryItem called with:', JSON.stringify(historyItem, null, 2));
   const { url, title, lastVisitTime, visitCount } = historyItem;
   
   // Skip empty URLs or chrome:// URLs
   if (!url || url.startsWith('chrome://') || url.startsWith('chrome-extension://')) {
+    console.log('Skipping URL:', url);
     return;
   }
   
@@ -105,6 +112,7 @@ async function saveHistoryItem(historyItem) {
   
   // Save back to storage
   await chrome.storage.local.set({ historyItems });
+  console.log('Saved history items, total count:', historyItems.length);
   
   // Update badge
   updateBadge();
@@ -235,7 +243,10 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('Received message:', request);
   
-  if (request.action === 'getStats') {
+  if (request.action === 'test') {
+    sendResponse({ success: true, message: 'Service worker is alive!' });
+    return true;
+  } else if (request.action === 'getStats') {
     chrome.storage.local.get(['historyItems', 'lastSync', 'syncEnabled'], (result) => {
       console.log('Storage data for stats:', result);
       const unsyncedCount = (result.historyItems || []).filter(item => !item.syncedToPantry).length;
@@ -261,10 +272,36 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: true });
     });
     return true;
+  } else if (request.action === 'manualSave') {
+    console.log('Manual save requested:', request.historyItem);
+    saveHistoryItem(request.historyItem).then(() => {
+      sendResponse({ success: true });
+    }).catch((error) => {
+      sendResponse({ success: false, error: error.message });
+    });
+    return true;
+  } else if (request.action === 'pageInfo') {
+    console.log('Page info received from content script:', request.data);
+    // Convert content script data to history item format
+    const historyItem = {
+      url: request.data.url,
+      title: request.data.title || request.data.url,
+      lastVisitTime: request.data.timestamp,
+      visitCount: 1
+    };
+    saveHistoryItem(historyItem);
+    sendResponse({ success: true });
+    return true;
   }
 });
 
 // Initial sync on startup
 chrome.runtime.onStartup.addListener(() => {
+  console.log('Service worker startup event');
   syncWithPantry();
 });
+
+// Keep service worker alive by responding to a heartbeat
+setInterval(() => {
+  console.log('Service worker heartbeat:', new Date().toISOString());
+}, 30000);

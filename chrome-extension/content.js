@@ -1,6 +1,8 @@
 // Content script for bar123 Chrome Extension
 // This runs on every page to capture additional metadata if needed
 
+console.log('bar123 content script loaded on:', window.location.href);
+
 // Send page info to background script when page loads
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', sendPageInfo);
@@ -18,11 +20,15 @@ function sendPageInfo() {
     timestamp: Date.now()
   };
   
+  console.log('bar123 sending page info:', pageInfo);
+  
   // Only send if we have useful information
   if (pageInfo.url && !pageInfo.url.startsWith('chrome://')) {
     chrome.runtime.sendMessage({
       action: 'pageInfo',
       data: pageInfo
+    }, (response) => {
+      console.log('bar123 background response:', response);
     });
   }
 }

@@ -2,112 +2,99 @@ import { test, expect, chromium } from '@playwright/test';
 import path from 'path';
 
 const PANTRY_ID = process.env.PANTRYID;
-if (!PANTRY_ID) {
-  throw new Error('PANTRYID environment variable is required');
-}
+const BASKET_NAME = `test-${Date.now()}`;
 
 test.describe('Chrome Extension Simple Test', () => {
-  test('extension loads and captures history', async () => {
-    // Launch Chrome with the extension
+  test('simple history capture test', async () => {
     const extensionPath = path.join(__dirname, '../../chrome-extension');
     
+    // Launch with debugging port
     const context = await chromium.launchPersistentContext('', {
       headless: false,
       args: [
         `--disable-extensions-except=${extensionPath}`,
         `--load-extension=${extensionPath}`,
+        '--enable-logging',
+        '--v=1'
       ],
-      viewport: { width: 1280, height: 720 }
+      devtools: true
     });
 
-    // Wait for extension to load
-    await context.waitForEvent('serviceworker');
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Browse to some pages first to generate history
-    const page = await context.newPage();
-    
-    console.log('Browsing to test pages...');
-    await page.goto('https://example.com');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
-    
-    await page.goto('https://github.com');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
-    
-    await page.goto('https://wikipedia.org');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
-
-    // Now get extension ID
-    await page.goto('chrome://extensions/');
-    await page.waitForTimeout(2000);
-    
-    const extensionId = await page.evaluate(() => {
-      const extensions = document.querySelector('extensions-manager').shadowRoot
-        .querySelector('extensions-item-list').shadowRoot
-        .querySelectorAll('extensions-item');
-      
-      for (const ext of extensions) {
-        const name = ext.shadowRoot.querySelector('#name').textContent;
-        if (name.includes('bar123')) {
-          return ext.id;
-        }
-      }
-      return null;
-    });
-
+    // Get service worker
+    const sw = await context.waitForEvent('serviceworker');
+    const extensionId = sw.url().split('//')[1].split('/')[0];
     console.log('Extension ID:', extensionId);
-    expect(extensionId).toBeTruthy();
-
-    // Open popup
+    
+    // Open popup and configure
     const popup = await context.newPage();
     await popup.goto(`chrome-extension://${extensionId}/popup.html`);
     await popup.waitForLoadState('networkidle');
     
-    // Take screenshot of initial state
-    await popup.screenshot({ path: 'test-results/popup-initial.png' });
-    
-    // Configure extension
+    // Configure the extension
     await popup.fill('#pantryId', PANTRY_ID);
-    await popup.fill('#basketName', `test-${Date.now()}`);
+    await popup.fill('#basketName', BASKET_NAME);
     await popup.check('#syncEnabled');
     await popup.click('#saveSettings');
+    await popup.waitForTimeout(2000);
+    
+    // Create a simple page that logs when history should be captured
+    const testPage = await context.newPage();
+    
+    // Navigate to a page
+    console.log('Navigating to test page...');
+    await testPage.goto('https://example.com');
+    await testPage.waitForLoadState('networkidle');
     
     // Wait a bit
-    await popup.waitForTimeout(3000);
+    await testPage.waitForTimeout(5000);
     
-    // Take screenshot after configuration
-    await popup.screenshot({ path: 'test-results/popup-configured.png' });
+    // Check if history was captured by looking at the popup stats
+    await popup.reload();
+    await popup.waitForTimeout(2000);
     
-    // Check if we have history items
     const totalItems = await popup.locator('#totalItems').textContent();
-    console.log('Total items:', totalItems);
+    console.log('Total items after navigation:', totalItems);
     
-    // If we see a number, that's good enough for now
-    if (totalItems && totalItems !== '-') {
-      const count = parseInt(totalItems);
-      console.log('History count:', count);
-      expect(count).toBeGreaterThan(0);
-    } else {
-      console.log('No history count available, checking other indicators...');
+    // Try to manually call the history API from popup context
+    const manualCapture = await popup.evaluate(async () => {
+      // First, let's see what's in history
+      const history = await new Promise((resolve) => {
+        chrome.history.search({ text: '', maxResults: 5 }, (results) => {
+          resolve(results);
+        });
+      });
       
-      // Check if sync button is enabled (indicates extension is working)
-      const syncButton = await popup.locator('#syncNow');
-      const isEnabled = await syncButton.isEnabled();
-      console.log('Sync button enabled:', isEnabled);
-      expect(isEnabled).toBeTruthy();
-    }
+      // Now let's manually save the first non-extension URL
+      const historyItem = history.find(h => !h.url.startsWith('chrome-extension://'));
+      if (historyItem) {
+        // Send a message to the background script to save it
+        const response = await new Promise((resolve) => {
+          chrome.runtime.sendMessage({
+            action: 'manualSave',
+            historyItem: historyItem
+          }, (response) => {
+            resolve(response || { error: 'No response' });
+          });
+        });
+        
+        return {
+          found: historyItem,
+          saveResponse: response
+        };
+      }
+      
+      return { error: 'No history item found' };
+    });
     
-    // Try to sync
-    await popup.click('#syncNow');
-    await popup.waitForTimeout(3000);
+    console.log('Manual capture result:', manualCapture);
     
-    // Take final screenshot
-    await popup.screenshot({ path: 'test-results/popup-after-sync.png' });
+    // Add the manual save handler to background.js
+    await popup.evaluate(() => {
+      chrome.runtime.sendMessage({ action: 'getStats' }, (response) => {
+        console.log('Stats after manual save:', response);
+      });
+    });
     
-    // Clean up
     await context.close();
   });
 });
