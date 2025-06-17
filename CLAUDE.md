@@ -207,10 +207,15 @@ Workflow triggers on:
 
 #### Key Features
 - Manifest V3 with service workers
-- Automatic history capture
+- Automatic history capture (via Chrome History API and content scripts)
 - 5-minute sync intervals
 - Badge with unsynced count
 - Cross-platform sync with iOS app
+
+#### Known Limitations
+- Chrome History API events don't fire in Playwright automation tests
+- Manual history capture via Chrome API works correctly
+- Content scripts provide fallback page capture mechanism
 
 ## Notes for Future Development
 
