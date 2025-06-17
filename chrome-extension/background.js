@@ -1,8 +1,13 @@
 // Chrome Extension Background Service Worker
 // Handles history tracking and sync with Pantry
 
+console.log('bar123 background script loading...');
+
 const PANTRY_BASE_URL = 'https://getpantry.cloud/apiv1/pantry';
 const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+// Log when service worker starts
+console.log('bar123 service worker started');
 
 // Initialize extension
 chrome.runtime.onInstalled.addListener(() => {
@@ -228,15 +233,20 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 // Handle messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('Received message:', request);
+  
   if (request.action === 'getStats') {
     chrome.storage.local.get(['historyItems', 'lastSync', 'syncEnabled'], (result) => {
+      console.log('Storage data for stats:', result);
       const unsyncedCount = (result.historyItems || []).filter(item => !item.syncedToPantry).length;
-      sendResponse({
+      const response = {
         totalItems: (result.historyItems || []).length,
         unsyncedCount: unsyncedCount,
         lastSync: result.lastSync,
         syncEnabled: result.syncEnabled
-      });
+      };
+      console.log('Sending stats response:', response);
+      sendResponse(response);
     });
     return true;
   } else if (request.action === 'syncNow') {
