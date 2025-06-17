@@ -77,7 +77,7 @@ jobs:
       run: npm run test:ci
       env:
         CI: true
-        TEST_PANTRY_ID: ${{ secrets.TEST_PANTRY_ID }}
+        PANTRYID: ${{ secrets.PANTRYID }}
         
     - name: Upload test results
       uses: actions/upload-artifact@v4

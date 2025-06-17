@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 
 // Test Pantry credentials - uses environment variable
-const TEST_PANTRY_ID = process.env.TEST_PANTRY_ID;
+const PANTRY_ID = process.env.PANTRYID;
 const TEST_BASKET_NAME = 'test-browser-history-' + Date.now();
 
 // Simplified test for CI environment
@@ -52,12 +52,12 @@ test.describe('Chrome Extension Basic Sync', () => {
     await page.goto(popupPath);
     
     // Fill in the form
-    await page.fill('#pantryId', TEST_PANTRY_ID);
+    await page.fill('#pantryId', PANTRY_ID);
     await page.fill('#basketName', TEST_BASKET_NAME);
     await page.check('#syncEnabled');
     
     // Verify values were set
-    await expect(page.locator('#pantryId')).toHaveValue(TEST_PANTRY_ID);
+    await expect(page.locator('#pantryId')).toHaveValue(PANTRY_ID);
     await expect(page.locator('#basketName')).toHaveValue(TEST_BASKET_NAME);
     await expect(page.locator('#syncEnabled')).toBeChecked();
   });

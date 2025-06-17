@@ -3,11 +3,11 @@ import path from 'path';
 import fs from 'fs';
 
 // Test Pantry credentials - uses environment variable
-const TEST_PANTRY_ID = process.env.TEST_PANTRY_ID;
+const PANTRY_ID = process.env.PANTRYID;
 const TEST_BASKET_NAME = 'test-browser-history-' + Date.now();
 
-if (!TEST_PANTRY_ID) {
-  throw new Error('TEST_PANTRY_ID environment variable is required. Set it in .env file or GitHub secrets.');
+if (!PANTRY_ID) {
+  throw new Error('PANTRYID environment variable is required. Set it in .env file or GitHub secrets.');
 }
 
 test.describe('Chrome Extension Sync', () => {
@@ -84,7 +84,7 @@ test.describe('Chrome Extension Sync', () => {
     await popup1.goto(`chrome-extension://${extensionId1}/popup.html`);
     
     // Set Pantry credentials
-    await popup1.fill('#pantryId', TEST_PANTRY_ID);
+    await popup1.fill('#pantryId', PANTRY_ID);
     await popup1.fill('#basketName', TEST_BASKET_NAME);
     await popup1.check('#syncEnabled');
     await popup1.click('#saveSettings');
@@ -96,7 +96,7 @@ test.describe('Chrome Extension Sync', () => {
     const popup2 = await context2.newPage();
     await popup2.goto(`chrome-extension://${extensionId2}/popup.html`);
     
-    await popup2.fill('#pantryId', TEST_PANTRY_ID);
+    await popup2.fill('#pantryId', PANTRY_ID);
     await popup2.fill('#basketName', TEST_BASKET_NAME);
     await popup2.check('#syncEnabled');
     await popup2.click('#saveSettings');

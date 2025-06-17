@@ -175,7 +175,7 @@ chrome-extension/
 npm install
 
 # Set up environment
-echo "TEST_PANTRY_ID=your-test-pantry-id" > .env
+echo "PANTRYID=your-test-pantry-id" > .env
 
 # Run tests locally
 npm test
@@ -191,7 +191,7 @@ The project uses GitHub Actions for CI/CD:
 2. **Chrome Extension Tests**: Runs on Ubuntu with Playwright
 
 Required GitHub Secrets:
-- `TEST_PANTRY_ID`: Pantry ID for E2E tests
+- `PANTRYID`: Pantry ID for E2E tests
 
 Workflow triggers on:
 - Push to: main, sync-logic-to-swift, chrome-extension-support

@@ -11,7 +11,7 @@ This directory contains end-to-end tests for the bar123 Chrome extension.
 
 2. Create a `.env` file in the project root:
    ```bash
-   TEST_PANTRY_ID=your-pantry-id-here
+   PANTRYID=your-pantry-id-here
    ```
 
 3. Install Playwright browsers:
@@ -50,7 +50,7 @@ The tests run automatically on:
 - Pull requests to main
 
 Required GitHub Secret:
-- `TEST_PANTRY_ID` - A valid Pantry ID for testing
+- `PANTRYID` - A valid Pantry ID for testing
 
 ## Writing Tests
 
