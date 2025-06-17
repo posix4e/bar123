@@ -153,6 +153,65 @@ ls ~/Library/Logs/DiagnosticReports/ | grep bar123
 xcrun simctl get_app_container booted xyz.foo.bar123
 ```
 
+## Chrome Extension
+
+The project now includes a Chrome extension for cross-platform sync:
+
+### Chrome Extension Structure
+```
+chrome-extension/
+├── manifest.json          # Manifest V3 configuration
+├── background.js          # Service worker for history tracking
+├── content.js             # Content script for page metadata
+├── popup.html/css/js      # Extension UI
+└── icons/                 # Extension icons
+```
+
+### Testing
+
+#### E2E Tests with Playwright
+```bash
+# Install dependencies
+npm install
+
+# Set up environment
+echo "TEST_PANTRY_ID=your-test-pantry-id" > .env
+
+# Run tests locally
+npm test
+
+# Run tests in CI mode
+npm run test:ci
+```
+
+#### GitHub Actions
+The project uses GitHub Actions for CI/CD:
+
+1. **iOS Build**: Runs on macOS-13 with Xcode 15.2
+2. **Chrome Extension Tests**: Runs on Ubuntu with Playwright
+
+Required GitHub Secrets:
+- `TEST_PANTRY_ID`: Pantry ID for E2E tests
+
+Workflow triggers on:
+- Push to: main, sync-logic-to-swift, chrome-extension-support
+- Pull requests to: main
+
+### Chrome Extension Development
+
+#### Loading the Extension
+1. Open `chrome://extensions/`
+2. Enable Developer mode
+3. Click "Load unpacked"
+4. Select the `chrome-extension` directory
+
+#### Key Features
+- Manifest V3 with service workers
+- Automatic history capture
+- 5-minute sync intervals
+- Badge with unsynced count
+- Cross-platform sync with iOS app
+
 ## Notes for Future Development
 
 - Consider adding iCloud sync as alternative to Pantry
@@ -161,3 +220,5 @@ xcrun simctl get_app_container booted xyz.foo.bar123
 - Consider adding favorite/bookmark functionality
 - Optimize Core Data queries for large datasets
 - Add proper error handling UI for sync failures
+- Create automated release process for Chrome Web Store
+- Add Firefox extension support
