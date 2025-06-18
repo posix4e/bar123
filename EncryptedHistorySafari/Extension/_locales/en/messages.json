@@ -1,0 +1,10 @@
+{
+  "extension_name": {
+    "message": "Encrypted History",
+    "description": "Name of the extension"
+  },
+  "extension_description": {
+    "message": "Stores browsing history encrypted with background sync",
+    "description": "Description of the extension"
+  }
+}
