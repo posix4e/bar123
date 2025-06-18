@@ -1,0 +1,41 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "webextensions": true
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "globals": {
+    "chrome": "readonly",
+    "importScripts": "readonly",
+    "CryptoJS": "readonly",
+    "ConnectionShare": "readonly",
+    "DiscoveryManager": "readonly",
+    "PeerDiscovery": "readonly",
+    "WebSocketDiscovery": "readonly",
+    "STUNOnlyDiscovery": "readonly",
+    "RTCPeerConnection": "readonly",
+    "RTCSessionDescription": "readonly",
+    "RTCIceCandidate": "readonly"
+  },
+  "rules": {
+    "indent": ["error", 4],
+    "linebreak-style": ["error", "unix"],
+    "quotes": ["error", "single"],
+    "semi": ["error", "always"],
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "eqeqeq": ["error", "always"],
+    "curly": ["error", "all"],
+    "brace-style": ["error", "1tbs"],
+    "comma-dangle": ["error", "never"],
+    "no-trailing-spaces": "error",
+    "no-multiple-empty-lines": ["error", { "max": 2, "maxBOF": 0, "maxEOF": 1 }]
+  }
+}

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>bar123</h1>
+            <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+        </div>
+        
+        <!-- Connection Status -->
+        <div class="status-card">
+            <span id="status-icon">🔴</span>
+            <span id="status" class="status">Disconnected</span>
+            <input type="text" id="room-id" placeholder="Room ID" class="room-input">
+            <button id="connect-btn" class="btn btn-primary">Connect</button>
+        </div>
+        
+        <!-- Cloudflare Toggle -->
+        <div id="cloudflare-section" class="cloudflare-section">
+            <label class="toggle">
+                <input type="checkbox" id="cloudflare-toggle">
+                <span>Use Cloudflare DNS Discovery</span>
+            </label>
+            
+            <div id="cloudflare-settings" class="cloudflare-settings" style="display: none;">
+                <input type="text" id="cloudflare-api-token" placeholder="API Token" class="form-input">
+                <input type="text" id="cloudflare-zone-id" placeholder="Zone ID" class="form-input">
+                <input type="text" id="cloudflare-domain" placeholder="Domain (e.g., example.com)" class="form-input">
+            </div>
+        </div>
+        
+        <!-- Search -->
+        <div class="search-section">
+            <input type="text" id="search-input" placeholder="Search history..." class="search-input">
+            <select id="device-filter" class="device-filter">
+                <option value="">All Devices</option>
+            </select>
+        </div>
+        
+        <!-- History List -->
+        <div id="history-list" class="history-list">
+            <div class="no-results">No history yet</div>
+        </div>
+        
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2>Settings</h2>
+                
+                <div class="settings-form">
+                    <h3>Cloudflare Configuration</h3>
+                    <p class="help-text">Enter your Cloudflare credentials for peer discovery</p>
+                    
+                    <label>API Token</label>
+                    <input type="password" id="settings-api-token" class="form-input">
+                    
+                    <label>Zone ID</label>
+                    <input type="text" id="settings-zone-id" class="form-input">
+                    
+                    <label>Domain</label>
+                    <input type="text" id="settings-domain" class="form-input">
+                    
+                    <div class="modal-actions">
+                        <button id="save-settings-btn" class="btn btn-primary">Save</button>
+                        <button id="cancel-settings-btn" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="popup-simple.js"></script>
+</body>
+</html>

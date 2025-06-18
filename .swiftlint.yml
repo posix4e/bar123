@@ -1,0 +1,124 @@
+# SwiftLint configuration for bar123
+
+included:
+  - bar123
+  - bar123 Extension
+  - bar123Tests
+  - bar123UITests
+
+excluded:
+  - Carthage
+  - Pods
+  - .build
+  - DerivedData
+  - bar123.xcodeproj
+
+# Rule configuration
+opt_in_rules:
+  - anyobject_protocol
+  - array_init
+  - attributes
+  - closure_end_indentation
+  - closure_spacing
+  - collection_alignment
+  - contains_over_first_not_nil
+  - discouraged_object_literal
+  - empty_count
+  - empty_string
+  - empty_xctest_method
+  - explicit_init
+  - first_where
+  - force_unwrapping
+  - implicit_return
+  - joined_default_parameter
+  - modifier_order
+  - multiline_arguments
+  - multiline_function_chains
+  - multiline_parameters
+  - operator_usage_whitespace
+  - overridden_super_call
+  - prefer_self_type_over_type_of_self
+  - redundant_nil_coalescing
+  - redundant_type_annotation
+  - sorted_first_last
+  - trailing_closure
+  - unneeded_parentheses_in_closure_argument
+  - vertical_parameter_alignment_on_call
+  - yoda_condition
+
+disabled_rules:
+  - todo
+  - fixme
+
+analyzer_rules:
+  - explicit_self
+
+# Rule parameters
+line_length:
+  warning: 120
+  error: 200
+  ignores_function_declarations: true
+  ignores_comments: true
+  ignores_urls: true
+
+function_body_length:
+  warning: 60
+  error: 100
+
+file_length:
+  warning: 600
+  error: 1200
+
+type_body_length:
+  warning: 300
+  error: 500
+
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1
+  max_length:
+    warning: 40
+    error: 50
+  excluded:
+    - id
+    - URL
+    - url
+    - i
+    - j
+    - x
+    - y
+    - z
+
+type_name:
+  min_length: 3
+  max_length:
+    warning: 40
+    error: 50
+
+cyclomatic_complexity:
+  warning: 15
+  error: 20
+
+nesting:
+  type_level:
+    warning: 2
+  function_level:
+    warning: 3
+
+# Custom rules
+custom_rules:
+  no_print:
+    name: "No print statements"
+    regex: '^\s*print\('
+    message: "Use os_log or logger instead of print()"
+    severity: warning
+    
+  mark_format:
+    name: "MARK format"
+    regex: '// MARK: -?[^\n]*'
+    match_kinds: comment
+    message: "Use // MARK: - Section Name format"
+    severity: warning
+
+reporter: "xcode" # or "json" for CI

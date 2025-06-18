@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		CE03C42D2DDF94E1008CC9F2 /* bar123 Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CE03C42C2DDF94E1008CC9F2 /* bar123 Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CEC8C2F12DF5A9C2006176F7 /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = CEC8C2F02DF5A9C2006176F7 /* WebRTC */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,6 +111,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CEC8C2F12DF5A9C2006176F7 /* WebRTC in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -181,6 +183,7 @@
 			);
 			name = bar123;
 			packageProductDependencies = (
+				CEC8C2F02DF5A9C2006176F7 /* WebRTC */,
 			);
 			productName = bar123;
 			productReference = CE03C3F92DDF94E0008CC9F2 /* bar123.app */;
@@ -289,6 +292,9 @@
 			);
 			mainGroup = CE03C3F02DDF94E0008CC9F2;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CEC8C2EF2DF5A9C2006176F7 /* XCRemoteSwiftPackageReference "WebRTC" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CE03C3FA2DDF94E0008CC9F2 /* Products */;
 			projectDirPath = "";
@@ -757,6 +763,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CEC8C2EF2DF5A9C2006176F7 /* XCRemoteSwiftPackageReference "WebRTC" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stasel/WebRTC.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 137.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CEC8C2F02DF5A9C2006176F7 /* WebRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEC8C2EF2DF5A9C2006176F7 /* XCRemoteSwiftPackageReference "WebRTC" */;
+			productName = WebRTC;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CE03C3F12DDF94E0008CC9F2 /* Project object */;
 }

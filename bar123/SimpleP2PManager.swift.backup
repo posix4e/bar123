@@ -1,0 +1,273 @@
+import Foundation
+import Network
+import CryptoKit
+
+// MARK: - Simple P2P Manager using Apple's Network framework
+// This is a simpler alternative to libtorrent that uses Apple's native networking
+
+@available(iOS 16.0, *)
+class SimpleP2PManager {
+    private let sharedSecret: String
+    private let deviceId: String
+    private var listener: NWListener?
+    private var connections: [String: NWConnection] = [:]
+    private let queue = DispatchQueue(label: "com.bar123.p2p")
+    
+    // Callbacks
+    var onDataReceived: ((Data, String) -> Void)?
+    var onPeerConnected: ((String) -> Void)?
+    var onPeerDisconnected: ((String) -> Void)?
+    
+    init(sharedSecret: String) {
+        self.sharedSecret = sharedSecret
+        self.deviceId = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
+    }
+    
+    // MARK: - Network Discovery
+    
+    func startDiscovery() {
+        // Start Bonjour service for local network discovery
+        startListener()
+        browseForPeers()
+    }
+    
+    private func startListener() {
+        let parameters = NWParameters.tcp
+        parameters.allowLocalEndpointReuse = true
+        
+        // Use Bonjour for discovery
+        let service = "_bar123-sync._tcp"
+        listener = try? NWListener(service: NWListener.Service(name: deviceId, type: service), using: parameters)
+        
+        listener?.newConnectionHandler = { [weak self] connection in
+            self?.handleIncomingConnection(connection)
+        }
+        
+        listener?.start(queue: queue)
+        print("[P2P] Started listening for connections")
+    }
+    
+    private func browseForPeers() {
+        let parameters = NWParameters.tcp
+        let browser = NWBrowser(for: .bonjour(type: "_bar123-sync._tcp", domain: nil), using: parameters)
+        
+        browser.browseResultsChangedHandler = { [weak self] results, changes in
+            for result in results {
+                if case .service(let name, _, _, _) = result.endpoint {
+                    if name != self?.deviceId {
+                        self?.connectToPeer(endpoint: result.endpoint)
+                    }
+                }
+            }
+        }
+        
+        browser.start(queue: queue)
+        print("[P2P] Started browsing for peers")
+    }
+    
+    // MARK: - Connection Management
+    
+    private func connectToPeer(endpoint: NWEndpoint) {
+        let connection = NWConnection(to: endpoint, using: .tcp)
+        
+        connection.stateUpdateHandler = { [weak self] state in
+            switch state {
+            case .ready:
+                self?.handleConnectionReady(connection, endpoint: endpoint)
+            case .failed(let error):
+                print("[P2P] Connection failed: \(error)")
+            default:
+                break
+            }
+        }
+        
+        connection.start(queue: queue)
+    }
+    
+    private func handleIncomingConnection(_ connection: NWConnection) {
+        connection.stateUpdateHandler = { [weak self] state in
+            switch state {
+            case .ready:
+                self?.performHandshake(connection, isInitiator: false)
+            default:
+                break
+            }
+        }
+        
+        connection.start(queue: queue)
+    }
+    
+    private func handleConnectionReady(_ connection: NWConnection, endpoint: NWEndpoint) {
+        performHandshake(connection, isInitiator: true)
+    }
+    
+    // MARK: - Handshake & Authentication
+    
+    private func performHandshake(_ connection: NWConnection, isInitiator: Bool) {
+        // Create handshake message with shared secret proof
+        let handshake = createHandshakeMessage()
+        
+        connection.send(content: handshake, completion: .contentProcessed { [weak self] error in
+            if let error = error {
+                print("[P2P] Handshake send failed: \(error)")
+                return
+            }
+            
+            // Wait for response
+            self?.receiveHandshake(connection, isInitiator: isInitiator)
+        })
+    }
+    
+    private func createHandshakeMessage() -> Data {
+        // Create a proof that we have the shared secret without revealing it
+        let timestamp = Date().timeIntervalSince1970
+        let message = "\(deviceId):\(timestamp)"
+        let proof = generateProof(message: message)
+        
+        let handshake: [String: Any] = [
+            "deviceId": deviceId,
+            "timestamp": timestamp,
+            "proof": proof.base64EncodedString(),
+            "version": "1.0"
+        ]
+        
+        return try! JSONSerialization.data(withJSONObject: handshake)
+    }
+    
+    private func generateProof(message: String) -> Data {
+        let key = SymmetricKey(data: SHA256.hash(data: sharedSecret.data(using: .utf8)!))
+        let messageData = message.data(using: .utf8)!
+        let signature = HMAC<SHA256>.authenticationCode(for: messageData, using: key)
+        return Data(signature)
+    }
+    
+    private func receiveHandshake(_ connection: NWConnection, isInitiator: Bool) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
+            guard let data = data,
+                  let handshake = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let peerId = handshake["deviceId"] as? String,
+                  let timestamp = handshake["timestamp"] as? Double,
+                  let proofString = handshake["proof"] as? String,
+                  let proof = Data(base64Encoded: proofString) else {
+                print("[P2P] Invalid handshake received")
+                connection.cancel()
+                return
+            }
+            
+            // Verify proof
+            let message = "\(peerId):\(timestamp)"
+            let expectedProof = self?.generateProof(message: message)
+            
+            guard proof == expectedProof else {
+                print("[P2P] Handshake verification failed")
+                connection.cancel()
+                return
+            }
+            
+            // Connection authenticated
+            self?.addConnection(peerId: peerId, connection: connection)
+            self?.startReceivingData(from: connection, peerId: peerId)
+            
+            if !isInitiator {
+                // Send our handshake back
+                let response = self?.createHandshakeMessage() ?? Data()
+                connection.send(content: response, completion: .contentProcessed { _ in })
+            }
+        }
+    }
+    
+    // MARK: - Data Transfer
+    
+    private func addConnection(peerId: String, connection: NWConnection) {
+        connections[peerId] = connection
+        onPeerConnected?(peerId)
+        print("[P2P] Connected to peer: \(peerId)")
+    }
+    
+    private func startReceivingData(from connection: NWConnection, peerId: String) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
+            if let data = data {
+                self?.handleReceivedData(data, from: peerId)
+            }
+            
+            if error == nil && !isComplete {
+                self?.startReceivingData(from: connection, peerId: peerId)
+            } else {
+                self?.connections.removeValue(forKey: peerId)
+                self?.onPeerDisconnected?(peerId)
+            }
+        }
+    }
+    
+    private func handleReceivedData(_ data: Data, from peerId: String) {
+        // Decrypt and process data
+        do {
+            let decrypted = try decrypt(data)
+            onDataReceived?(decrypted, peerId)
+        } catch {
+            print("[P2P] Failed to decrypt data from \(peerId): \(error)")
+        }
+    }
+    
+    // MARK: - Sending Data
+    
+    func broadcast(_ data: Data) {
+        let encrypted = try! encrypt(data)
+        
+        for (peerId, connection) in connections {
+            connection.send(content: encrypted, completion: .contentProcessed { error in
+                if let error = error {
+                    print("[P2P] Failed to send to \(peerId): \(error)")
+                }
+            })
+        }
+    }
+    
+    func send(_ data: Data, to peerId: String) throws {
+        guard let connection = connections[peerId] else {
+            throw P2PError.peerNotConnected
+        }
+        
+        let encrypted = try encrypt(data)
+        connection.send(content: encrypted, completion: .contentProcessed { error in
+            if let error = error {
+                print("[P2P] Failed to send to \(peerId): \(error)")
+            }
+        })
+    }
+    
+    // MARK: - Encryption
+    
+    private func encrypt(_ data: Data) throws -> Data {
+        let key = SymmetricKey(data: SHA256.hash(data: sharedSecret.data(using: .utf8)!))
+        let sealedBox = try AES.GCM.seal(data, using: key)
+        return sealedBox.combined ?? Data()
+    }
+    
+    private func decrypt(_ data: Data) throws -> Data {
+        let key = SymmetricKey(data: SHA256.hash(data: sharedSecret.data(using: .utf8)!))
+        let sealedBox = try AES.GCM.SealedBox(combined: data)
+        return try AES.GCM.open(sealedBox, using: key)
+    }
+    
+    // MARK: - Cleanup
+    
+    func stop() {
+        listener?.cancel()
+        listener = nil
+        
+        for connection in connections.values {
+            connection.cancel()
+        }
+        connections.removeAll()
+    }
+}
+
+// MARK: - Errors
+
+enum P2PError: Error {
+    case peerNotConnected
+    case encryptionFailed
+    case decryptionFailed
+    case handshakeFailed
+}

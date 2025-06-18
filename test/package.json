@@ -1,0 +1,13 @@
+{
+  "name": "bar123-playwright-test",
+  "version": "1.0.0",
+  "description": "Playwright test for bar123 P2P sync",
+  "main": "playwright-sync-test.js",
+  "scripts": {
+    "test": "node playwright-sync-test.js",
+    "test:headless": "HEADLESS=true node playwright-sync-test.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  }
+}
