@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>bar123 Test Page</title>
+    <meta name="description" content="Test page for bar123 Chrome extension">
+    <meta name="keywords" content="test, bar123, chrome extension">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+        }
+        .info {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .timestamp {
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>bar123 Test Page</h1>
+    
+    <div class="info">
+        <h2>Page Information</h2>
+        <p><strong>Title:</strong> <span id="title">bar123 Test Page</span></p>
+        <p><strong>URL:</strong> <span id="url"></span></p>
+        <p><strong>Loaded at:</strong> <span id="timestamp" class="timestamp"></span></p>
+    </div>
+    
+    <div class="info">
+        <h2>Test Links</h2>
+        <ul>
+            <li><a href="https://example.com">Example.com</a></li>
+            <li><a href="https://github.com">GitHub</a></li>
+            <li><a href="https://wikipedia.org">Wikipedia</a></li>
+        </ul>
+    </div>
+    
+    <script>
+        document.getElementById('url').textContent = window.location.href;
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+        
+        // Change title dynamically to test SPA behavior
+        setTimeout(() => {
+            document.title = 'bar123 Test Page - Updated';
+            document.getElementById('title').textContent = document.title;
+        }, 3000);
+    </script>
+</body>
+</html>

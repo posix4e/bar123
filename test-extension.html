@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>bar123 Extension Test Page</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 0;
+        }
+        .test-section {
+            margin: 20px 0;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .links a {
+            display: block;
+            padding: 8px 0;
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <h1>bar123 Chrome Extension Test Page</h1>
+    
+    <div class="card">
+        <h2>Extension Status</h2>
+        <div class="test-section">
+            <button onclick="checkExtension()">Check Extension Status</button>
+            <div id="extensionStatus" class="status info" style="display:none;"></div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>Test Navigation</h2>
+        <div class="test-section">
+            <p>Click these links to test history capture:</p>
+            <div class="links">
+                <a href="https://example.com" target="_blank">Example.com</a>
+                <a href="https://github.com" target="_blank">GitHub</a>
+                <a href="https://wikipedia.org" target="_blank">Wikipedia</a>
+                <a href="https://news.ycombinator.com" target="_blank">Hacker News</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>Dynamic Title Test</h2>
+        <div class="test-section">
+            <button onclick="changeTitle()">Change Page Title</button>
+            <p>Current title: <strong id="currentTitle"></strong></p>
+            <div class="status info">This tests if the extension captures title changes (SPA behavior)</div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>Test Instructions</h2>
+        <ol>
+            <li>Make sure the bar123 extension is loaded in Chrome</li>
+            <li>Click the extension icon and configure your Pantry credentials</li>
+            <li>Enable Auto Sync in the extension popup</li>
+            <li>Click the test links above to generate browsing history</li>
+            <li>Click the extension icon again to see the sync status</li>
+            <li>Click "Sync Now" to manually trigger a sync</li>
+            <li>Check your Pantry basket to verify the data was uploaded</li>
+        </ol>
+    </div>
+    
+    <script>
+        // Update current title display
+        document.getElementById('currentTitle').textContent = document.title;
+        
+        function checkExtension() {
+            const status = document.getElementById('extensionStatus');
+            
+            // Check if we're in an extension context
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+                status.className = 'status success';
+                status.textContent = '✓ Running in Chrome extension context';
+            } else {
+                status.className = 'status info';
+                status.textContent = 'ℹ️ Not running in extension context - this is normal for a regular web page';
+            }
+            status.style.display = 'block';
+        }
+        
+        function changeTitle() {
+            const titles = [
+                'bar123 Test - Title Changed!',
+                'bar123 Test - Another Title',
+                'bar123 Test - Dynamic Update',
+                'bar123 Extension Test Page'
+            ];
+            const currentIndex = titles.indexOf(document.title);
+            const nextIndex = (currentIndex + 1) % titles.length;
+            document.title = titles[nextIndex];
+            document.getElementById('currentTitle').textContent = document.title;
+        }
+        
+        // Log page load
+        console.log('bar123 test page loaded at', new Date().toISOString());
+    </script>
+</body>
+</html>

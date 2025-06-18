@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>bar123 - History Sync</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="icons/icon-48.png" alt="bar123" class="logo">
+      <h1>bar123</h1>
+    </header>
+    
+    <div class="status-section">
+      <h2>Sync Status</h2>
+      <div class="status-item">
+        <span class="label">Total Items:</span>
+        <span id="totalItems" class="value">-</span>
+      </div>
+      <div class="status-item">
+        <span class="label">Unsynced:</span>
+        <span id="unsyncedCount" class="value">-</span>
+      </div>
+      <div class="status-item">
+        <span class="label">Last Sync:</span>
+        <span id="lastSync" class="value">Never</span>
+      </div>
+    </div>
+    
+    <div class="settings-section">
+      <h2>Settings</h2>
+      <div class="form-group">
+        <label for="pantryId">Pantry ID:</label>
+        <input type="text" id="pantryId" placeholder="Enter your Pantry ID">
+      </div>
+      <div class="form-group">
+        <label for="basketName">Basket Name:</label>
+        <input type="text" id="basketName" placeholder="browser-history">
+      </div>
+      <div class="form-group checkbox">
+        <label>
+          <input type="checkbox" id="syncEnabled">
+          <span>Enable Auto Sync</span>
+        </label>
+      </div>
+    </div>
+    
+    <div class="actions">
+      <button id="syncNow" class="btn btn-primary">Sync Now</button>
+      <button id="saveSettings" class="btn btn-secondary">Save Settings</button>
+    </div>
+    
+    <div id="message" class="message"></div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
